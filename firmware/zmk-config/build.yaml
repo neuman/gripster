@@ -1,0 +1,12 @@
+# build.yaml — drives ZMK's GitHub Actions build matrix.
+# Without this file the Actions build produces no artifacts. Default board is the
+# XIAO nRF52840 (seeeduino_xiao_ble); nice!nano v2 kept as a drop-in alternative.
+include:
+  - board: seeeduino_xiao_ble
+    shield: thumbdeck_left
+  - board: seeeduino_xiao_ble
+    shield: thumbdeck_right
+  - board: nice_nano_v2
+    shield: thumbdeck_left
+  - board: nice_nano_v2
+    shield: thumbdeck_right

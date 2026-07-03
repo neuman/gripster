@@ -1,0 +1,61 @@
+name: Build ZMK firmware
+
+# Self-contained build so the nested firmware/zmk-config/ (per repo structure)
+# builds without relying on the reusable workflow's root-config assumption.
+# This is the real functional gate: it compiles both halves for the XIAO nRF52840.
+on:
+  push:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: zmkfirmware/zmk-build-arm:stable
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shield: thumbdeck_left
+            board: seeeduino_xiao_ble
+          - shield: thumbdeck_right
+            board: seeeduino_xiao_ble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache west workspace
+        uses: actions/cache@v4
+        with:
+          path: |
+            modules/
+            tools/
+            zephyr/
+            bootloader/
+            zmk/
+          key: zmk-${{ hashFiles('firmware/zmk-config/config/west.yml') }}
+
+      - name: West init + update
+        working-directory: firmware/zmk-config
+        run: |
+          west init -l config
+          west update
+          west zephyr-export
+
+      - name: Build ${{ matrix.shield }}
+        working-directory: firmware/zmk-config
+        run: |
+          west build -s zmk/app -b ${{ matrix.board }} -- \
+            -DSHIELD=${{ matrix.shield }} \
+            -DZMK_CONFIG="${GITHUB_WORKSPACE}/firmware/zmk-config/config"
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.shield }}-${{ matrix.board }}
+          path: firmware/zmk-config/build/zephyr/zmk.uf2
+          if-no-files-found: warn

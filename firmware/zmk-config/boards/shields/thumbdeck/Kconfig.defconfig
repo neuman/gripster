@@ -1,0 +1,28 @@
+if SHIELD_THUMBDECK_LEFT
+
+config ZMK_KEYBOARD_NAME
+	default "thumbdeck"
+
+# LEFT = peripheral (default)
+config ZMK_SPLIT_ROLE_CENTRAL
+	default n
+
+endif
+
+if SHIELD_THUMBDECK_RIGHT
+
+config ZMK_KEYBOARD_NAME
+	default "thumbdeck"
+
+# RIGHT = central (default): pairs with host, presents whole keyboard, USB host
+config ZMK_SPLIT_ROLE_CENTRAL
+	default y
+
+endif
+
+if SHIELD_THUMBDECK_LEFT || SHIELD_THUMBDECK_RIGHT
+
+config ZMK_SPLIT
+	default y
+
+endif

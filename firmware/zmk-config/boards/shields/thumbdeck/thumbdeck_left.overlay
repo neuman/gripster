@@ -1,0 +1,14 @@
+/*
+ * thumbdeck_left.overlay — LEFT half = PERIPHERAL (default).
+ * Links to the central (right) half over BLE and relays its keypresses.
+ * The col-offset shifts this half's 5 columns into logical columns 5..9 so the
+ * two 5x5 kscans join into one 50-key logical matrix on the central.
+ */
+
+#include "thumbdeck.dtsi"
+
+/* split role: peripheral */
+
+&default_transform {
+	col-offset = <5>;
+};
