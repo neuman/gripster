@@ -20,14 +20,9 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 RENDERS = os.path.join(ROOT, "renders")
 FW = os.path.join(ROOT, "firmware", "zmk-config")
 
-# Real exposed pins per board -> the fix for the spec's impossible default map.
-# ZMK devicetree form: (gpio_port, pin). XIAO nRF52840 breaks out D0..D10 only.
-XIAO_PINS = {
-    ("gpio0", 2), ("gpio0", 3), ("gpio0", 28), ("gpio0", 29), ("gpio0", 4),
-    ("gpio0", 5), ("gpio1", 11), ("gpio1", 12), ("gpio1", 13), ("gpio1", 14),
-    ("gpio1", 15),
-}
-BOARD_PINS = {"seeeduino_xiao_ble": XIAO_PINS}
+# Usable &pro_micro nexus pin indices on the nice!nano v2 (Pro Micro footprint):
+# 0..10 and 14..21 minus the non-broken-out 11,12,13,17 -> 18 usable GPIO.
+NICE_NANO_PRO_MICRO = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 16, 18, 19, 20, 21}
 
 
 def _rects_overlap(a, b, pad=0.0):
@@ -104,43 +99,57 @@ def geometric_checks(geo_both):
     checks.append((f"F7 envelope <= {c['env_w_max']:.0f}x{c['env_h_max']:.0f}mm", ok_env, False,
                    f"{R['board_w']:.1f}x{R['board_h']:.1f}mm (flanks {c['phone_len']:.0f}mm phone)"))
 
-    # F-usb: USB-C on bottom edge (reachable)
+    # F-usb: USB-C on bottom edge (reachable), RIGHT/MCU grip only
     ux, uy, uw, uh = R["keepouts"]["usb_c"]
-    checks.append(("F-usb USB-C on bottom edge", uy < 3.0, False, f"usb y={uy:.1f}mm"))
+    checks.append(("F-usb USB-C on bottom edge (mcu grip)", uy < 3.0, False, f"usb y={uy:.1f}mm"))
+
+    # F-bridge: both grips expose a bridge connector on the inner/split edge
+    def inner_bridge(geo):
+        if "bridge" not in geo["keepouts"]:
+            return False
+        bx, by, bw, bh = geo["keepouts"]["bridge"]
+        # inner edge is x~0 (right) or x~board_w (left)
+        return bx < 8.0 or (bx + bw) > geo["board_w"] - 8.0
+    checks.append(("F-bridge bridge connector on inner edge (both grips)",
+                   inner_bridge(R) and inner_bridge(L), True,
+                   f"R={inner_bridge(R)} L={inner_bridge(L)}"))
+
+    # F-role: RIGHT carries the electronics, LEFT is passive (no controller/LiPo)
+    mcu_ok = {"controller", "lipo", "usb_c"} <= set(R["keepouts"].keys())
+    passive_ok = "controller" not in L["keepouts"] and "lipo" not in L["keepouts"]
+    checks.append(("F-role right=mcu, left=passive", mcu_ok and passive_ok, True,
+                   f"R has mcu parts={mcu_ok}, L passive={passive_ok}"))
     return checks
 
 
 def firmware_checks():
     checks = []
-    board = "seeeduino_xiao_ble"
+    board = "nice_nano_v2"
 
     def read(p):
         fp = os.path.join(FW, p)
         return open(fp).read() if os.path.exists(fp) else ""
 
-    dtsi = read("boards/shields/thumbdeck/thumbdeck.dtsi")
+    overlay = read("boards/shields/thumbdeck/thumbdeck.overlay")
     keymap = read("boards/shields/thumbdeck/thumbdeck.keymap")
     conf = read("boards/shields/thumbdeck/thumbdeck.conf") or read("config/thumbdeck.conf")
-    left = read("boards/shields/thumbdeck/thumbdeck_left.overlay")
-    right = read("boards/shields/thumbdeck/thumbdeck_right.overlay")
     build = read("build.yaml")
 
-    # F8 combined matrix transform = 50 unique RC(), 10 cols x 5 rows (HARD).
-    # Two 25-key halves join into ONE logical keymap: central(right)=cols 0..4,
-    # peripheral(left)=cols 5..9 via col-offset. (Correctness fix vs the spec's
-    # literal "25/half transform", which would not build on ZMK.)
-    rc = re.findall(r"RC\((\d+),(\d+)\)", dtsi)
+    # F8 single 5x10 matrix transform = 50 unique RC() (HARD).
+    # One controller scans all 50 keys: cols 0..4 = RIGHT grip, 5..9 = LEFT grip
+    # (reached over the bridge). No split, no col-offset.
+    rc = re.findall(r"RC\((\d+),(\d+)\)", overlay)
     seen = [(int(a), int(b)) for a, b in rc]
     dup = len(seen) != len(set(seen))
     covers = len(set(seen)) == 50 and all(0 <= r < 5 and 0 <= cc < 10 for r, cc in seen)
-    checks.append(("F8 combined transform = 50 unique RC() (25/half)", covers and not dup, True,
+    checks.append(("F8 single 5x10 transform = 50 unique RC()", covers and not dup, True,
                    f"{len(seen)} entries, {len(set(seen))} unique"))
 
-    # F8b both halves represented: 25 cols<5 (central) + 25 cols>=5 (peripheral)
-    central = sum(1 for r, cc in set(seen) if cc < 5)
-    periph = sum(1 for r, cc in set(seen) if cc >= 5)
-    checks.append(("F8b 25 central-cols + 25 peripheral-cols", central == 25 and periph == 25,
-                   True, f"central={central} peripheral={periph}"))
+    # F8b both grips represented in the one matrix: 25 cols<5 (R) + 25 cols>=5 (L)
+    rgrip = sum(1 for r, cc in set(seen) if cc < 5)
+    lgrip = sum(1 for r, cc in set(seen) if cc >= 5)
+    checks.append(("F8b 25 right-grip + 25 left-grip columns", rgrip == 25 and lgrip == 25,
+                   True, f"right={rgrip} left={lgrip}"))
 
     # F8c keymap default layer has 50 bindings (count only the default layer)
     dl = re.search(r"default_layer\s*\{.*?bindings\s*=\s*<(.*?)>;", keymap, re.S)
@@ -148,42 +157,37 @@ def firmware_checks():
     checks.append(("F8c keymap default layer has 50 bindings", len(binds) == 50, True,
                    f"{len(binds)} bindings"))
 
-    # F8d peripheral (left) carries the col-offset that joins the halves
-    checks.append(("F8d peripheral col-offset joins halves", "col-offset" in left, True,
-                   f"col-offset in left overlay={('col-offset' in left)}"))
-
-    # F9 pins valid for board + consistent (HARD)
+    # F9 pins valid for nice!nano + consistent: 5 rows + 10 cols = 15 unique (HARD)
     def pins(text):
-        return [(g, int(p)) for g, p in re.findall(r"&(gpio[01])\s+(\d+)", text)]
-    row_block = re.search(r"row-gpios\s*=\s*(.*?);", dtsi, re.S)
-    col_block = re.search(r"col-gpios\s*=\s*(.*?);", dtsi, re.S)
+        return [int(p) for p in re.findall(r"&pro_micro\s+(\d+)", text)]
+    row_block = re.search(r"row-gpios\s*=\s*(.*?);", overlay, re.S)
+    col_block = re.search(r"col-gpios\s*=\s*(.*?);", overlay, re.S)
     rowp = pins(row_block.group(1)) if row_block else []
     colp = pins(col_block.group(1)) if col_block else []
     allp = rowp + colp
-    valid = BOARD_PINS[board]
-    bad = [p for p in allp if p not in valid]
+    bad = [p for p in allp if p not in NICE_NANO_PRO_MICRO]
     unique = len(allp) == len(set(allp))
-    right_count = len(rowp) == 5 and len(colp) == 5
+    right_count = len(rowp) == 5 and len(colp) == 10
     ok_pins = not bad and unique and right_count
-    checks.append(("F9 GPIO pins valid+unique for XIAO nRF52840", ok_pins, True,
+    checks.append(("F9 pins valid+unique for nice!nano (5r+10c=15)", ok_pins, True,
                    f"{len(rowp)}r+{len(colp)}c, invalid={bad}, unique={unique}"))
 
-    # F10 BLE split + battery reporting
-    have_ble = "CONFIG_ZMK_BLE=y" in conf.replace(" ", "")
-    have_batt = "CONFIG_ZMK_BATTERY" in conf.replace(" ", "") or "battery" in conf.lower()
-    role_left = "peripheral" in left.lower() or "central" not in left.lower()
-    role_right = "central" in right.lower()
-    checks.append(("F10 BLE on + battery reporting + split roles", have_ble and have_batt and role_right,
-                   True, f"ble={have_ble} batt={have_batt} right=central:{role_right}"))
+    # F10 BLE + USB + battery reporting (single controller, no split roles)
+    flat = conf.replace(" ", "")
+    have_ble = "CONFIG_ZMK_BLE=y" in flat
+    have_usb = "CONFIG_ZMK_USB=y" in flat
+    have_batt = "CONFIG_ZMK_BATTERY" in flat or "battery" in conf.lower()
+    checks.append(("F10 BLE + USB + battery reporting", have_ble and have_usb and have_batt,
+                   True, f"ble={have_ble} usb={have_usb} batt={have_batt}"))
 
-    # F11 build.yaml lists both shields (CI can actually build)
-    ok_build = "thumbdeck_left" in build and "thumbdeck_right" in build and board in build
-    checks.append(("F11 build.yaml drives CI for both halves", ok_build, True,
+    # F11 build.yaml drives CI for the single board+shield
+    ok_build = "thumbdeck" in build and board in build
+    checks.append(("F11 build.yaml drives CI (nice_nano_v2 + thumbdeck)", ok_build, True,
                    f"present={bool(build)}"))
 
     # F12 diode direction consistent col2row
-    checks.append(("F12 diode-direction col2row", 'diode-direction = "col2row"' in dtsi
-                   or "col2row" in dtsi, False, "col2row in dtsi"))
+    checks.append(("F12 diode-direction col2row", "col2row" in overlay, False,
+                   "col2row in overlay"))
     return checks
 
 

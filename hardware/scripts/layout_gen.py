@@ -46,7 +46,8 @@ def _draw_half(ax, geo, title):
                            facecolor="none", edgecolor="#7fd1ff", ls=":", lw=0.8, zorder=2))
     ax.plot([ax_], [ay], marker="x", color="#7fd1ff", ms=7, zorder=5)
     # keep-outs
-    ko_colors = {"usb_c": "#e07a5f", "controller": "#8093f1", "lipo": "#c9ada7"}
+    ko_colors = {"usb_c": "#e07a5f", "controller": "#8093f1", "lipo": "#c9ada7",
+                 "bridge": "#43aa8b"}
     for name, (x, y, w, h) in geo["keepouts"].items():
         ax.add_patch(Rectangle((x, y), w, h, facecolor=ko_colors.get(name, "#888"),
                      alpha=0.55, edgecolor="white", ls="--", lw=1.0, zorder=3))
@@ -99,13 +100,13 @@ def render(iter_n: int, out_dir: str, params: dict | None = None) -> str:
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 6.2))
     fig.patch.set_facecolor("#101418")
-    _draw_half(axes[0], left, f"LEFT  (peripheral)  {left['board_w']:.0f}x{left['board_h']:.0f}mm")
-    _draw_half(axes[1], right, f"RIGHT (central)  {right['board_w']:.0f}x{right['board_h']:.0f}mm")
+    _draw_half(axes[0], left, f"LEFT  (passive matrix)  {left['board_w']:.0f}x{left['board_h']:.0f}mm")
+    _draw_half(axes[1], right, f"RIGHT (MCU: nRF52840+LiPo+USB-C)  {right['board_w']:.0f}x{right['board_h']:.0f}mm")
     fig.suptitle(f"thumbdeck — layout iter {iter_n:02d}   "
-                 f"(25 keys/half · i8+-inspired · BLE split · nRF52840)",
+                 f"(25 keys/half · i8+-inspired · single nRF52840 · wired bridge)",
                  fontsize=12, color="#f4d35e", y=0.98)
-    fig.text(0.5, 0.02, "inner/split edge faces phone (left of RIGHT half) · "
-             "USB-C bottom edge · thumb arc from x-marked anchor (dotted)",
+    fig.text(0.5, 0.02, "one controller in the RIGHT grip · LEFT grip passive, wired over the "
+             "bridge connector · inner/split edge faces phone · thumb arc dotted",
              ha="center", fontsize=7.5, color="#9aa")
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     os.makedirs(out_dir, exist_ok=True)

@@ -6,8 +6,8 @@ Prints the physical matrix for each half and the combined logical keymap order,
 and checks that the render legends (deck.py) agree with the ZMK keymap bindings
 so the two never silently drift apart.
 
-Combined logical layout (per row): RIGHT half = logical cols 0..4,
-LEFT half = logical cols 5..9 (peripheral col-offset). See docs/matrix-and-diodes.md.
+Single 5x10 matrix on one controller (v0.3): RIGHT grip = logical cols 0..4
+(local), LEFT grip = cols 5..9 (over the bridge cable). See docs/matrix-and-diodes.md.
 """
 import os, re
 import deck
@@ -15,9 +15,10 @@ import deck
 FW = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..",
                      "firmware", "zmk-config", "boards", "shields", "thumbdeck"))
 
-# XIAO nRF52840 exposed pins used by the matrix (rows D0..D4, cols D5..D9)
-ROW_PINS = ["P0.02 (D0)", "P0.03 (D1)", "P0.28 (D2)", "P0.29 (D3)", "P0.04 (D4)"]
-COL_PINS = ["P0.05 (D5)", "P1.11 (D6)", "P1.12 (D7)", "P1.13 (D8)", "P1.14 (D9)"]
+# nice!nano v2 &pro_micro pins used by the single 5x10 matrix.
+ROW_PINS = ["pro_micro 4", "pro_micro 5", "pro_micro 6", "pro_micro 7", "pro_micro 8"]
+COL_PINS = ["pro_micro 9", "pro_micro 10", "pro_micro 14", "pro_micro 15", "pro_micro 16",
+            "pro_micro 18*", "pro_micro 19*", "pro_micro 20*", "pro_micro 21*", "pro_micro 1*"]
 
 
 def print_half(name, legends):
@@ -35,11 +36,13 @@ def keymap_default_bindings():
 
 
 def main():
-    print("=== thumbdeck matrix map ===")
-    print("rows:", ROW_PINS)
-    print("cols:", COL_PINS)
-    print_half("RIGHT (central, logical cols 0..4)", deck.RIGHT_LEGENDS)
-    print_half("LEFT  (peripheral, logical cols 5..9)", deck.LEFT_LEGENDS)
+    print("=== thumbdeck matrix map (single 5x10 controller) ===")
+    print("rows (shared, cross bridge):", ROW_PINS)
+    print("cols (0-4 right/local, 5-9 left/*=over bridge):")
+    for c in COL_PINS:
+        print("   ", c)
+    print_half("RIGHT grip (logical cols 0..4, local)", deck.RIGHT_LEGENDS)
+    print_half("LEFT  grip (logical cols 5..9, over bridge)", deck.LEFT_LEGENDS)
 
     # Expected combined keymap order: per row, right c0..4 then left c0..4
     expected = []
