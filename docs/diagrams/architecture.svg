@@ -1,40 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360" font-family="sans-serif">
   <rect width="820" height="360" fill="#0b0f14"/>
-  <text x="410" y="34" fill="#ffd60a" font-size="20" font-weight="bold" text-anchor="middle">thumbdeck — system architecture</text>
+  <text x="410" y="34" fill="#ffd60a" font-size="20" font-weight="bold" text-anchor="middle">thumbdeck v0.3 — system architecture (single controller)</text>
 
-  <!-- LEFT peripheral -->
-  <rect x="40" y="90" width="200" height="180" rx="14" fill="#132a13" stroke="#ffd60a" stroke-width="2"/>
-  <text x="140" y="118" fill="#f4d35e" font-size="15" font-weight="bold" text-anchor="middle">LEFT half</text>
-  <text x="140" y="138" fill="#89c2d9" font-size="12" text-anchor="middle">PERIPHERAL</text>
-  <text x="140" y="170" fill="#e5e5e5" font-size="11" text-anchor="middle">nRF52840 (XIAO)</text>
-  <text x="140" y="188" fill="#e5e5e5" font-size="11" text-anchor="middle">5×5 matrix · 25 keys</text>
-  <text x="140" y="206" fill="#e5e5e5" font-size="11" text-anchor="middle">LiPo + USB-C charge</text>
-  <text x="140" y="224" fill="#e5e5e5" font-size="11" text-anchor="middle">col-offset = 5</text>
+  <!-- LEFT passive -->
+  <rect x="40" y="90" width="200" height="185" rx="14" fill="#132a13" stroke="#ffd60a" stroke-width="2"/>
+  <text x="140" y="118" fill="#f4d35e" font-size="15" font-weight="bold" text-anchor="middle">LEFT grip</text>
+  <text x="140" y="138" fill="#89c2d9" font-size="12" text-anchor="middle">PASSIVE MATRIX</text>
+  <text x="140" y="170" fill="#e5e5e5" font-size="11" text-anchor="middle">25 switches + diodes</text>
+  <text x="140" y="188" fill="#e5e5e5" font-size="11" text-anchor="middle">no chip, no battery</text>
+  <text x="140" y="206" fill="#e5e5e5" font-size="11" text-anchor="middle">cols 5–9 of the matrix</text>
+  <text x="140" y="238" fill="#43aa8b" font-size="11" text-anchor="middle">bridge connector</text>
 
-  <!-- RIGHT central -->
-  <rect x="420" y="90" width="200" height="180" rx="14" fill="#132a13" stroke="#ffd60a" stroke-width="2"/>
-  <text x="520" y="118" fill="#f4d35e" font-size="15" font-weight="bold" text-anchor="middle">RIGHT half</text>
-  <text x="520" y="138" fill="#89c2d9" font-size="12" text-anchor="middle">CENTRAL</text>
-  <text x="520" y="170" fill="#e5e5e5" font-size="11" text-anchor="middle">nRF52840 (XIAO)</text>
-  <text x="520" y="188" fill="#e5e5e5" font-size="11" text-anchor="middle">5×5 matrix · 25 keys</text>
-  <text x="520" y="206" fill="#e5e5e5" font-size="11" text-anchor="middle">LiPo + USB-C charge</text>
-  <text x="520" y="224" fill="#e5e5e5" font-size="11" text-anchor="middle">applies 50-key keymap</text>
+  <!-- RIGHT mcu -->
+  <rect x="420" y="90" width="210" height="185" rx="14" fill="#132a13" stroke="#ffd60a" stroke-width="2"/>
+  <text x="525" y="118" fill="#f4d35e" font-size="15" font-weight="bold" text-anchor="middle">RIGHT grip</text>
+  <text x="525" y="138" fill="#89c2d9" font-size="12" text-anchor="middle">CONTROLLER</text>
+  <text x="525" y="168" fill="#e5e5e5" font-size="11" text-anchor="middle">nice!nano v2 (nRF52840)</text>
+  <text x="525" y="186" fill="#e5e5e5" font-size="11" text-anchor="middle">1× LiPo + USB-C charge</text>
+  <text x="525" y="204" fill="#e5e5e5" font-size="11" text-anchor="middle">scans all 50 keys (5×10)</text>
+  <text x="525" y="222" fill="#e5e5e5" font-size="11" text-anchor="middle">BLE + USB-C HID</text>
+  <text x="525" y="248" fill="#43aa8b" font-size="11" text-anchor="middle">bridge connector</text>
 
   <!-- HOST -->
   <rect x="690" y="120" width="90" height="120" rx="12" fill="#1d1d1d" stroke="#89c2d9" stroke-width="2"/>
   <text x="735" y="175" fill="#89c2d9" font-size="13" font-weight="bold" text-anchor="middle">HOST</text>
   <text x="735" y="195" fill="#adb5bd" font-size="11" text-anchor="middle">phone/PC</text>
 
-  <!-- BLE link left<->right -->
-  <line x1="240" y1="180" x2="420" y2="180" stroke="#7fd1ff" stroke-width="2.5" stroke-dasharray="7 5"/>
-  <text x="330" y="170" fill="#7fd1ff" font-size="12" text-anchor="middle">BLE split</text>
+  <!-- wired bridge left<->right -->
+  <line x1="240" y1="182" x2="420" y2="182" stroke="#43aa8b" stroke-width="3.5"/>
+  <text x="330" y="172" fill="#43aa8b" font-size="12" text-anchor="middle">wired bridge</text>
+  <text x="330" y="200" fill="#6b8f7d" font-size="10" text-anchor="middle">10 conductors (5 rows + 5 cols)</text>
 
-  <!-- central <-> host -->
-  <line x1="620" y1="165" x2="690" y2="165" stroke="#7fd1ff" stroke-width="2.5" stroke-dasharray="7 5"/>
-  <text x="655" y="155" fill="#7fd1ff" font-size="10" text-anchor="middle">BLE</text>
-  <line x1="620" y1="205" x2="690" y2="205" stroke="#e07a5f" stroke-width="2.5"/>
-  <text x="655" y="223" fill="#e07a5f" font-size="10" text-anchor="middle">USB-C</text>
+  <!-- mcu <-> host -->
+  <line x1="630" y1="165" x2="690" y2="165" stroke="#7fd1ff" stroke-width="2.5" stroke-dasharray="7 5"/>
+  <text x="660" y="155" fill="#7fd1ff" font-size="10" text-anchor="middle">BLE</text>
+  <line x1="630" y1="205" x2="690" y2="205" stroke="#e07a5f" stroke-width="2.5"/>
+  <text x="660" y="223" fill="#e07a5f" font-size="10" text-anchor="middle">USB-C</text>
 
-  <text x="410" y="310" fill="#9aa" font-size="12" text-anchor="middle">Wireless: host ⇄BLE⇄ central ⇄BLE⇄ peripheral   ·   Wired: host ⇄USB-C⇄ central (peripheral still BLE)</text>
-  <text x="410" y="332" fill="#666" font-size="11" text-anchor="middle">No inter-half cable · per-half battery reporting · ZMK</text>
+  <text x="410" y="312" fill="#9aa" font-size="12" text-anchor="middle">One controller + one battery in the RIGHT grip. LEFT grip is passive, wired across the bridge.</text>
+  <text x="410" y="333" fill="#666" font-size="11" text-anchor="middle">No inter-half wireless link · single USB-C charge · single 5×10 matrix · ZMK (non-split)</text>
 </svg>
