@@ -17,6 +17,15 @@ auto-produced (PROJECT_SPEC §10) — no fabricated routing.
 > The switch footprint in these files is **provisional** (marked on silk). Verify
 > it before routing — see `hardware/footprints/README.md`.
 
+### Wiring reference for the routing step
+
+- `renders/wiring_schematic.png` — the logical 5×10 matrix (rows R0–R4 × cols
+  C0–C9), switch+diode per node, RIGHT/LEFT board split, and the bridge nets.
+- `renders/wiring_assembly_right.png` / `_left.png` — per-board solder-pad
+  placement + the 10-pin **bridge connector pinout** (which conductor is which
+  row/column, and the matching nice!nano `pro_micro` pin). Use these to net the
+  schematic and to wire the bridge connector.
+
 ## Manual steps to a fab package
 
 1. **Schematic** (`thumbdeck.kicad_sch`): 25 switches + 25 diodes (1N4148W,

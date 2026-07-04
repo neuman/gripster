@@ -38,7 +38,9 @@ hardware/
                  (grading) · gen_kicad.py (board) · matrix_map.py (planning aid)
   kicad/         manual KiCad workflow (SCAFFOLD) + generated/ board outline + placement
   footprints/    datasheet-verified switch footprint (TODO)
-renders/         iter_NN.png loop history · production.png · fab_view.png · GRADING.md
+renders/         iter_NN.png loop history · production.png · fab_view.png ·
+                 wiring_schematic.png (matrix) · wiring_assembly_{left,right}.png
+                 (solder pads + bridge pinout) · GRADING.md
 firmware/
   zmk-config/    single ZMK shield "thumbdeck" + build.yaml + CI
 .github/         GitHub Actions ZMK build
