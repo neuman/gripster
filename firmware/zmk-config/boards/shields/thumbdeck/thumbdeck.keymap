@@ -1,9 +1,10 @@
 /*
  * thumbdeck.keymap — placeholder default layer (i8+-inspired QWERTY).
  *
- * 50 bindings, row-major over the combined transform. Per-row order is
- * RIGHT-half (logical cols 0..4) then LEFT-half (cols 5..9), because ZMK applies
- * the split col-offset to the peripheral (left). Legends match the render:
+ * 50 bindings, row-major over the single 5x10 matrix. Per-row order is
+ * RIGHT grip (logical cols 0..4, local wiring) then LEFT grip (cols 5..9, over
+ * the bridge cable). One controller scans all of it — no split. Legends match
+ * the render:
  *   RIGHT: 6 7 8 9 0 / Y U I O P / H J K L ENT / N M , . / / SPC ARROWS
  *   LEFT : 1 2 3 4 5 / Q W E R T / A S D F G / Z X C V B / CTL GUI ALT SPC FN
  * Layout is provisional until the KiCad layout freezes (Section 7 loop output).

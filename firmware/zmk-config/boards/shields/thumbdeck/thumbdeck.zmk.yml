@@ -1,12 +1,9 @@
 file_format: "1"
 id: thumbdeck
-name: thumbdeck (split thumb keyboard)
+name: thumbdeck (single-controller thumb keyboard)
 type: shield
 url: https://github.com/neuman/custom-thumb-keyboard
 requires:
-  - seeeduino_xiao_ble
+  - pro_micro
 features:
   - keys
-siblings:
-  - thumbdeck_left
-  - thumbdeck_right

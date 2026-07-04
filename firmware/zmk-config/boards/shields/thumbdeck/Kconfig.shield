@@ -1,5 +1,2 @@
-config SHIELD_THUMBDECK_LEFT
-	def_bool $(shields_list_contains,thumbdeck_left)
-
-config SHIELD_THUMBDECK_RIGHT
-	def_bool $(shields_list_contains,thumbdeck_right)
+config SHIELD_THUMBDECK
+	def_bool $(shields_list_contains,thumbdeck)
