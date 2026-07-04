@@ -1,17 +1,18 @@
 {
-  "iter": 3,
-  "render": "renders/iter_03.png",
+  "iter": 5,
+  "version": "v0.3",
+  "render": "renders/iter_05.png",
   "fab_view": "renders/fab_view.png",
   "graded_by": "loop operator (Claude Code) viewing the rendered PNG",
-  "note": "Visual checklist from PROJECT_SPEC Section 7. These are judgments over the render; the computable subset is cross-checked numerically in grade.py so a visual pass cannot ride on a bad silhouette.",
+  "note": "v0.3 single-controller architecture: RIGHT grip holds the one nRF52840 + LiPo + USB-C; LEFT grip is a passive matrix wired over the bridge. Key field still mirrors; keep-outs differ by role (checked numerically in grade.py: F-role, F-bridge).",
   "checklist": [
-    {"id": "V1", "item": "Silhouette: rounded outer/grip edge, straight inner split edge, reads as a hand grip", "pass": true, "note": "D-profile: flat inner (cyan mating edge) + bowed rounded outer. Reads as a grip."},
-    {"id": "V2", "item": "Mirror: left is a true mirror of right", "pass": true, "note": "Confirmed visually and numerically (F3 max err 0.000mm)."},
-    {"id": "V3", "item": "Key field: 25 keys/half, i8+-like QWERTY, no overlaps", "pass": true, "note": "Left reads 1-5/QWERT/ASDFG/ZXCVB; right 67890/YUIOP/HJKL-ENT/NM,./ + arrows. No overlaps."},
-    {"id": "V4", "item": "Thumb ergonomics: every key within a plausible thumb arc from the grip anchor", "pass": true, "note": "Arc 22-84mm from bottom-outer anchor; actual key radii 36.3-80.6mm (F4)."},
-    {"id": "V5", "item": "Backbone interface: inner edge exposes >=2 mount bosses + flat mating reference", "pass": true, "note": "2 inner-edge M2 holes + flat inner edge marked as mating reference."},
-    {"id": "V6", "item": "Keep-outs: USB-C reachable bottom edge; LiPo zone; controller footprint; non-overlapping with keys", "pass": true, "note": "USB-C on bottom edge, LiPo + controller in dedicated strips; F5 clash=0."},
-    {"id": "V7", "item": "Silk: key labels + version + half (L/R) legible in the render", "pass": true, "note": "All legends legible; 'thumbdeck-L/R v0.2' on inner edge; L/R in titles."},
-    {"id": "V8", "item": "Envelope: within the stated phone-flank size target", "pass": true, "note": "63x108mm per half, target <=64x112mm, flanks a ~160mm phone."}
+    {"id": "V1", "item": "Silhouette: rounded outer/grip edge, straight inner split edge, reads as a hand grip", "pass": true, "note": "Both grips D-profile: flat inner (mating edge) + bowed rounded outer."},
+    {"id": "V2", "item": "Mirror: left key field is a true mirror of right", "pass": true, "note": "Key field mirror confirmed (F3 err 0.000mm). Electronics intentionally only on the right."},
+    {"id": "V3", "item": "Key field: 25 keys/half, i8+-like QWERTY, no overlaps", "pass": true, "note": "Left 1-5/QWERT/ASDFG/ZXCVB; right 67890/YUIOP/HJKL-ENT/NM,./ + arrows."},
+    {"id": "V4", "item": "Thumb ergonomics: every key within a plausible thumb arc", "pass": true, "note": "Arc 22-84mm from bottom-outer anchor; actual radii 34.1-77.1mm."},
+    {"id": "V5", "item": "Bridge/Backbone interface: inner edge exposes mount bosses + flat mating reference + bridge connector", "pass": true, "note": "2 inner-edge M2 holes + flat inner edge + bridge connector at inner-bottom of BOTH grips."},
+    {"id": "V6", "item": "Keep-outs by role: right = controller+LiPo+USB-C+bridge; left = bridge only; none overlap keys", "pass": true, "note": "F5 clash=0; F-role and F-bridge pass. nice!nano-sized controller fits the top strip."},
+    {"id": "V7", "item": "Silk: key labels + version + half (L/R) legible", "pass": true, "note": "'thumbdeck-L/R v0.3' on inner edge; L/R + roles in titles."},
+    {"id": "V8", "item": "Envelope: within the stated phone-flank size target", "pass": true, "note": "63x108mm per grip, target <=64x112mm."}
   ]
 }
