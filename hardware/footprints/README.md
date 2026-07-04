@@ -11,7 +11,11 @@ The generated board (`hardware/kicad/generated/*.kicad_pcb`) marks each switch
 position with a **provisional** placement guide, not a verified footprint. Before
 you route or order:
 
-1. Measure the real part (or pull the manufacturer datasheet). Record:
+1. **Meter the pin pairing first** (EE review): put a multimeter in continuity
+   mode across the 4 legs and confirm *which two pairs are internally shorted*
+   before trusting the "2-terminal SPST" assumption — the pairs may be
+   same-side or diagonal, and that decides the footprint and the matrix wiring.
+2. Measure the real part (or pull the manufacturer datasheet). Record:
    - pad count/arrangement (4 pads; which two are internally common),
    - pad size + spacing (X/Y pitch),
    - courtyard / keep-out,

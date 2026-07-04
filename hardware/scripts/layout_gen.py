@@ -47,7 +47,7 @@ def _draw_half(ax, geo, title):
     ax.plot([ax_], [ay], marker="x", color="#7fd1ff", ms=7, zorder=5)
     # keep-outs
     ko_colors = {"usb_c": "#e07a5f", "controller": "#8093f1", "lipo": "#c9ada7",
-                 "bridge": "#43aa8b"}
+                 "bridge": "#43aa8b", "antenna": "#f28482"}
     for name, (x, y, w, h) in geo["keepouts"].items():
         ax.add_patch(Rectangle((x, y), w, h, facecolor=ko_colors.get(name, "#888"),
                      alpha=0.55, edgecolor="white", ls="--", lw=1.0, zorder=3))

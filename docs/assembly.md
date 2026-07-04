@@ -23,6 +23,27 @@ grip; run the flex/ribbon (5 shared rows + 5 left-grip columns) through the
 telescoping bridge. *(Or, for the expander variant: MCP23017 in the left grip +
 a 4-wire cable.)*
 
+## 1.5 Bring-up (power-on checkpoints — do this BEFORE flashing)
+
+Catch shorts before they cook something. Numbered, with expected values:
+
+1. **Continuity, power off.** Ohm-meter BAT+ ↔ GND: **expect** open/high (no short).
+   Buzz the 10 bridge conductors end-to-end: **expect** continuity each, no
+   shorts between adjacent pins.
+2. **First power (bench supply, current-limited to ~50 mA).** Apply 3.7 V at
+   BAT+. **Expect** the board to draw only a **few mA** and *not* hit the limit.
+   If it slams to the limit → short; stop and inspect.
+3. **Rail check.** Measure the nice!nano 3.3 V rail: **expect** 3.3 V ±5 %.
+4. **Idle current on battery.** With firmware later flashed and idle/advertising,
+   **expect** low **single-digit mA** (BLE), dropping toward µA in deep sleep.
+   A steady tens-of-mA idle draw means something is mis-wired.
+5. **Charge check.** Plug USB-C: **expect** the charge LED behaviour per the
+   nice!nano docs and the cell to warm only slightly. Never leave it unattended.
+6. **Matrix continuity.** With a key pressed, buzz its column pad → its row pad
+   through the diode: **expect** continuity one way only (diode).
+
+Only proceed to flashing once 1–3 pass.
+
 ## 2. Flash ZMK — one image
 
 - Push this repo; **GitHub Actions** (`.github/workflows/build.yml`) builds a

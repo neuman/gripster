@@ -1,78 +1,57 @@
 # Grading system & iteration log
 
-The loop converges on a layout that passes **two** gates, enforced by
-`hardware/scripts/final_grade.py`. A design is "done" only when both pass.
+Two gates, enforced by `hardware/scripts/final_grade.py`. Done only when both pass.
+As of v0.4 the grade also encodes the **EE design-review** findings (see
+`docs/design-review.md`) so the design is held to them, not just reminded of them.
 
-## The two gates
+> Scope caveat: the grade covers **geometry + config/doc structure**. It is *not*
+> electrical sign-off — no compile, no DRC/ERC, no RF sim. Passing is necessary,
+> not sufficient. Human-verified fab gates are listed in the design review.
 
-### 1. Functional grade — `grade.py` (objective, computed)
-17 checks over the shared geometry (`deck.py`) and the ZMK config. **HARD** checks
-(●) block the pass regardless of score. Pass = no hard fails **and** score ≥ 90%.
+## Gate 1 — functional grade (`grade.py`, 27 checks)
 
-| id | check | hard |
-|----|-------|:----:|
-| F1 | 25 keys per half | ● |
-| F2 | no key overlaps | ● |
-| F3 | left key field is a true mirror of right (≤0.05 mm) | ● |
-| F4 | every key within the stated thumb arc | |
-| F5 | keep-outs clear of keys and each other | ● |
-| F6 | ≥2 inner-edge mount holes | |
-| F7 | envelope within phone-flank target | |
-| F-usb | USB-C on the bottom edge (mcu grip) | |
-| F-bridge | bridge connector on the inner edge of both grips | ● |
-| F-role | right = mcu (controller+LiPo+USB-C), left = passive | ● |
-| F8 | single 5×10 transform = 50 unique `RC()` | ● |
-| F8b | 25 right-grip + 25 left-grip columns | ● |
-| F8c | keymap default layer = 50 bindings | ● |
-| F9 | GPIO pins valid + unique for nice!nano (5r+10c=15) | ● |
-| F10 | BLE + USB + battery reporting | ● |
-| F11 | build.yaml drives CI (nice_nano_v2 + thumbdeck) | ● |
-| F12 | diode direction `col2row` | |
+HARD checks (●) block the pass regardless of score. Pass = no hard fails and ≥90%.
 
-### 2. Visual grade — `renders/visual_scores.json` (operator, from the PNG)
-8 items from the spec's visual acceptance checklist, scored by viewing the render.
-The computable subset (mirror, overlaps, envelope, keep-out collision, arc, bridge,
-role) is **also** verified numerically in `grade.py`, so a visual pass can't
-rubber-stamp a bad silhouette.
+**Geometry** F1 keys=25/half ● · F2 no overlap ● · F3 true mirror ● · F4 thumb arc ·
+F5 keep-outs clear ● · F6 inner mount holes · F7 envelope · F-usb USB present ·
+**F-antenna** RF keep-out overhangs edge + ≥10 mm from LiPo + clear of keys ● ·
+F-bridge connector on both inner edges ● · F-role right=mcu(+antenna)/left=passive ●
+
+**Firmware** F8 5×10 transform=50 ● · F8b 25+25 grips ● · F8c keymap 50 ● ·
+F9 nice!nano pins valid ● · F10 BLE+USB+battery ● · F11 build.yaml ● · F12 col2row ·
+**F-si-debounce** kscan debounce ≥6 ms ●
+
+**Docs/BOM (EE review encoded)** F-si-passives row pull-downs + column series R ● ·
+F-esd-tvs TVS on bridge/USB ● · F-charge charge-current vs cell noted ● ·
+F-switch-verify meter the pinout ● · F-si-doc matrix doc SI · F-review-doc
+design-review.md + FMEA ● · F-bringup bring-up + current checkpoints ● ·
+F-fab-gates README gates fab on schematic+ERC+DRC ●
+
+## Gate 2 — visual grade (`renders/visual_scores.json`, 9 items)
+Silhouette, mirror, key field, thumb arc, bridge/Backbone interface, keep-outs by
+role, silk legibility, envelope, **+ V9 antenna overhang**. Computable items are
+also verified numerically in `grade.py`.
 
 ## Iteration log
 
-**Phase v0.2 — two-controller ZMK BLE split** (`renders/iter_03.png`)
+| phase | iter | result | key change |
+|---|:---:|---|---|
+| v0.2 two-controller BLE split | 00→03 | PASS (16/16, 8/8) | converged split layout; left legends fixed |
+| v0.3 single controller + wired bridge | 05 | PASS (17/17, 8/8) | one nice!nano; passive left; bridge connector |
+| **v0.4 EE-hardening** | 06 | 92.6% → **PASS (27/27, 9/9)** | antenna keep-out (F-antenna), bridge SI (debounce + BOM pull-downs/series-R/TVS), charge-current, metering + bring-up + ERC/DRC gates. Fixed: antenna/controller touching edge (float overlap) → 0.6 mm gap; `series res` substring in BOM check |
 
-| iter | functional | visual | key change |
-|:----:|:----------:|:------:|------------|
-| 00 | 81.2% — 2 hard fails | — | first render; keep-outs collided with keys; keymap double-counted |
-| 01 | 93.8% | — | added component strips + D-grip; thumb arc fixed; envelope still 67 mm |
-| 02 | 100% | fail (V3) | envelope tightened to 63 mm; left half read "5 4 3 2 1" (mirror reversed columns) |
-| 03 | 100% | 8/8 | pre-reversed left legends; silk half+version+mating-edge → **v0.2 PASS** |
-
-**Phase v0.3 — single controller + wired bridge** (`renders/iter_05.png`)
-
-| iter | functional | visual | key change |
-|:----:|:----------:|:------:|------------|
-| 05 | 94.1% — 1 hard fail | — | pivot to one nice!nano; passive left grip; bridge connector overlapped inner keys |
-| 05′ | 100% (17/17) | 8/8 | moved bridge connector to inner-bottom corner → **v0.3 PASS** |
-
-## Final verdict (v0.3, iter 05)
+## Final verdict (v0.4, iter 06)
 
 ```
-FUNCTIONAL : 100.0%  (17/17)  hard-fails: none   -> PASS
-VISUAL     : 8/8 checklist items                 -> PASS
+FUNCTIONAL : 100.0%  (27/27)  hard-fails: none   -> PASS
+VISUAL     : 9/9 checklist items                 -> PASS
 OVERALL    : *** PASS ***
 ```
 
-Reproduce: `cd hardware/scripts && python3 layout_gen.py --iter 5 && python3 final_grade.py --iter 5`
+Reproduce: `cd hardware/scripts && python3 layout_gen.py --iter 6 && python3 final_grade.py --iter 6`
 
-**Kept renders:** `iter_03.png` (v0.2 two-controller milestone) and `iter_05.png`
-(v0.3 single-controller final) — the two architectures side by side in history.
-Layout is fully regenerable from `deck.py`.
+**Kept renders:** `iter_03.png` (v0.2), `iter_05.png` (v0.3), `iter_06.png` (v0.4 final).
 
-## Honest limits of "confidence"
-
-- **Functional** confidence is *structural*: the ZMK config is internally
-  consistent, pins are physically real on the nice!nano, the transform/keymap
-  match the render. It is **not** a compile — no Zephyr toolchain runs here. The
-  real build gate is GitHub Actions (`.github/workflows/build.yml`).
-- **Production** confidence covers the converged **placement + board outline**
-  (real, in the `.kicad_pcb`/DXF). It does **not** cover the datasheet-verified
-  switch footprint or copper routing — both `TODO(user)` by design.
+## What the grade still does NOT prove (human gates — `docs/design-review.md`)
+Compile (ZMK CI), DRC/ERC, RF performance, the metered switch pinout, mechanical
+flex, and the real bridge-cable flex life. Those gate a fab order; the grade doesn't.

@@ -58,7 +58,8 @@ def _draw(ax, geo, ox, oy, is_mcu):
     ax.add_patch(Polygon([P(p) for p in geo["outline"]], closed=True,
                  facecolor="none", edgecolor=INK, lw=1.2))
     # keep-outs
-    names = {"controller": "nice!nano v2", "lipo": "LiPo", "usb_c": "USB-C"}
+    names = {"controller": "nice!nano v2", "lipo": "LiPo", "usb_c": "USB-C",
+             "antenna": "ANTENNA (no copper — overhangs edge)"}
     for name, (x, y, w, h) in geo["keepouts"].items():
         ax.add_patch(Rectangle((x + ox, y + oy), w, h, facecolor="none",
                      edgecolor=KO, ls="--", lw=0.7))

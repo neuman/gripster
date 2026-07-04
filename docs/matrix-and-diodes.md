@@ -40,6 +40,22 @@ of the one matrix. Per-row keymap order is RIGHT grip (cols 0–4) then LEFT gri
 (`deck.py`) and asserts it equals the ZMK `default_layer` bindings. Status:
 **CONSISTENT (50/50)**.
 
+## Bridge signal integrity (EE review #2)
+
+The matrix scan crosses a long, flexing bridge cable, which is the design's main
+electrical risk. Mitigations, all in the design now:
+
+- **External 4.7 kΩ row pull-downs** at the MCU — the nRF's internal ~13 kΩ pull
+  is too weak over the cable capacitance and would leave rows stale-high
+  (phantom presses). External stronger pull-downs fix this.
+- **100–330 Ω series resistors** on each driven column — slow the edges, damp
+  ringing, cut crosstalk into adjacent sense rows.
+- **Raised debounce** — `debounce-press-ms`/`debounce-release-ms` = 8 ms in the
+  kscan, to reject cable-induced chatter.
+- **Shielded / ground-interleaved flex**, flex-rated for the telescoping motion,
+  strain-relieved at both connectors.
+- **TVS** on the exposed bridge conductors (ESD).
+
 ## Diode direction sanity
 
 `diode-direction = "col2row"` must match the physical diodes (cathode toward the

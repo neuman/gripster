@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.3"
+VERSION = "v0.4"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 RIGHT_LEGENDS = [
@@ -53,12 +53,14 @@ class Config:
     grip_margin: float = 7.0
     outer_bow: float = 6.0
     bottom_strip: float = 28.0
-    ctrl_w: float = 33.4          # nice!nano v2 (Pro Micro footprint), laid horizontal
-    ctrl_h: float = 18.0
+    ctrl_w: float = 18.0          # nice!nano v2 width (Pro Micro footprint)
+    ctrl_h: float = 33.4          # nice!nano v2 length; mounted VERTICAL, antenna end up
+    antenna_h: float = 8.0        # no-copper antenna keep-out at the TOP edge (RF, EE review)
+    usb_gap: float = 7.0          # access gap for the module's USB-C below the module
     top_pad: float = 4.0
     phone_len: float = 160.0
     env_w_max: float = 64.0
-    env_h_max: float = 112.0
+    env_h_max: float = 126.0      # taller: vertical module + antenna overhang
     side: str = "right"
 
 
@@ -90,7 +92,9 @@ def _outline(c: Config, keys):
     ys = [k["y"] for k in keys]
     outer_base = max(xs) + c.key_w / 2 + c.grip_margin
     top_keys = max(ys) + c.key_h / 2
-    board_h = top_keys + c.top_pad + c.ctrl_h + c.top_pad
+    # vertical nice!nano at the top (antenna end overhangs the top edge) + a USB
+    # access gap between the module and the top key row
+    board_h = top_keys + c.usb_gap + c.ctrl_h + 2.0
     r_in, r_out = 4.0, 14.0
 
     def outer_x(y):
@@ -123,13 +127,20 @@ def _bridge_conn(board_h):
 def _keepouts_mcu(c, board_w, board_h, outer_base, keys):
     ys = [k["y"] for k in keys]
     field_bottom = min(ys) - c.key_h / 2
+    field_top = max(ys) + c.key_h / 2
     mid_x = outer_base / 2.0
     ko = {}
-    ko["usb_c"] = [round(mid_x - 4.5, 2), 1.0, 9.0, 6.0]
+    # nice!nano mounted VERTICAL at the top; antenna end overhangs the top edge.
+    # antenna = strict no-copper RF keep-out reaching the board edge (EE review #1).
+    ko["antenna"] = [round(mid_x - c.ctrl_w / 2, 2), round(board_h - c.antenna_h, 2),
+                     c.ctrl_w, c.antenna_h]
+    ko["controller"] = [round(mid_x - c.ctrl_w / 2, 2), round(board_h - c.ctrl_h, 2),
+                        c.ctrl_w, round(c.ctrl_h - c.antenna_h - 0.6, 2)]  # body below antenna (gap)
+    # module's USB-C sits in the access gap below the module (shell notch, not a
+    # board edge — the ergonomic cost of prioritising the antenna overhang)
+    ko["usb_c"] = [round(mid_x - 4.5, 2), round(field_top + 1.5, 2), 9.0, 5.0]
     ko["lipo"] = [round(mid_x - 13.0, 2),
                   round((9.0 + field_bottom) / 2 - 6.5, 2), 26.0, 13.0]
-    ko["controller"] = [round(mid_x - c.ctrl_w / 2, 2),
-                        round(board_h - c.ctrl_h - c.top_pad, 2), c.ctrl_w, c.ctrl_h]
     ko["bridge"] = _bridge_conn(board_h)
     return ko
 

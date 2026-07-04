@@ -1,18 +1,19 @@
 {
-  "iter": 5,
-  "version": "v0.3",
-  "render": "renders/iter_05.png",
+  "iter": 6,
+  "version": "v0.4",
+  "render": "renders/iter_06.png",
   "fab_view": "renders/fab_view.png",
   "graded_by": "loop operator (Claude Code) viewing the rendered PNG",
-  "note": "v0.3 single-controller architecture: RIGHT grip holds the one nRF52840 + LiPo + USB-C; LEFT grip is a passive matrix wired over the bridge. Key field still mirrors; keep-outs differ by role (checked numerically in grade.py: F-role, F-bridge).",
+  "note": "v0.4 EE-hardening pass on the v0.3 single-controller design: adds the nRF52840 antenna keep-out (overhangs top edge), vertical nice!nano, USB in an access gap, plus bridge SI + protection folded into firmware/BOM/docs. Computable items cross-checked numerically in grade.py.",
   "checklist": [
-    {"id": "V1", "item": "Silhouette: rounded outer/grip edge, straight inner split edge, reads as a hand grip", "pass": true, "note": "Both grips D-profile: flat inner (mating edge) + bowed rounded outer."},
-    {"id": "V2", "item": "Mirror: left key field is a true mirror of right", "pass": true, "note": "Key field mirror confirmed (F3 err 0.000mm). Electronics intentionally only on the right."},
+    {"id": "V1", "item": "Silhouette: rounded outer/grip edge, straight inner split edge, reads as a hand grip", "pass": true, "note": "Both grips D-profile; taller now (63x124mm) for the vertical module + antenna."},
+    {"id": "V2", "item": "Mirror: left key field is a true mirror of right", "pass": true, "note": "Key field mirror confirmed (F3 err 0.000mm); electronics only on the right."},
     {"id": "V3", "item": "Key field: 25 keys/half, i8+-like QWERTY, no overlaps", "pass": true, "note": "Left 1-5/QWERT/ASDFG/ZXCVB; right 67890/YUIOP/HJKL-ENT/NM,./ + arrows."},
-    {"id": "V4", "item": "Thumb ergonomics: every key within a plausible thumb arc", "pass": true, "note": "Arc 22-84mm from bottom-outer anchor; actual radii 34.1-77.1mm."},
-    {"id": "V5", "item": "Bridge/Backbone interface: inner edge exposes mount bosses + flat mating reference + bridge connector", "pass": true, "note": "2 inner-edge M2 holes + flat inner edge + bridge connector at inner-bottom of BOTH grips."},
-    {"id": "V6", "item": "Keep-outs by role: right = controller+LiPo+USB-C+bridge; left = bridge only; none overlap keys", "pass": true, "note": "F5 clash=0; F-role and F-bridge pass. nice!nano-sized controller fits the top strip."},
-    {"id": "V7", "item": "Silk: key labels + version + half (L/R) legible", "pass": true, "note": "'thumbdeck-L/R v0.3' on inner edge; L/R + roles in titles."},
-    {"id": "V8", "item": "Envelope: within the stated phone-flank size target", "pass": true, "note": "63x108mm per grip, target <=64x112mm."}
+    {"id": "V4", "item": "Thumb ergonomics: every key within a plausible thumb arc", "pass": true, "note": "Arc 22-84mm; actual radii 34.1-77.1mm."},
+    {"id": "V5", "item": "Bridge/Backbone interface: mount bosses + flat mating reference + bridge connector", "pass": true, "note": "2 inner-edge M2 holes + flat inner edge + bridge connector at inner-bottom of both grips."},
+    {"id": "V6", "item": "Keep-outs by role: right = antenna+controller+LiPo+USB-C+bridge; left = bridge only; none overlap keys", "pass": true, "note": "F5 clash=0; F-role/F-bridge pass."},
+    {"id": "V7", "item": "Silk: key labels + version + half (L/R) legible", "pass": true, "note": "'thumbdeck-L/R v0.4' on inner edge; roles in titles."},
+    {"id": "V8", "item": "Envelope: within the stated phone-flank size target", "pass": true, "note": "63x124mm per grip, target <=64x126mm (taller for the antenna overhang)."},
+    {"id": "V9", "item": "RF: antenna keep-out overhangs the top board edge, clear of copper, far from the LiPo", "pass": true, "note": "Antenna zone at the very top edge (overhang), LiPo at the bottom ~90mm away; F-antenna passes."}
   ]
 }

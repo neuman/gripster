@@ -47,11 +47,29 @@ grip needs **no power** — it's a passive matrix of switches + diodes.
 
 ## Power / charging
 
-- **One LiPo**, in the right grip, on the nice!nano's **onboard charger**.
+- **One LiPo**, in the right grip, on the nice!nano's **onboard charger** (BQ24075).
 - **One USB-C**, one charge session (the pain point of v2's two-battery design is
   gone).
 - ZMK reports the single battery level over BLE.
 - Optional slide power switch in the right grip.
+
+### Charge current vs. cell C-rating (EE review)
+
+The nice!nano's default **charge current is ~100 mA** (set by a 10 kΩ PROG
+resistor). Into a 100 mAh cell that is **1C** — aggressive; many small pouch cells
+spec **0.5C** charge. Therefore: use a **protected** cell **rated for 1C charge**,
+*or* fit a **≥200 mAh** cell, *or* change the PROG resistor to lower the current.
+Never charge unattended.
+
+## Antenna / RF placement (EE review #1)
+
+The nRF52840's 2.4 GHz antenna needs a **no-copper keep-out** on every layer under
+the RF path. The nice!nano is therefore mounted **vertically at the top of the
+grip with its antenna end overhanging the top board edge** (nothing under it), the
+**LiPo kept far away** (≥ board length — metal detunes it), and the module's USB-C
+accessed via a shell notch below it. Even so, the antenna is flanked by the phone
+and the user's hand — expect reduced range vs. an open board; keep the bridge
+cable and its shield away from the antenna end.
 
 ## Safety (see also assembly.md)
 

@@ -14,11 +14,22 @@
 | PCB | thumbdeck_right (MCU) + thumbdeck_left (passive), 1.6 mm HASL | 5 each | JLCPCB. Two distinct boards. |
 | Keycaps / tops | TBD | 50 | `TODO(user)` — required over bare plungers. |
 
+### Bridge signal-integrity & protection (EE review #2 — required, not optional)
+
+Running a scanned matrix over a long, flexing bridge cable needs hardening:
+
+| Item | Part | Qty | Notes |
+|---|---|---|---|
+| Row **pull-down** resistors | 4.7 kΩ 0402 | 5 | External, at the MCU on each row line — the nRF's internal ~13 kΩ is too weak over the cable (stops stale-high phantom presses). |
+| Column **series** resistors | 100–330 Ω 0402 | 10 | In series with each driven column — slow edges, kill ringing/crosstalk. |
+| **TVS** diode array | e.g. SP3051/USBLC6 (low-C) | 2–3 | ESD clamp on the 10 exposed bridge conductors + USB data lines. |
+| Bridge cable | **shielded/ground-interleaved FFC**, flex-rated | 1 | Shield/GND to chassis; rated for the telescoping flex cycles. Strain-relieve both ends. |
+
 ### Optional variant
 
 | Item | Part | Qty | Notes |
 |---|---|---|---|
-| Bridge I/O expander | MCP23017 (I²C) | 1 | In the left grip → bridge shrinks to **4 wires** (SDA/SCL/V+/GND) instead of 10. |
+| Bridge I/O expander | MCP23017 (I²C) | 1 | Left grip → bridge shrinks to 4 wires. **Caveat:** I²C is *worse* over a long flexing cable than a scanned matrix; prefer a 74HC165 shift register or a UART link if reducing conductors. |
 
 ## Notes vs. v0.2
 

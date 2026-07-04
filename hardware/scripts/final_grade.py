@@ -22,7 +22,7 @@ def main():
     a = ap.parse_args()
 
     geo = json.load(open(os.path.join(RENDERS, f"iter_{a.iter:02d}.geo.json")))
-    checks = grade.geometric_checks(geo) + grade.firmware_checks()
+    checks = grade.geometric_checks(geo) + grade.firmware_checks() + grade.doc_checks()
     pct, hard_fail, passed, total = grade.score(checks)
     func_pass = not hard_fail and pct >= 90.0
 

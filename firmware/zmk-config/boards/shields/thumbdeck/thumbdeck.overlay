@@ -38,6 +38,12 @@
 		compatible = "zmk,kscan-gpio-matrix";
 		diode-direction = "col2row";
 
+		/* Debounce raised for the long bridge cable (EE review #2): rejects
+		 * cable-capacitance / crosstalk chatter. Pair with external row
+		 * pull-downs + column series resistors + shielded flex (see BOM). */
+		debounce-press-ms = <8>;
+		debounce-release-ms = <8>;
+
 		/* rows: read, shared across both grips (5 wires over the bridge) */
 		row-gpios
 			= <&pro_micro 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>

@@ -8,20 +8,23 @@ matrix wired across the telescoping bridge.
 
 ![thumbdeck layout](renders/production.png)
 
-## Status: v0.3 layout converged & graded — PASS
+## Status: v0.4 layout converged & graded — PASS
 
 The autonomous generate→render→grade loop converged with **functional 100%
-(17/17)** and **visual 8/8**. See [`renders/GRADING.md`](renders/GRADING.md).
+(27/27)** and **visual 9/9**. v0.4 folds a professional **EE design review**
+([`docs/design-review.md`](docs/design-review.md)) into the grade — antenna
+keep-out, bridge signal-integrity, charge current, and the human fab gates are
+now enforced checks. See [`renders/GRADING.md`](renders/GRADING.md).
 
 | | value |
 |---|---|
-| Per-grip board | **63 × 108 mm**, 25 keys (5×5), D-shaped grip |
-| Controller | **one nice!nano v2** (nRF52840) in the right grip |
-| Left grip | **passive** 5×5 matrix, wired over the bridge (10 conductors) |
-| Firmware | ZMK, single non-split shield `thumbdeck` on `nice_nano_v2` |
-| Matrix | single 5×10, `col2row`, 1N4148W diodes |
+| Per-grip board | **63 × 124 mm**, 25 keys (5×5), D-shaped grip |
+| Controller | **one nice!nano v2** (nRF52840), vertical at top; **antenna overhangs the top edge** |
+| Left grip | **passive** 5×5 matrix, wired over the bridge (10 conductors, shielded flex) |
+| Firmware | ZMK single non-split shield `thumbdeck` on `nice_nano_v2`; 8 ms debounce |
+| Matrix | single 5×10, `col2row`, 1N4148W diodes; ext. row pull-downs + column series R |
 | Wireless | BLE, or USB-C wired HID — one device, no inter-half pairing |
-| Power | one LiPo, one USB-C charge |
+| Power | one LiPo, one USB-C charge (mind 1C — see charge note) |
 
 > **Architecture note (v0.3):** this replaces v0.2's two-controller BLE split
 > with a single controller + a wired bridge — how real Backbone-style controllers
@@ -81,6 +84,17 @@ verify:
 
 Everything upstream — layout, envelope, keep-outs, mount/bridge features,
 firmware, BOM — is done and graded.
+
+### Fab is gated on (human-verified, see `docs/design-review.md`)
+
+The loop grades geometry + config **structure only** — it is not electrical
+sign-off. Before ordering boards, all of these must pass:
+
+1. **Schematic** drawn, netlist generated.
+2. Layout routed and passes **DRC** (design-rule check) **and ERC** (electrical-rule check).
+3. Datasheet-verified switch footprint (meter the pin pairing).
+4. **ZMK CI build green** (`.github/workflows/build.yml`).
+5. Antenna keep-out + bridge SI hardening + charge-current confirmed on the real board.
 
 ## License
 
