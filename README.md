@@ -40,7 +40,8 @@ hardware/
   footprints/    datasheet-verified switch footprint (TODO)
 renders/         iter_NN.png loop history · production.png · fab_view.png ·
                  wiring_schematic.png (matrix) · wiring_assembly_{left,right}.png
-                 (solder pads + bridge pinout) · GRADING.md
+                 (solder pads + bridge pinout) · thumbdeck_soldermap.pdf
+                 (1:1 printable, lay parts on it) · GRADING.md
 firmware/
   zmk-config/    single ZMK shield "thumbdeck" + build.yaml + CI
 .github/         GitHub Actions ZMK build
