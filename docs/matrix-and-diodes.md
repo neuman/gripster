@@ -1,4 +1,14 @@
-# Matrix, diodes & the single-controller scan (v0.3)
+# Matrix, diodes & the single-controller scan
+
+> **v0.8 update.** The matrix grew to **9 rows × 10 columns** (~81 keys: 6×6/grip +
+> clusters), scanned by a **Raytac MDBT50Q-1MV2 module** (not a nice!nano). Diodes
+> are **SOD-323** on the **back** of the board (no room front at 8.5 mm pitch),
+> `col2row`, cathode → row. Right grip = COL0–4, left = COL5–9 (over the JST-GH
+> harness), ROW0–8 shared. Still a ZMK **unibody** kscan, **not** a split — do not
+> set `CONFIG_ZMK_SPLIT`/`col-offset`. GPIO budget ~23 (19 matrix + 2 I²C + 1
+> Cirque DR-IRQ + 1 batt ADC), well within the module's ~48. Keep the external
+> **4.7 kΩ row pull-downs** + **column series R**. The v0.3 text below still describes
+> the scan/ghosting principles correctly; only the dimensions and MCU changed.
 
 ## Scanning & ghosting
 

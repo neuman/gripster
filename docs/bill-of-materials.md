@@ -1,4 +1,15 @@
-# Bill of materials (v0.3 — single controller)
+# Bill of materials
+
+> **v0.8 supersedes the table below.** The current, authoritative BOM is in the
+> [README](../README.md#parts-list-bom): **81 Snaptron 7 mm domes**, one-piece TPU
+> keymat + polyimide dome retention, **Raytac MDBT50Q-1MV2** module (not nice!nano),
+> **Cirque TM023023** trackpad, **SOD-323** diodes (not SOD-123), MCP73831 charger +
+> USB-C (2× 5.1 kΩ CC) + USBLC6-2 ESD, JST-GH bridge, **ENIG** finish. Rationale in
+> [design-decisions.md](design-decisions.md#v08). The v0.3 table below is history.
+
+---
+
+## v0.3 (historical) — single controller
 
 50 keys total (25/grip). One controller, one battery.
 

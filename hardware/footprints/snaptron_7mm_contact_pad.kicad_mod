@@ -1,0 +1,62 @@
+(footprint "snaptron_7mm_contact_pad_SINGLE"
+	(version 20240108)
+	(generator "cyberdeck_extract")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(descr "Snaptron 7mm double-sided metal snap-dome, SINGLE contact pad. Pad 1 = centre disc (dome dimple lands here), Pad 2 = outer ring/arc (dome rim rests here); pressing the dome shorts 1->2. Geometry extracted verbatim from the PocketMage_PDA V3.4 keyboard (github.com/TailsmanDesign/PocketMage_PDA, Apache-2.0). Gold/ENIG the exposed pads for a reliable dome contact. Pitch used on PocketMage: 8.5mm X, 8.8mm Y.")
+	(tags "snaptron dome snap-dome tactile switch keyboard thumbdeck")
+	(attr smd)
+	(property "Reference" "SW**"
+		(at 0 -5.4 0)
+		(layer "F.SilkS")
+		(effects
+			(font (size 1 1) (thickness 0.15))
+		)
+	)
+	(property "Value" "SNAP7"
+		(at 0 5.4 0)
+		(layer "F.Fab")
+		(effects
+			(font (size 1 1) (thickness 0.15))
+		)
+	)
+	(property "Datasheet" "https://www.snaptron.com" (at 0 0 0) (unlocked yes) (layer "F.Fab") (hide yes)
+		(effects (font (size 1 1) (thickness 0.15))))
+	(property "Description" "7mm metal snap dome contact pad" (at 0 0 0) (unlocked yes) (layer "F.Fab") (hide yes)
+		(effects (font (size 1 1) (thickness 0.15))))
+	(fp_text user "${REFERENCE}"
+		(at 0 -4.0 0)
+		(layer "F.Fab")
+		(effects (font (size 1 1) (thickness 0.15)))
+	)
+	(fp_circle (center 0 0) (end 3.5 0)
+		(stroke (width 0.1) (type default)) (fill none) (layer "F.Fab"))
+	(fp_circle (center 0 0) (end 4.2 0)
+		(stroke (width 0.05) (type default)) (fill none) (layer "F.CrtYd"))
+	(pad "1" smd circle
+		(at 0 0)
+		(size 2.86 2.86)
+		(layers "F.Cu" "F.Mask")
+		(pintype "passive")
+	)
+	(pad "2" smd custom
+		(at 3.48 0)
+		(size 1.5 1.5)
+		(layers "F.Cu" "F.Mask")
+		(pintype "passive")
+		(thermal_bridge_angle 90)
+		(options
+			(clearance outline)
+			(anchor circle)
+		)
+		(primitives
+			(gr_arc
+				(start -2.109999 -3.139999)
+				(mid -3.48 3.425857)
+				(end -4.85 -3.139999)
+				(width 1.4)
+			)
+		)
+	)
+	(embedded_fonts no)
+)

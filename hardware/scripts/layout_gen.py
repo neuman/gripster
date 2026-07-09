@@ -68,6 +68,22 @@ def _draw_half(ax, geo, title):
                      facecolor="#1d1d1d", edgecolor="#f4d35e", lw=1.3, zorder=5))
         ax.text(k["x"], k["y"], k["label"], ha="center", va="center",
                 fontsize=7.0, color="#f4f1de", fontweight="bold", zorder=6)
+    # non-grid features: trackpad (circle) + cluster switches (D-pad/mouse/pages)
+    for f in geo.get("features", []):
+        if f["type"] == "trackpad":
+            opt = f.get("optional")
+            w, h = f["w"], f["h"]
+            ax.add_patch(FancyBboxPatch((f["x"] - w / 2, f["y"] - h / 2), w, h,
+                         boxstyle="round,pad=0,rounding_size=3", facecolor="none" if opt else "#22333b",
+                         edgecolor="#7fd1ff", lw=1.4, ls=":" if opt else "-", zorder=5))
+            ax.text(f["x"], f["y"], "trackpad\n(opt)" if opt else "trackpad",
+                    ha="center", va="center", fontsize=5.5, color="#7fd1ff", zorder=6)
+        else:
+            ax.add_patch(Circle((f["x"], f["y"]), f["d"] / 2,
+                         facecolor="#1d1d1d", edgecolor="#f4a259", lw=1.2, zorder=5))
+            ax.text(f["x"], f["y"], f["label"].replace("NAV_", "").replace("MB_", "M"),
+                    ha="center", va="center", fontsize=4.6, color="#f4a259",
+                    fontweight="bold", zorder=6)
     # silkscreen: half + version, printed along the inner/split (mating) edge
     half = "R" if geo["side"] == "right" else "L"
     if geo["side"] == "right":
@@ -103,8 +119,8 @@ def render(iter_n: int, out_dir: str, params: dict | None = None) -> str:
     _draw_half(axes[0], left, f"LEFT  (passive matrix)  {left['board_w']:.0f}x{left['board_h']:.0f}mm")
     _draw_half(axes[1], right, f"RIGHT (MCU: nRF52840+LiPo+USB-C)  {right['board_w']:.0f}x{right['board_h']:.0f}mm")
     fig.suptitle(f"thumbdeck — layout iter {iter_n:02d}   "
-                 f"(25 keys/half · i8+-inspired · single nRF52840 · wired bridge)",
-                 fontsize=12, color="#f4d35e", y=0.98)
+                 f"(36-key grid +clusters/half · Snaptron 7mm dome · phone MagSafe · single nRF52840)",
+                 fontsize=11.5, color="#f4d35e", y=0.98)
     fig.text(0.5, 0.02, "one controller in the RIGHT grip · LEFT grip passive, wired over the "
              "bridge connector · inner/split edge faces phone · thumb arc dotted",
              ha="center", fontsize=7.5, color="#9aa")

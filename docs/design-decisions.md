@@ -1,5 +1,113 @@
 # Design decisions
 
+## v0.12 — outline-clamped placement, layer-correct traces, PCB antenna
+
+- **Nothing hangs off the board.** All right-grip electronics (module, charger,
+  USB-C, antenna) and the two outer mount holes are now **clamped inside the actual
+  rounded/bowed outline** via `_right_edge_x()`, instead of being referenced to
+  `outer_base` (which sits outside the corner). Electronics moved into the **bottom
+  zone**; the trackpad has the upper zone to itself (clean capacitance).
+- **Layer-correct matrix (Rii i8+ topology).** Front copper = **vertical columns**
+  (over the keys) + inner-margin **row feeders**; back copper = **horizontal rows** +
+  diodes + chips. The two layers connect **only through vias** (drawn at every key and
+  at each row's inner end), so nothing shorts — the earlier diagonal "airwire" fan
+  that crossed the row buses is gone. Power traces are short and local to the bottom
+  cluster.
+- **PCB meander antenna** (fat squiggle on the front, with a **ground cut-out** on the
+  back) drawn in the outer-bottom corner, far from the centre magnets. **OPEN
+  DECISION:** a board antenna means going **chip-down** (a module carries its own
+  antenna) — chip-down is cheaper and gives the free squiggle, but re-adds RF
+  match/tuning + crystals + DC-DC + bootloader, and (only if ever *sold*) FCC/IC/RED
+  radiated cert. For a personal, non-marketed build the cert isn't required, so the
+  real cost is RF tuning + assembly complexity. Keep the certified E73 module (its own
+  antenna) unless you want to take that on.
+
+## v0.11 — trackpad-on-PCB, battery-behind-ring, straight bridge, cleanup
+
+- **Trackpad → PCB-integrated capacitive pad** (~34×26 mm copper on the front, driven
+  by an **Azoteq IQS7211E** controller on the back), replacing the 43×40 mm TPS43
+  module. It now **fits the grip** (no overhang) *and* is **turnkey-friendly** — the
+  pad is free copper and the controller reflows with everything else, so the trackpad
+  no longer has to be dropped for assembly. Trade: needs the community Azoteq ZMK input
+  driver (vs the in-tree Cirque one).
+- **Battery stack-up fixed:** the LiPo sits **inside the spine, directly behind the
+  MagSafe ring** (sandwiched between back and front shells). The **N52 ring is applied
+  to the outside of the front shell** (top of the stack); the phone mates to it.
+- **Bridge connectors rotated vertical** at each grip's inner edge so the flex exits
+  toward the spine and runs **straight across** to the mirror connector, clearing the
+  spine battery above it.
+- **Chip-interconnect traces** are now drawn (indicatively) on the PCB layers: module →
+  rows / USB-C / charger / ESD / IQS7211E / bridge; passive grip rows → bridge.
+- **Repo cleanup:** old 50-key design-loop scripts moved to `hardware/scripts/legacy/`;
+  grading artifacts + the superseded front/back render archived to `renders/history/`.
+
+## v0.10 — proportions, spine battery, rectangular trackpad, layer set
+
+- **LiPo → central spine** (behind the phone / MagSafe ring), out of the grips. Short
+  wire to the right-grip charger; it does **not** cross the left bridge, so the
+  battery-across-flex risk still doesn't apply. This lets the grips shrink from
+  **118 → 102 mm** so the ~72 mm (landscape) phone is no longer dwarfed (~15 mm
+  overhang/side, matching the i8+).
+- **Trackpad → Azoteq TPS43** (43×40 mm **rectangular** I²C module, 40 µA active, sold
+  maker-ready). Still optional; sits as a **shoulder-bump** over the upper-right grip
+  (its 40 mm height overhangs the top rather than forcing the whole grip taller).
+- **Stackable layer renders** (`render_layers.py`): back_shell · pcb_back · pcb_front ·
+  keymats · front_shell, all on one 2400×1050 canvas for overlay/animation.
+
+## v0.9 — landscape, turnkey sourcing, and shell-readiness
+
+- **Phone orientation → LANDSCAPE.** The phone's long side spans horizontally
+  between the grips (Steam-Deck posture); device is now ~287 mm wide. `deck.product()`
+  handles orientation.
+- **MCU module → Ebyte E73-2G4M08S1C** (JLC C356849), replacing the Raytac MDBT50Q,
+  because the Raytac was out of stock / not reliably JLC-placeable. The E73 is in the
+  JLC library, is the community-standard ZMK nRF52840 module, and machine-places.
+- **Trackpad dropped from the turnkey build** (kept as an optional, dashed, hand-fit
+  I²C header). The host is a phone with its own touchscreen; the Cirque isn't LCSC-
+  stocked (hand-assembled anyway), and enabling ZMK pointing forces a HID re-pair on
+  every host. This resolves the crowded upper-right zone too.
+- **Turnkey assembly = JLCPCB, single-sided (all reflow parts on the BACK), L+R
+  panelized.** ~$150–230 for 5 sets vs ~$300–600 at PCBWay. Domes + retention sheet +
+  LiPo + shell are hand steps at either house (snap domes can't be reflowed). Full
+  costing, LCSC part numbers and open decisions in [fabrication-sourcing.md](fabrication-sourcing.md).
+- **Shell-readiness (emulate i8+):** 5× M2 screws per grip clamp the keymat perimeter
+  evenly (consistent dome feel), placed in the inner column + top/bottom strips, clear
+  of the key field; every key/cluster is ≥6.5 mm from the board edge (shell wall +
+  keycap skirt); USB-C on the outer-bottom edge; module + all SMD on the back. This
+  preps the board for the next step — the 3D shell + keymat models.
+
+## v0.8 — phone target, MagSafe, module, and a 5-lens EE/PD review
+
+Big shifts from v0.3–0.7: target is a **phone** (MagSafe centre-mount), telescoping
+is **deferred** for a **fixed one-piece shell**, switches are **Snaptron 7 mm snap
+domes** on a one-piece 3D-printed keymat (adopted from PocketMage), the grid grew to
+**6×6/half + clusters** (~81 keys) validated against the Rii i8+ the user thumb-types,
+and a trackpad + D-pad + mouse buttons returned. A background workflow ran a
+**5-lens review** (digital EE, RF/power EE, product/ergonomics, DFM, firmware). Its
+decision record, adopted:
+
+| Topic | Decision | Why (short) |
+|---|---|---|
+| **MCU** | **Raytac MDBT50Q-1MV2 module**, *not* chip-down bare nRF52840 | Chip-down triggers FCC/IC/RED radiated cert + RF match + crystals/DC-DC + USB bootloader + Zephyr port. Module gives certified radio + ~48 GPIO (need ~23) + UF2. |
+| **GPIO** | Budget ~23: 19 matrix + 2 I²C + 1 Cirque DR-IRQ + 1 batt ADC | Confirms the pin-starved nice!nano was the real problem, solved by a full-pinout module — not by chip-down. |
+| **Battery** | LiPo + charger + USB-C + MCU **all in the right grip**; ballast the left | Cell across the bridge = chafe-to-short fire + charge IR-drop undercharge + ground coupling into the SAADC/scan. Only logic crosses the bridge. |
+| **Power front-end** | Add MCP73831 charger + PROG R, USB-C **2× 5.1 kΩ CC**, USBLC6-2 ESD, ÷2 batt divider, VDDH wiring, SWD pads | A module hides crystals/DC-DC/antenna but **not** the charger, CC resistors, ESD or divider. Their absence = won't charge / over-VDD / unflashable. |
+| **Matrix** | Single 9×10, passive left, per-key **SOD-323** `col2row`, NKRO best-effort | Unibody single kscan over a cable (NOT a ZMK split). Diodes de-ghost modifiers even though BLE boot is 6KRO. Standardise SOD-323 (drop SOD-123). |
+| **Bridge** | Static internal harness, **JST-GH ≥15 pos**, signals only, ~22–24 conductors w/ ground interleave | Fixed shell ⇒ assembled-once harness (no flex-fatigue). One GND can't shield 9 sense lines; power stays with the MCU. |
+| **Trackpad** | **Cirque TM023023 (23 mm)**, I²C 0x2A, **DR-IRQ wake** (not polled), flat ≤2 mm non-conductive overlay | 30 mm isn't a catalog size. Polling collapses runtime to ~28 h; conductive/variable FDM overlay kills sensing. |
+| **PCB finish** | **ENIG** (hard gold on dome pads for production), not HASL | Snap domes shorting bare pads need gold; HASL oxidises → rising contact resistance in weeks. |
+| **Dome retention** | Add taped-polyimide dome array / laser-cut spacer | Keymat alone doesn't laterally retain a dome on its single ~1.4 mm arc; ~0.5 mm walk = dead key. |
+| **Keymat** | TPU 95A / tough resin; fatigue-test a hinge coupon >10 k cycles | Non-TPU living hinges at ~0.5 mm webs crack early; boss preload must be shimmed. |
+| **MagSafe** | Alignment only + **mechanical edge-capture** on 2+ edges | Magnets alone shed peel/torque on a waved handheld. |
+
+### Open questions (need a human call — see README §Open questions)
+
+- **Pitch/feel:** keep 8.5 mm flat ortho, or go ≥9.5 mm canted/fanned arc (i8+-like) via a switch daughter-PCB / standoff-canted mat? The review says the flat rigid plane can't both type well and feel like a controller.
+- **Phone-fit:** fixed shell = ~145–160 mm band (≈ one phone family); accept, or bring back telescoping for multi-phone?
+- **NKRO vs simplicity:** if 6KRO is fine, dropping diodes enables a TCA8418 local scanner + a 4-wire bridge.
+- **Shoulder/bumper buttons** for index fingers? Changes the matrix + conductor count.
+- **Cell size:** sleep-managed runtime is weeks → a 400–500 mAh cell may pack better than 700 mAh.
+
 ## v0.3 — the architecture pivot (single controller)
 
 **Decision:** one nRF52840 in the right grip; the left grip is a passive matrix

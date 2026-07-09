@@ -1,0 +1,37 @@
+{
+  "_source": "Digitized from sketches/keymats.png + sketches/top_shell.png, legends corrected against references/rii8_ref.png (Rii i8+ full layout). col 0 = INNER edge (faces the phone). Stored inner->outer so a mirrored render reads naturally.",
+  "target_device": "phone (MagSafe center-mount, screen facing user)",
+  "mount": "fixed one-piece shell (telescoping deferred)",
+  "pitch_mm": { "x": 8.5, "y": 8.8 },
+  "switch": "Snaptron 7mm double-sided snap dome (hardware/footprints/snaptron_7mm_contact_pad.kicad_mod)",
+  "left": {
+    "grid": [
+      ["F5", "F4", "F3", "F2", "F1", "ESC"],
+      ["5",  "4",  "3",  "2",  "1",  "`"],
+      ["T",  "R",  "E",  "W",  "Q",  "TAB"],
+      ["G",  "F",  "D",  "S",  "A",  "CAP"],
+      ["B",  "V",  "C",  "X",  "Z",  "SHF"],
+      ["SPC", "ALT", "WIN", "FN", "CTL", "MEN"]
+    ],
+    "clusters": {
+      "mouse_buttons": { "keys": ["MB_L", "MB_R"], "place": "upper-outer grip, stacked", "note": "HID mouse left/right (i8+ parity)" },
+      "dpad": { "keys": ["NAV_U", "NAV_D", "NAV_L", "NAV_R", "NAV_OK"], "place": "upper-inner grip, 4-way + centre OK", "note": "arrow keys + Enter" }
+    }
+  },
+  "right": {
+    "grid": [
+      ["F6", "F7", "F8", "F9", "F10", "DEL"],
+      ["6",  "7",  "8",  "9",  "0",   "BSP"],
+      ["Y",  "U",  "I",  "O",  "P",   ";"],
+      ["H",  "J",  "K",  "L",  "'",   "ENT"],
+      ["N",  "M",  ",",  ".",  "/",   "SHF"],
+      ["SPC", "AGR", "[", "]", "\\",  "MEN"]
+    ],
+    "clusters": {
+      "trackpad": { "type": "Cirque Pinnacle circular capacitive, I2C", "place": "upper grip", "size_mm": [30, 30], "note": "HID pointer" },
+      "page_keys": { "keys": ["PGUP", "PGDN"], "place": "upper-outer grip, stacked" }
+    }
+  },
+  "switch_count": { "left_grid": 36, "left_clusters": 7, "right_grid": 36, "right_clusters": 2, "total_switches": 81, "trackpads": 1 },
+  "legend_notes": "Alpha/number/F-keys are faithful to the i8+ split at the T|Y, G|H, B|N boundary. Outer-column symbol/modifier keys (;'[]\\, MEN, AGR) are design-reasoned fills, not literal from the hand sketch — tune freely in the keymap."
+}
