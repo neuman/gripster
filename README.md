@@ -22,13 +22,13 @@ passive matrix wired across a fixed internal bridge.
 | | value |
 |---|---|
 | Form | phone in **LANDSCAPE**, MagSafe-mounted centre, two dome-key grips, **fixed one-piece shell** (~287 mm wide, Steam-Deck-style) |
-| Keys | **81 Snaptron 7 mm snap domes** · 8.5 × 8.8 mm ortholinear pitch · one-piece 3D-printed living-hinge keymat |
+| Keys | **79 Snaptron 7 mm snap domes** · **9.5 mm** ortholinear pitch (~1.5 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons |
 | Right grip | YUIOP-half (6×6) + **PgUp/PgDn** + a **PCB-integrated capacitive trackpad** (~34×26 mm copper + Azoteq IQS7211E controller, fits the grip) |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals/DC-DC/UF2, ~48 GPIO |
 | Matrix | single **9 × 10**, `col2row`, one **SOD-323** diode/key on the back, NKRO best-effort |
 | Left grip wiring | passive matrix over a **static internal harness** (JST-GH, signals only, ground-interleaved) |
-| Grip size | **69.5 × 102 mm** each — kept short (battery in the spine) so the ~72 mm phone isn't dwarfed (~15 mm overhang/side, i8+-like) |
+| Grip size | **74.5 × 109.5 mm** each — battery in the spine keeps them from dwarfing the ~72 mm phone (~18 mm overhang/side) |
 | Power | **LiPo inside the spine, directly behind the MagSafe ring** (between the shells; the N52 ring is applied to the outside of the front shell); **MCP73831 charger** + **USB-C** + **USBLC6-2 ESD** in the right grip |
 | Wireless | BLE HID (keyboard [+ pointer if trackpad kept]); USB-C for charge + flashing |
 | Fabrication | **JLCPCB** turnkey, 2 boards panelized, 1.6 mm FR-4, **ENIG**, all reflow parts on the **back** (single-sided) → **~$150–230 for 5 sets** |
@@ -92,7 +92,7 @@ and the USB-C cutout.
 
 ![Layout, both grips](renders/iter_09.png)
 
-Ortholinear 6×6 dome field per grip at 8.5 × 8.8 mm, plus the cluster features.
+Ortholinear 6-col grid at 9.5 mm per grip (bottom row = a 2u space bar), plus the cluster features.
 
 ### Fabrication view + real KiCad board
 
@@ -100,7 +100,7 @@ Ortholinear 6×6 dome field per grip at 8.5 × 8.8 mm, plus the cluster features
 
 The generated boards are **real, openable, netlisted KiCad files** —
 [`hardware/kicad/generated/thumbdeck_right.kicad_pcb`](hardware/kicad/generated/thumbdeck_right.kicad_pcb)
-(38 domes + 38 diodes) and `thumbdeck_left.kicad_pcb` (43 + 43) — with the board
+(37 domes + 37 diodes) and `thumbdeck_left.kicad_pcb` (42 + 42) — with the board
 outline, mount cutouts, a **real Snaptron dome footprint** at every key, a **real
 SOD-323 diode on the back** under each dome, the **matrix nets** (ROW0–8 / COL0–9)
 so the ratsnest is correct, and reserved keep-outs for the module / power / bridge /
@@ -110,7 +110,7 @@ routing + the module/connector/power footprints are the remaining gate.**
 
 Like the i8+: the **front** carries only the snap-dome pads, the PCB-integrated
 trackpad copper, and the vertical **column** traces; the **back** carries everything
-soldered — the 81 diodes, the Ebyte module, IQS7211E, charger, USB-C, ESD, passives,
+soldered — the 79 diodes, the Ebyte module, IQS7211E, charger, USB-C, ESD, passives,
 connectors — plus the horizontal **row** traces. Keeping all reflow parts on the back
 makes the SMT job **single-sided** (one stencil, one pass), the key cost lever for
 turnkey assembly.
@@ -119,17 +119,17 @@ turnkey assembly.
 
 ## Parts list (BOM)
 
-Full BOM in [`docs/bill-of-materials.md`](docs/bill-of-materials.md). **81 keys**,
+Full BOM in [`docs/bill-of-materials.md`](docs/bill-of-materials.md). **79 keys**,
 **one** module, **one** battery.
 
 ### Core
 
 | Item | Part | Qty | Notes |
 |---|---|---|---|
-| Snap dome | **Snaptron 7 mm 4-leg dome** (SnapForce series) | 81 (+spares) | On cross/ring pads. Footprint: [`hardware/footprints/snaptron_7mm_contact_pad.kicad_mod`](hardware/footprints/snaptron_7mm_contact_pad.kicad_mod). |
+| Snap dome | **Snaptron 7 mm 4-leg dome** (SnapForce series) | 79 (+spares) | On cross/ring pads. Footprint: [`hardware/footprints/snaptron_7mm_contact_pad.kicad_mod`](hardware/footprints/snaptron_7mm_contact_pad.kicad_mod). |
 | Dome retention | Snaptron taped polyimide array **or** 0.2–0.3 mm laser-cut polyimide spacer | 2 | **Required** — the keymat alone won't stop a dome walking off its ~1.4 mm arc contact. |
 | Keymat | one-piece 3D print, **TPU 95A** / tough resin | 2 | Living-hinge strips; fatigue-test a coupon >10 k cycles before the full mat. |
-| Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 81 | One/key, `col2row`, cathode band → row net, **on the back** (no room front at 8.5 mm). Basic part = free feeder. |
+| Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 79 | One/key, `col2row`, cathode band → row net, **on the back** (no room front at this pitch). Basic part = free feeder. |
 | **Controller** | **Ebyte E73-2G4M08S1C** (nRF52840, JLC **C356849**) | **1** | Certified radio, on-module antenna/crystals/DC-DC, UF2. On the **back** of the right grip. Verify stock + reserve (Extended, X-ray). Backup: Holyiot 18010. |
 | Trackpad controller | **Azoteq IQS7211E** (I²C) + **PCB copper pad** (~34×26 mm on the front) | 1 | PCB-integrated (not a module) → **turnkey-friendly** (copper is free, chip reflows on the back). Fits the grip. Needs the community Azoteq ZMK input driver. |
 | **LiPo** | single cell ~400–700 mAh | 1 | Right grip. Sleep-managed runtime is weeks; size to grip thickness. |
@@ -194,7 +194,7 @@ nets and keep-outs**. Remaining before gerbers:
 
 ## Step 3 — Solder & assemble
 
-- **Both grips:** 81 domes are mechanical (no solder); reflow the **81 SOD-323
+- **Both grips:** 79 domes are mechanical (no solder); reflow the **79 SOD-323
   diodes on the back**, row pull-downs, column series R.
 - **Right grip:** Raytac module, MCP73831 + USB-C (with the 2× 5.1 kΩ CC), USBLC6-2,
   battery divider, LiPo (**polarity!**), Cirque trackpad on I²C + DR-IRQ.
@@ -248,10 +248,9 @@ nets and keep-outs**. Remaining before gerbers:
 The EE/PD review flagged decisions that are **yours to make** — they change the
 shape of the build:
 
-1. **Pitch & feel.** The locked 8.5 mm ortho grid packs tight but the review argues
-   a deep controller grip wants a **≥9.5 mm canted/fanned arc** (like the i8+ you
-   proved you can thumb-type) to both type well *and* feel like a controller.
-   Flat-and-tight vs arc-and-roomy is the core ergonomic call.
+1. **Feel.** Pitch is now **9.5 mm** (v0.13, for PETG-printable walls + i8+ comfort).
+   Still an open call: a flat ortho grid vs a **canted/fanned arc** to feel more like a
+   controller — the arc is a keymat/standoff change, not a pitch change.
 2. **Phone-fit window.** A fixed shell fits a **~15 mm width band (~145–160 mm)** —
    effectively one phone family (a Pro Max won't fit, a mini wobbles) unless you add
    a stick-on MagSafe ring. Deferring the telescoping bridge forecloses multi-phone.

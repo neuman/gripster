@@ -223,21 +223,38 @@ def pcb_back(ax, P):
 def keymats(ax, P):
     for key in ("left", "right"):
         geo = P[key]; ox, oy = P[f"{key}_origin"]
-        sw = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
-        # living-hinge strips: connect grid neighbours
+        pitch = geo["config"]["pitch_x"]; kw0 = geo["config"]["key_w"]
         grid = {(k["row"], k["col"]): k for k in geo["keys"]}
+        feats = [f for f in geo.get("features", []) if f["type"] == "key"]
+
+        def strip(a, b):
+            ax.plot([a["x"] + ox, b["x"] + ox], [a["y"] + oy, b["y"] + oy],
+                    color="#8a8f96", lw=2.5, alpha=0.55, zorder=3, solid_capstyle="round")
+
+        def dist(a, b):
+            return ((a["x"] - b["x"]) ** 2 + (a["y"] - b["y"]) ** 2) ** 0.5
+
+        # grid neighbours
         for (r, c), k in grid.items():
             for dr, dc in ((0, 1), (1, 0)):
                 n = grid.get((r + dr, c + dc))
                 if n:
-                    ax.plot([k["x"] + ox, n["x"] + ox], [k["y"] + oy, n["y"] + oy],
-                            color="#8a8f96", lw=2.5, alpha=0.5, zorder=3, solid_capstyle="round")
-        for k in sw:
-            lab = k.get("label", "")
-            ax.add_patch(FancyBboxPatch((k["x"] + ox - 3.7, k["y"] + oy - 3.7), 7.4, 7.4,
+                    strip(k, n)
+        # cluster living-hinges — every feature key ties into the web: to its nearest
+        # grid key (bridges the cluster to the main field) AND its nearest other feature.
+        gk = list(geo["keys"])
+        for f in feats:
+            strip(f, min(gk, key=lambda k: dist(f, k)))
+            others = [o for o in feats if o is not f]
+            if others:
+                strip(f, min(others, key=lambda o: dist(f, o)))
+        # keycaps (grid = w-aware incl. 2u space; feature keys = single)
+        for k in list(geo["keys"]) + feats:
+            w = (k.get("w", 1) - 1) * pitch + kw0
+            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - 3.7), w, 7.4,
                          boxstyle="round,pad=0,rounding_size=1.6", facecolor="#d7dade",
                          edgecolor="#9aa0a7", lw=0.9, zorder=5))
-            ax.text(k["x"] + ox, k["y"] + oy, lab.replace("NAV_", "").replace("MB_", "M"),
+            ax.text(k["x"] + ox, k["y"] + oy, k.get("label", "").replace("NAV_", "").replace("MB_", "M"),
                     ha="center", va="center", fontsize=4.2, color="#20242a", fontweight="bold", zorder=6)
 
 
@@ -271,8 +288,10 @@ def front_shell(ax, P):
     for key in ("left", "right"):
         geo = P[key]; ox, oy = P[f"{key}_origin"]
         sw = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
+        pitch = geo["config"]["pitch_x"]
         for k in sw:
-            ax.add_patch(FancyBboxPatch((k["x"] + ox - 3.9, k["y"] + oy - 3.9), 7.8, 7.8,
+            w = (k.get("w", 1) - 1) * pitch + 8.0
+            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - 4.0), w, 8.0,
                          boxstyle="round,pad=0,rounding_size=1.6", facecolor=BG,
                          edgecolor=INK, lw=0.7, zorder=4))
         for f in geo.get("features", []):

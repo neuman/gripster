@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.12"
+VERSION = "v0.13"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -27,13 +27,15 @@ VERSION = "v0.12"
 # tighter 8.5x8.8 pitch a 6x6 half is only 51x53mm — smaller than the i8+ half,
 # so reach is proven; edge legends below are PROVISIONAL (best read of the
 # sketch — nav cluster / trackpad / arrows not yet placed). col 0 = INNER edge.
+# v0.13: bottom row = a DOUBLE-WIDE (2u) space bar at the inner edge, then 4 keys.
+# The MENU key is dropped and the row shifts over one (5 keycaps span the 6-unit width).
 RIGHT_LEGENDS = [
     ["F6", "F7", "F8", "F9", "F10", "DEL"],
     ["6",  "7",  "8",  "9",  "0",   "BSP"],
     ["Y",  "U",  "I",  "O",  "P",   ";"],
     ["H",  "J",  "K",  "L",  "'",   "ENT"],
     ["N",  "M",  ",",  ".",  "/",   "SHF"],
-    ["SPC", "AGR", "[", "]",  "\\",  "MEN"],
+    ["SPC", "AGR", "[", "]",  "\\"],          # SPC = 2u; MEN dropped
 ]
 # stored inner->outer so the mirrored render reads naturally
 LEFT_LEGENDS = [
@@ -42,7 +44,7 @@ LEFT_LEGENDS = [
     ["T",  "R",  "E",  "W",  "Q",  "TAB"],
     ["G",  "F",  "D",  "S",  "A",  "CAP"],
     ["B",  "V",  "C",  "X",  "Z",  "SHF"],
-    ["SPC", "ALT", "WIN", "FN", "CTL", "MEN"],
+    ["SPC", "ALT", "WIN", "FN", "CTL"],        # SPC = 2u; MEN dropped
 ]
 
 # --- non-grid features per grip (digitized from the sketch, see
@@ -62,8 +64,12 @@ class Config:
     # Pitch + ortholinear grid adopted verbatim from PocketMage's proven keyboard:
     # 8.5mm X, 8.8mm Y, no column stagger / arc bow. The 7mm dome courtyard is
     # ~8.3mm, so 8.5mm X is about as tight as the domes physically pack.
-    pitch_x: float = 8.5
-    pitch_y: float = 8.8
+    # v0.13: pitch bumped 8.5/8.8 -> 9.5mm so the inter-key GAP is ~1.5mm (pitch - key_w),
+    # i.e. ~3-4 perimeters of wall at a 0.4mm nozzle — the minimum for a reliable PETG-FDM
+    # keymat + shell. (At 8.5mm the wall was only ~0.5mm = unprintable in PETG; resin/SLA
+    # or a 0.25mm nozzle would be needed to go tighter.) 9.5mm also matches the i8+ pitch.
+    pitch_x: float = 9.5
+    pitch_y: float = 9.5
     key_w: float = 8.0
     key_h: float = 8.0
     col_stagger: float = 0.0      # ortholinear (was 1.3 arc-stagger through v0.4)
@@ -106,19 +112,21 @@ class Config:
 
 
 def _key_centers(c: Config):
+    """Ortholinear grid, laid out inner->outer by cumulative COLUMN UNITS so a wide
+    key (the bottom-row 2u space) shifts the rest of its row over. Each key carries a
+    'w' (width in units); the dome/switch stays single, only the keycap is 2u."""
     field_x0 = c.inner_margin + c.key_w / 2.0
     field_y0 = c.bottom_strip + c.key_h / 2.0 + 4.0
-    mid = (c.cols - 1) / 2.0
     keys = []
     for r in range(c.rows):
-        for col in range(c.cols):
-            x = field_x0 + col * c.pitch_x
+        colpos = 0.0
+        for slot, lab in enumerate(RIGHT_LEGENDS[r]):
+            w = 2 if (r == c.rows - 1 and slot == 0) else 1
+            xc = field_x0 + (colpos + (w - 1) / 2.0) * c.pitch_x
             y = field_y0 + (c.rows - 1 - r) * c.pitch_y
-            y += col * c.col_stagger
-            y += -c.arc_bow * ((col - mid) ** 2) * c.pitch_y * 0.5
-            keys.append({"row": r, "col": col,
-                         "x": round(x, 3), "y": round(y, 3),
-                         "label": RIGHT_LEGENDS[r][col]})
+            keys.append({"row": r, "col": slot, "w": w,
+                         "x": round(xc, 3), "y": round(y, 3), "label": lab})
+            colpos += w
     return keys, field_x0
 
 
@@ -136,7 +144,9 @@ def _outline(c: Config, keys):
     # upper grip zone sized for the D-pad / mouse / page-key cluster + the SMD module
     # behind it. The OPTIONAL trackpad is NOT sized in here (it overhangs the top as a
     # shoulder bump when populated) so the base grip stays short.
-    upper_zone = max(2 * c.cluster_pitch + c.feat_key_d + 6.0, c.ctrl_h + c.usb_gap)
+    # upper zone must fully clear the D-pad plus-cluster (2*cluster_pitch + key +
+    # top/bottom margins) so NAV_D doesn't collide with the F-row below it.
+    upper_zone = max(2 * c.cluster_pitch + c.feat_key_d + 10.0, c.ctrl_h + c.usb_gap)
     board_h = top_keys + upper_zone + 2.0
     r_in, r_out = 4.0, 14.0
 
@@ -215,7 +225,7 @@ def _mount_holes(board_h, outer_base, bottom_strip, outline):
                 _right_edge_x(y + 3, outline))
         return round(e - 4.5, 2)                        # 4.5mm = M2 boss + wall
     return [
-        {"x": inset, "y": round(board_h * 0.14, 2), "d": d},   # bottom-inner
+        {"x": inset, "y": round(bottom_strip * 0.5, 2), "d": d},  # bottom-inner (BELOW the bridge connector)
         {"x": inset, "y": round(board_h * 0.50, 2), "d": d},   # inner-mid
         {"x": inset, "y": round(board_h * 0.86, 2), "d": d},   # top-inner
         {"x": ox(board_h * 0.28), "y": round(board_h * 0.28, 2), "d": d},  # bottom-outer
@@ -232,14 +242,11 @@ def _features(geo: dict, c: Config) -> list:
     field_top = max(ys) + c.key_h / 2
     W = geo["board_w"]
     ob = geo["outer_base"]
-    cy = (field_top + geo["board_h"]) / 2.0 - 1.0   # upper-zone mid
     p = c.cluster_pitch
     feats = []
-    # cluster switches stay >=EDGE_MIN from the board edge (shell wall + keycap
-    # skirt clearance, i8+-style). The trackpad is OPTIONAL: PCBA sourcing dropped
-    # it from the turnkey build (the phone already has a touchscreen); it stays a
-    # dashed, hand-fit option with an unpopulated I2C header.
-    cy_lo = cy - 3.0                                  # keep clusters off the top corner
+    # clusters are CENTRED in the upper zone (which is now sized to fit them) so the
+    # D-pad's bottom key clears the F-row and its top key clears the board edge.
+    cy_lo = (field_top + geo["board_h"]) / 2.0        # upper-zone mid
     if geo["side"] == "right":
         # inner edge at x=0; grip body toward +x. PCB-integrated capacitive trackpad
         # (IQS7211E), sized to fit the upper zone with NO overhang.

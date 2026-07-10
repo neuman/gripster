@@ -1,5 +1,26 @@
 # Design decisions
 
+## v0.13 — printable spacing, 2u space bar, cluster fixes
+
+- **Pitch 8.5/8.8 → 9.5 mm (#5).** At 8.5 mm the inter-key wall was only ~0.5 mm —
+  **not printable in PETG-FDM** (needs ≥1.2–1.6 mm = 3–4 perimeters at a 0.4 mm nozzle).
+  9.5 mm gives a ~1.5 mm wall, and matches the i8+ pitch. Grips grow to 74.5 × 109.5 mm.
+  (To go tighter you'd print the keymat/shell in resin/SLA or use a 0.25 mm nozzle.)
+- **Double-wide 2u space bar (#4).** The MENU key is dropped and the bottom row shifts
+  over one, so the inner key is a **2u space** on each side (`SPC AGR [ ] \` right,
+  `SPC ALT WIN FN CTL` left). The dome stays single under the wide keycap. Keys now
+  carry a `w` (width in units); `_key_centers` lays each row out by cumulative units.
+- **D-pad no longer overlaps the F-row (#2).** The upper zone is sized to fully clear
+  the plus-cluster and the clusters are centred in it (previously an offset pushed
+  NAV_D down into the grid).
+- **Screw no longer passes through the bridge (#1).** The bottom-inner mount hole moved
+  below the vertical JST-GH connector.
+- **Every cluster keycap ties into the keymat web (#3).** The one-piece keymat now
+  draws living-hinge strips from each D-pad / mouse / page key to its nearest grid key
+  and nearest neighbour, so nothing floats.
+- Verified programmatically: no keycap overlaps, nothing off-board, no screw inside any
+  keep-out, both grips.
+
 ## v0.12 — outline-clamped placement, layer-correct traces, PCB antenna
 
 - **Nothing hangs off the board.** All right-grip electronics (module, charger,

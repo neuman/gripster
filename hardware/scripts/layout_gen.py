@@ -58,10 +58,11 @@ def _draw_half(ax, geo, title):
     for hole in geo["mount_holes"]:
         ax.add_patch(Circle((hole["x"], hole["y"]), hole["d"] / 2 + 0.6,
                      facecolor="#222", edgecolor="#f4d35e", lw=1.2, zorder=4))
-    # keys
+    # keys (keycap width follows k['w'] so the 2u space bar reads correctly)
     c = geo["config"]
-    kw, kh = c["key_w"], c["key_h"]
+    kh = c["key_h"]
     for k in geo["keys"]:
+        kw = (k.get("w", 1) - 1) * c["pitch_x"] + c["key_w"]
         x, y = k["x"] - kw / 2, k["y"] - kh / 2
         ax.add_patch(FancyBboxPatch((x, y), kw, kh,
                      boxstyle="round,pad=0.0,rounding_size=1.4",

@@ -16,14 +16,16 @@ OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "rende
 
 
 def _draw_grip(ax, geo, ox, oy):
-    kw = geo["config"]["key_w"]
+    pitch = geo["config"]["pitch_x"]
+    kw0 = geo["config"]["key_w"]
     kh = geo["config"]["key_h"]
     # outline
     pts = [[x + ox, y + oy] for x, y in geo["outline"]]
     ax.add_patch(Polygon(pts, closed=True, facecolor="#0b3d2e",
                  edgecolor="#f4d35e", lw=2.2, zorder=2))
-    # grid keys
+    # grid keys (2u space bar follows k['w'])
     for k in geo["keys"]:
+        kw = (k.get("w", 1) - 1) * pitch + kw0
         x, y = k["x"] + ox - kw / 2, k["y"] + oy - kh / 2
         ax.add_patch(FancyBboxPatch((x, y), kw, kh,
                      boxstyle="round,pad=0,rounding_size=1.4",
