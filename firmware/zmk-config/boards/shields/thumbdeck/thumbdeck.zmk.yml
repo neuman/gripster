@@ -1,9 +1,0 @@
-file_format: "1"
-id: thumbdeck
-name: thumbdeck (single-controller thumb keyboard)
-type: shield
-url: https://github.com/neuman/custom-thumb-keyboard
-requires:
-  - pro_micro
-features:
-  - keys

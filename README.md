@@ -115,6 +115,34 @@ connectors — plus the horizontal **row** traces. Keeping all reflow parts on t
 makes the SMT job **single-sided** (one stencil, one pass), the key cost lever for
 turnkey assembly.
 
+### 3D model — printable shells + keymats, fit-checked against real hardware
+
+The mechanical parts are generated from the **same** parametric model as the PCB
+([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) via CadQuery, so key openings
+land on dome pads and bosses land on mount holes *by construction*. The whole stack —
+back shell, PCB with **real-dimension** components (E73 module, USB-C, SOT-23s, 0402s,
+snap-domes), LiPo, bridge flex, keymats, front shell, MagSafe ring, phone — is
+assembled in one frame and **collision-checked**: `deck3d.py --check` reports **0
+impossible overlaps** (the loop already caught + fixed a battery-through-floor error
+and front-mounted connectors clashing the top shell). Full method:
+[`docs/cad-process.md`](docs/cad-process.md).
+
+![Full assembly](renders/assembly3d.png)
+
+**Exploded** — back shell · PCB + domes · keymats · front shell · MagSafe · phone:
+
+![Exploded assembly](renders/assembly3d_exploded.png)
+
+The printable parts (STEP for verification + STL/3MF for slicing) — one-piece back
+shell (grips + spine), front shell with the 79 key openings + phone window, and the
+per-grip keymats (plungers + living-hinge web, TPU 95A):
+
+Bottom shell | Top shell | Keymat (one grip)
+:---:|:---:|:---:
+![bottom](renders/part_bottom_shell.png) | ![top](renders/part_top_shell.png) | ![keymat](renders/part_keymat_right.png)
+
+Regenerate: `hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render`.
+
 ---
 
 ## Parts list (BOM)
@@ -176,11 +204,12 @@ nets and keep-outs**. Remaining before gerbers:
 1. **Drop in real footprints** for the Ebyte E73 module, SMD USB-C, JST-GH, charger,
    ESD and passives (switches/diodes are already placed) — **all on the back** so the
    SMT job stays single-sided.
-2. **Route** the matrix + power + bridge; pass **DRC + ERC** (needs KiCad 8 GUI or
-   `kicad-cli` ≥ 8 — this repo's toolchain is 7.0, which has no DRC CLI).
+2. **Route** the matrix + power + bridge; pass **DRC + ERC** (KiCad 9 is used here —
+   `kicad-cli` runs DRC + zone-fill headlessly; interactive push-shove finishes the
+   dense E73 fan-in and honours the antenna keep-out). See [`docs/evaluation.md`](docs/evaluation.md).
 3. **Order — JLCPCB turnkey PCBA**, both boards **panelized into one panel**, 1.6 mm
    FR-4, **ENIG** (snap domes need gold — HASL oxidises within weeks of cycling),
-   single-sided assembly. The fab places ~95–100 % of the joints; you press the 81
+   single-sided assembly. The fab places ~95–100 % of the joints; you press the 79
    domes under the retention sheet and close the shell. **~$150–230 for 5 sets** —
    full costing, part numbers and the JLC-vs-PCBWay call in
    [`docs/fabrication-sourcing.md`](docs/fabrication-sourcing.md).
@@ -268,15 +297,17 @@ shape of the build:
 
 ```bash
 cd hardware/scripts
-python3 render_product.py             # whole-assembly view   -> renders/product.png
-python3 render_layers.py              # 5 stackable layers     -> renders/layer_*.png
-python3 layout_gen.py     --iter 9    # per-grip layout        -> renders/iter_09.png
-python3 render_fab.py                 # fabrication view        -> renders/fab_view.png
-python3 gen_kicad_pcbnew.py           # REAL netlisted board    -> hardware/kicad/generated/*.kicad_pcb
+python3 gen_board.py                  # REAL netlisted 4-layer boards -> hardware/kicad/generated/*.kicad_pcb
+python3 sim_matrix.py                 # ghosting/NKRO proof (both grips + combined 79-key)
+python3 gen_firmware.py               # ZMK transform/keymap/gpio, generated from the model
+python3 render_layers.py              # 5 stackable 2D layers  -> renders/layer_*.png
+# --- 3D (CadQuery; see docs/cad-process.md) ---
+cd ../.. && hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render
 ```
 
-Requires Python 3 + `matplotlib`; the board generator needs the **KiCad 7 `pcbnew`
-Python module**. The digitized layout lives in
+Requires Python 3 + `matplotlib`; the board generator needs the **KiCad 9 `pcbnew`
+Python module**; the 3D generator uses a venv (`hardware/cad/requirements.txt`).
+The digitized layout lives in
 [`hardware/layout/keymat.json`](hardware/layout/keymat.json). The old 50-key /
 nice!nano design-loop scripts (`gen_kicad.py`, `render_wiring.py`, `grade.py`, …)
 are archived in [`hardware/scripts/legacy/`](hardware/scripts/legacy/).

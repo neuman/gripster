@@ -1,0 +1,10 @@
+file_format: "1"
+id: thumbdeck
+name: thumbdeck (E73 nRF52840 split thumb keyboard)
+type: board
+arch: arm
+features:
+  - keys
+outputs:
+  - usb
+  - ble

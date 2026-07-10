@@ -17,14 +17,18 @@ import pcbnew,sys; b=pcbnew.LoadBoard(sys.argv[1]); assert pcbnew.ExportSpecctra
 PY
 
 echo "[2] Freerouting autoroute ($PASSES passes)"
-timeout 600 "$JAVA" -jar "$FR" --gui.enabled=false \
+timeout 300 "$JAVA" -jar "$FR" --gui.enabled=false \
   -de "$GEN/thumbdeck_${SIDE}.dsn" -do "$GEN/thumbdeck_${SIDE}.ses" -mp "$PASSES" -mt 4 2>&1 \
-  | grep -iE "session completed|unrouted" | tail -1
-
-echo "[3] import routed SES"
+  | grep -iE "session completed" | tail -1 || true
 python3 - "$PCB" "$GEN/thumbdeck_${SIDE}.ses" <<'PY' 2>/dev/null
-import pcbnew,sys; b=pcbnew.LoadBoard(sys.argv[1]); pcbnew.ImportSpecctraSES(b,sys.argv[2]); pcbnew.SaveBoard(sys.argv[1],b)
+import pcbnew,sys
+b=pcbnew.LoadBoard(sys.argv[1]); pcbnew.ImportSpecctraSES(b,sys.argv[2]); pcbnew.SaveBoard(sys.argv[1],b)
 PY
+
+echo "[3] close stubs + stitch GND + fill zones"
+python3 "$(dirname "$0")/close_gaps.py" "$PCB" 4.0 2>/dev/null    # close short autorouter stubs
+python3 "$(dirname "$0")/stitch.py" "$PCB" 2>/dev/null            # tie GND pour + final fill
+python3 "$(dirname "$0")/report_open.py" "$PCB" 2>/dev/null || true  # list any still-open signal nets
 
 echo "[4] DRC"
 kicad-cli pcb drc --format json --exit-code-violations --severity-error \

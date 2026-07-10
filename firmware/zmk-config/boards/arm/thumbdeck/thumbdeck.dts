@@ -1,0 +1,49 @@
+/*
+ * thumbdeck.dts — ZMK board for the bare Ebyte E73-2G4M08S1C (nRF52840) soldered
+ * directly to the thumbdeck PCB. Models the same flash layout as nice!nano v2 so the
+ * Adafruit nRF52 UF2 bootloader (flashed once over SWD) works drag-and-drop after.
+ * The matrix (kscan + transform) is in the GENERATED thumbdeck.dtsi. High-voltage
+ * power mode: the cell drives VDDH; VDD is the internal REG0 3.3V output.
+ *   >>> VALIDATE WITH THE ZMK GITHUB-ACTIONS BUILD before trusting for fab. <<<
+ */
+/dts-v1/;
+#include <nordic/nrf52840_qiaa.dtsi>
+#include "thumbdeck.dtsi"
+
+/ {
+    model = "thumbdeck";
+    compatible = "thumbdeck";
+
+    chosen {
+        zephyr,code-partition = &code_partition;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zmk,battery = &vbatt;
+    };
+
+    /* battery sense: 1M/1M divider on P0.02/AIN0 (E73 pin 7 = VBAT_SENSE) */
+    vbatt: vbatt {
+        compatible = "zmk,battery-voltage-divider";
+        io-channels = <&adc 0>;
+        output-ohms = <1000000>;
+        full-ohms = <2000000>;
+    };
+};
+
+&adc { status = "okay"; };
+&gpiote { status = "okay"; };
+&gpio0 { status = "okay"; };
+&gpio1 { status = "okay"; };
+&usbd { status = "okay"; };
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        sd_partition: partition@0 { reg = <0x00000000 0x00001000>; };
+        code_partition: partition@1000 { reg = <0x00001000 0x000d3000>; };
+        storage_partition: partition@d4000 { reg = <0x000d4000 0x00020000>; };
+        adafruit_boot_partition: partition@f4000 { reg = <0x000f4000 0x0000c000>; };
+    };
+};

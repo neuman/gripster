@@ -37,3 +37,9 @@ hardware/kicad/generated/*.dsn
 hardware/kicad/generated/*.ses
 hardware/kicad/generated/drc_*.json
 hardware/kicad/generated/fab/
+
+# routing intermediates
+hardware/kicad/generated/.placed_*.kicad_pcb
+
+# --- CAD build artifacts (regenerate via deck3d.py; models/ is the tracked deliverable) ---
+hardware/cad/build/

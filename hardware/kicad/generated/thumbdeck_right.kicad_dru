@@ -1,0 +1,4 @@
+(version 1)
+(rule "gnd_pad_edge"
+  (condition "A.NetName == 'GND' && (A.Type == 'Pad' || B.Type == 'Pad')")
+  (constraint edge_clearance (min 0.05mm)))

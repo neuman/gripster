@@ -1,5 +1,4 @@
 # build.yaml — drives ZMK's GitHub Actions build matrix.
-# Single-controller (v0.3): one board, one shield, one firmware image.
+# Single non-split firmware for the bare E73 (nRF52840) thumbdeck board.
 include:
-  - board: nice_nano_v2
-    shield: thumbdeck
+  - board: thumbdeck

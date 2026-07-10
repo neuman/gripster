@@ -1,0 +1,10 @@
+# thumbdeck CAD toolchain (Python). Create + install:
+#   python3 -m venv hardware/cad/.venv
+#   hardware/cad/.venv/bin/pip install -r hardware/cad/requirements.txt
+cadquery>=2.8      # parametric B-rep modeller (OpenCASCADE); STEP + STL + 3MF
+trimesh>=4.0       # mesh checks: watertight, collisions, wall thickness
+manifold3d>=2.0    # fast robust mesh booleans (used by trimesh)
+shapely>=2.0       # 2D polygon offset for shell walls (consumes deck.py outline)
+numpy-stl
+matplotlib         # headless 6-view / assembly renders
+mapbox_earcut

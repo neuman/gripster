@@ -1,0 +1,12 @@
+if BOARD_THUMBDECK
+
+config BOARD
+	default "thumbdeck"
+
+config BT_CTLR
+	default BT
+
+config ZMK_KEYBOARD_NAME
+	default "thumbdeck"
+
+endif # BOARD_THUMBDECK

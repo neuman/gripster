@@ -1,3 +1,5 @@
+> **Authoritative status:** see [`docs/evaluation.md`](evaluation.md). The scan/ghosting principles below are correct; MCU/pin details in the v0.3 section are stale (now E73, 9×10, 79 keys).
+
 # Matrix, diodes & the single-controller scan
 
 > **v0.8 update.** The matrix grew to **9 rows × 10 columns** (~81 keys: 6×6/grip +

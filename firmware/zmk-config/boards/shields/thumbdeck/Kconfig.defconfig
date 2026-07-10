@@ -1,6 +1,0 @@
-if SHIELD_THUMBDECK
-
-config ZMK_KEYBOARD_NAME
-	default "thumbdeck"
-
-endif

@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED / VERSION-DRIFTED.** This file describes an earlier design (50-key nice!nano BQ24075 split). The current board is a **79-key 9×10 Ebyte E73 (nRF52840)** with an external **MCP73831** charger. See [`docs/evaluation.md`](evaluation.md) and the code for the authoritative design.
+
 # Design review (professional EE pass) — thumbdeck v0.4
 
 Adversarial review of the whole design + plan, and the mitigations now folded in.
