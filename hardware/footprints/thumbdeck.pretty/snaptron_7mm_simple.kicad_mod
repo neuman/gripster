@@ -1,0 +1,10 @@
+(footprint "snaptron_7mm_simple"
+  (version 20221018) (generator pcbnew) (layer "F.Cu")
+  (descr "Snaptron 7mm dome, ROUTING footprint (2 simple circular pads; use the arc-pad snaptron_7mm_contact_pad for final fab art). pad1=centre/col, pad2=ring/diode-node")
+  (attr smd)
+  (fp_text reference "SW**" (at 0 -5.2) (layer "F.SilkS") (effects (font (size 1 1) (thickness 0.15))))
+  (fp_text value "SNAP7" (at 0 5.2) (layer "F.Fab") (effects (font (size 1 1) (thickness 0.15))))
+  (fp_circle (center 0 0) (end 3.5 0) (stroke (width 0.1) (type default)) (fill none) (layer "F.Fab"))
+  (pad "1" smd circle (at 0 0) (size 2.86 2.86) (layers "F.Cu" "F.Mask"))
+  (pad "2" smd circle (at 3.48 0) (size 1.5 1.5) (layers "F.Cu" "F.Mask"))
+)

@@ -31,3 +31,9 @@ firmware/zmk-config/bootloader/
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+# --- routing loop intermediates ---
+hardware/kicad/generated/*.dsn
+hardware/kicad/generated/*.ses
+hardware/kicad/generated/drc_*.json
+hardware/kicad/generated/fab/
