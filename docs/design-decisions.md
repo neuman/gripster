@@ -1,5 +1,64 @@
 # Design decisions
 
+Decision log, newest first. Older entries are **history** — they record why calls
+were made at the time and may name parts since replaced (Raytac → E73, Cirque /
+IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
+current design is rev-A / v0.15 (first entry).
+
+## v0.15 / rev-A — the production audit pass (2026-07-11)
+
+An 8-dimension adversarial audit (120 findings, 14 blockers) followed by fixes,
+a fully autonomous route (both boards **DRC-clean, 0/0**), fab export, firmware
+repair and a mechanical re-verify. Full record in
+[design-review.md](design-review.md); status in [evaluation.md](evaluation.md).
+
+- **Snap-dome footprint → production `snaptron_7mm_contact`** (centre pad +
+  continuous leg ring with a 67.5° routing escape gap, pour/via keepouts, tape-
+  channel venting). The simple 2-pad proxy would have given dead keys at 45° dome
+  rotation.
+- **E73 antenna-down at the bottom board edge**, keep-out crossing the edge +
+  0.6 mm shell relief (was aimed mid-board at the USB shell — detuned).
+- **Bridge → 2× 16-pin 1.0 mm FFC ZIF (AFA07-S16FCC-00, C13744) + a 16-way
+  1.0 mm type-A (same-side contacts) jumper, length ≥160 mm** (200 mm is the
+  common stock length, e.g. "FFC-1.0-16P-200mm" type A — the J2 contact rows are
+  151.2 mm apart + ~4 mm ZIF insertion per end, so 150 mm cannot mate); left-grip
+  nets assigned by ribbon geometry (straight
+  jumper correct by construction). Replaces the 2×08 THT header that couldn't fit
+  the shell cavity (8.5 vs 5.7 mm), overhung the right edge and landed under a
+  left-grip dome. **No hand-soldered parts remain** — the USB-C shell's plated
+  stakes and the FFC/slide-switch locating pegs are the only through-board
+  features, all placed in the same single-pass JLC assembly → 100 % turnkey.
+- **Battery: JST-PH SMT (C295747)**, polarized (was an unpolarized 2.54 header);
+  **NEW** MSK12C02 power switch (charger on the cell side — charges while off),
+  TS-1187A reset tact behind a floor pinhole, charge LED behind a floor light
+  hole.
+- **Charger corrected per datasheet:** 4.7 µF 0805 25 V at both supply and cell
+  nodes, at the chip; PROG 5.1 k → ~196 mA. 100 nF SAADC filter added to the
+  battery divider.
+- **USB ESD inline; deterministic USB copper** for the interleaved data pads
+  (autorouters can't solve it). **COL9 off P0.00/XL1 → P0.04**; spare I²C to
+  TP6–8; SWD on TP1–5.
+- **Trackpad dropped from v1** (single-maintainer ZMK Azoteq driver + ATI tuning
+  burden); D-pad + FN-layer mouse keys cover pointer duty; TP6–8 keep rev-B open.
+  Column series R + dome-field TVS dropped from the BOM (telescoping-cable-era
+  artifacts; rev-B option).
+- **Boards 76.5 × 114.5 mm** (inner margin 6→8 for the FFC, bottom strip 14→19
+  for module-at-edge + passive lane), 4-layer with solid In1 GND; **GND escape
+  vias + obstacle-aware stitcher** make the headless route loop converge to 0/0.
+- **Fabrication: two separate JLC orders** (panelizing two designs costs more);
+  right = Standard (E73 X-ray), left = Economic-eligible.
+- **Firmware:** ZMK **pinned to v0.3.0** (main dropped HWMv1 boards); LF clock
+  from internal RC (**the E73 has no 32 kHz crystal** — without this BLE never
+  starts); DCDC config removed (module has no inductors; LDO correct); flash
+  partitions = exact Adafruit/nice!nano-v2 bootloader layout; board moved to
+  `config/boards/arm/thumbdeck`; FN layer gained MINUS/EQUAL, HOME/END, PSCRN,
+  BT controls, bootloader/sys_reset.
+- **Mechanical:** back cavity 5.7→6.3 mm (mated JST-PH + 0.24 margin); 3 support
+  posts per grip under the key field; top-shell rim clamps the keymat web
+  (0.1 mm preload); phone pocket in a raised spine plateau with a Ø57×1.8
+  MagSafe-ring recess; USB-C/switch/pinhole/LED openings cut from real part
+  placement. `deck3d.py --check` = 0 collisions.
+
 ## v0.13 — printable spacing, 2u space bar, cluster fixes
 
 - **Pitch 8.5/8.8 → 9.5 mm (#5).** At 8.5 mm the inter-key wall was only ~0.5 mm —
@@ -184,9 +243,14 @@ real requirement for something that clamps a phone.
 v0.2 was a ZMK **BLE split** — two XIAO nRF52840s (right=central, left=peripheral),
 a 50-key combined transform with a peripheral `col-offset`, and a LiPo + USB-C per
 half. It graded PASS but was more complex than this form factor needs. See the git
-history and `renders/iter_03.png`.
+history and `renders/history/iter_03.png`.
 
-## Open `TODO(user)`
+## Open `TODO(user)` — historical (v0.3 era), all resolved by rev-A
+
+Kept for the record only; every item below was closed by the rev-A design (see
+the v0.15 entry at the top): production dome footprint, fully routed/DRC-clean
+boards, FFC ZIF bridge with a defined pinout, spine LiPo, printed keymats, 3D
+shells, and a layout validated against the i8+.
 
 - Datasheet-verified switch footprint (before gerbers).
 - Copper routing in KiCad (before gerbers), incl. the bridge connector pinout.

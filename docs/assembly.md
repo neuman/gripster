@@ -1,76 +1,101 @@
-# Assembly, flash, charge, pair & test (v0.3 — single controller)
+# Assembly, first flash, charge, pair & test — rev-A (v0.15)
 
-## 0. Before boards exist (two gates)
+Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
+machine-placed) — there is **no hand-soldering** in this build. Your work is
+mechanical + one one-time SWD flash.
 
-1. Verify the switch footprint vs. the real Xiaoyztan datasheet
-   (`hardware/footprints/README.md`).
-2. Route both boards in KiCad and export gerbers (`hardware/kicad/README.md`),
-   including the bridge connector pinout.
+## 0. Order & print
 
-## 1. Solder
+1. **Boards:** two JLCPCB PCBA orders from `hardware/kicad/generated/fab/` —
+   see [fabrication-sourcing.md](fabrication-sourcing.md), including the DFM
+   preview checklist (LED polarity!).
+2. **Prints:** back shell + front shell (PETG) and the two keymats (TPU 95A) from
+   `hardware/cad/build/` (STL for slicing; STEP alongside). Coupon-test a 3×3
+   keymat patch for hinge fatigue (>10 k presses) before printing the full mats.
+3. **Order alongside:** 79+ Snaptron 7 mm domes with the taped retention array,
+   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥160 mm**
+   — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
+   contact rows sit 151.2 mm apart plus ~4 mm ZIF insertion each end, so a 150 mm
+   ribbon cannot mate — plus a 1S 400–700 mAh JST-PH LiPo, Ø56 N52 MagSafe ring,
+   M2 heat-set inserts + screws.
 
-**Both grips:** reflow/hand-solder the **25 switches** and **25 diodes** (SOD-123).
-Keep every diode's cathode band toward the row net (`col2row`), same orientation
-on both grips.
+## 1. Press the domes
 
-**Right grip only (the MCU board):**
-- Solder the **nice!nano v2** to its castellated pads (top keep-out).
-- Wire the **LiPo** to `BAT+/BAT-`. **Observe polarity.**
-- (Optional) slide power switch in line with the cell.
+Per grip, on the **front** (bare gold) side:
 
-**Bridge:** solder the 10-pin bridge connector at the inner-bottom corner of each
-grip; run the flex/ribbon (5 shared rows + 5 left-grip columns) through the
-telescoping bridge. *(Or, for the expander variant: MCP23017 in the left grip +
-a 4-wire cable.)*
+- Wipe the dome pads with IPA; don't touch the gold afterwards.
+- Apply the Snaptron **retention array**: pockets locate each 7 mm dome over its
+  contact ring; press each dome until it seats flat. The tape's channels vent the
+  domes — don't substitute a solid film.
+- Sanity-click a few domes with a meter across the centre pad ↔ ring: open at
+  rest, closed when pressed.
 
-## 1.5 Bring-up (power-on checkpoints — do this BEFORE flashing)
+## 2. Mechanical assembly
 
-Catch shorts before they cook something. Numbered, with expected values:
+1. Heat-set the **M2 inserts** into the back-shell bosses (3.2 mm bores, 5 per grip).
+2. Drop each board in, **parts down**, onto its perimeter bosses + the **3 support
+   posts** under the key field. Check the USB-C sits in its wall opening, the
+   slide-switch knob reaches its slot, and the reset tact + LED align with the
+   floor pinhole + light hole.
+3. **FFC jumper:** open both ZIF latches, feed the ribbon (≥160 mm type-A) across
+   the spine, **contacts facing the board at both ends** (the ZIFs are
+   bottom-contact and the jumper is type-A/same-side — a straight ribbon is
+   correct by construction; do not twist it). Close the latches.
+4. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
+   JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
+   wire lands on the pin marked **"+"** on the back silk beside J3 — that is
+   **pin 1, the pin nearer the bottom board edge** ("−" marks pin 2). Seat the
+   cell in the spine pocket but leave it **unplugged** and the power switch
+   **OFF** — the cell is connected only *after* the first flash (§3); see the
+   REGOUT0 warning there.
+5. Lay the keymats over the domes, seat the **MagSafe ring** in the front-shell
+   recess, fit the front shell (its rim lightly clamps the keymat web) and drive
+   the 10 M2 screws.
 
-1. **Continuity, power off.** Ohm-meter BAT+ ↔ GND: **expect** open/high (no short).
-   Buzz the 10 bridge conductors end-to-end: **expect** continuity each, no
-   shorts between adjacent pins.
-2. **First power (bench supply, current-limited to ~50 mA).** Apply 3.7 V at
-   BAT+. **Expect** the board to draw only a **few mA** and *not* hit the limit.
-   If it slams to the limit → short; stop and inspect.
-3. **Rail check.** Measure the nice!nano 3.3 V rail: **expect** 3.3 V ±5 %.
-4. **Idle current on battery.** With firmware later flashed and idle/advertising,
-   **expect** low **single-digit mA** (BLE), dropping toward µA in deep sleep.
-   A steady tens-of-mA idle draw means something is mis-wired.
-5. **Charge check.** Plug USB-C: **expect** the charge LED behaviour per the
-   nice!nano docs and the cell to warm only slightly. Never leave it unattended.
-6. **Matrix continuity.** With a key pressed, buzz its column pad → its row pad
-   through the diode: **expect** continuity one way only (diode).
+## 3. First flash (one-time SWD, then UF2 forever)
 
-Only proceed to flashing once 1–3 pass.
+The E73 ships **blank** — it cannot be UF2-flashed out of the box.
 
-## 2. Flash ZMK — one image
+> **Order matters — first power-up must be battery-free.** Until `UICR.REGOUT0`
+> is programmed to 3.3 V, the nRF's I/O rail runs at its **1.8 V** default, and a
+> full 4.2 V cell would put the battery divider's **2.1 V on AIN0 — exactly the
+> pin's absolute-maximum rating**. So: battery switch OFF and cell unplugged,
+> power from USB or the SWD probe only, flash the bootloader (which programs
+> REGOUT0 = 3.3 V), and only *then* connect the cell.
 
-- Push this repo; **GitHub Actions** (`.github/workflows/build.yml`) builds a
-  single `thumbdeck` firmware for `nice_nano_v2`.
-- Double-tap reset on the nice!nano → it mounts as a USB drive → drag the
-  `thumbdeck-*.uf2` on. **One flash — there's no second controller.**
+1. Connect an SWD probe (J-Link, CMSIS-DAP, or a Raspberry Pi with OpenOCD) to the
+   silk-labelled pads **TP1–5**: SWDIO, SWDCLK, RESET, 3V3, GND. Power the board
+   from **USB or the probe's 3V3 only** — cell unplugged, switch OFF.
+2. If the part arrives access-protected: `nrfjprog --recover` (or the OpenOCD
+   equivalent) first.
+3. Flash the **Adafruit nRF52 bootloader — nice_nano build** (that build matches
+   this board's flash layout; the board itself is *not* a nice!nano). The
+   bootloader sets `UICR.REGOUT0 = 3.3 V`, which the LiPo-direct power scheme
+   requires — verify the flash completed before going further.
+4. **Now connect the cell** (polarity already metered in §2) and switch ON —
+   **ON = knob toward the USB-connector end of the board**.
+5. From now on it's drag-and-drop: **double-tap reset** (paperclip in the floor
+   pinhole) → a UF2 drive mounts → drag on `thumbdeck-zmk.uf2` from the GitHub
+   Actions build (`.github/workflows/build.yml`, self-contained ZMK v0.3.0).
 
-## 3. Charge (LiPo safety — read this)
+## 4. Power-on checkpoints
 
-- Charge over the **single USB-C** on the right grip, via the nice!nano's
-  **onboard charger**. One cable, one session.
-- Use a **protected** cell. **Never charge unattended.** Keep it in its keep-out,
-  clear of switch travel and soldering heat.
+1. Switch ON (knob toward the USB end of the board): BLE advertising should start
+   (see the host's scanner). Idle draw on
+   a bench meter: single-digit mA advertising, dropping toward µA in deep sleep.
+2. Plug USB-C: the **charge LED** in the floor lights; it goes out when full.
+   The cell also charges with the switch OFF (charger is on the cell side).
+   Never charge unattended.
+3. First battery reading on the host should be plausible (÷2 divider on AIN0).
 
-## 4. Pair
+## 5. Pair & test
 
-- Power the keyboard. Pair the host to the advertised **"thumbdeck"** device.
-- No inter-half pairing — the left grip is wired, not a BLE peer.
-- Wired option: plug the right grip into the host over USB-C for wired HID.
-- Re-pair / clear bonds: **Fn + `BT_CLR`**, then `BT_SEL 0/1/2` for a profile.
-
-## 5. Test
-
-- Type across both grips — all 50 keys should register and match the legends
-  (`matrix_map.py` is the label ↔ keycode source of truth). If a whole *column*
-  of the **left** grip is dead, suspect a bridge-cable conductor; a dead **row**
-  affects both grips (rows are shared).
-- Check the single **battery level** reports on the host.
-- Confirm the **fn layer** (`Fn` = left outer thumb) + `BT_*`.
-- Hold several keys at once to confirm the diodes kill ghosting.
+- Pair the host to **"thumbdeck"**. There is no inter-half pairing — the left grip
+  is wired, not a BLE peer.
+- Type across **both** grips. Debug map: a dead left-grip **column** → reseat the
+  FFC ribbon; a dead **row** affects **both** grips (rows are shared).
+- **FN layer** (hold FN): MINUS/EQUAL on 0/9, HOME/END on PgUp/PgDn, PSCRN on DEL,
+  `BT_CLR` + `BT_SEL 0–3` for profiles, plus `&bootloader` / `&sys_reset`.
+- Pointer: D-pad + ZMK mouse keys on the FN layer (no trackpad in v1).
+- Chord several keys at once — the diodes kill ghosting (verified exhaustively in
+  `sim_matrix.py`, but enjoy confirming it with fingers).

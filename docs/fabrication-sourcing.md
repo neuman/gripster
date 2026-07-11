@@ -1,62 +1,98 @@
-# Fabrication & sourcing — JLCPCB vs PCBWay (v0.9)
+# Fabrication & sourcing — rev-A (v0.15)
 
-**Recommendation: JLCPCB Standard PCBA, single-sided (all reflow parts on the
-back), left+right panelized into one panel.** For the minimum run this is roughly
-**$150–230 all-in delivered for 5 sets** vs **~$300–600 at PCBWay**. The only reason
-to pick PCBWay is if you want the *fab* to press the Snaptron retention sheet for you
-(a quote-only manual step that roughly doubles cost) — otherwise you press the domes
-in yourself at either house.
+**Recommendation: JLCPCB turnkey PCBA, two separate orders (right + left), 4-layer,
+ENIG, single-sided bottom assembly.** The fab package is already exported — nothing
+to draw, route or export yourself:
 
-Derived from a 5-agent sourcing review (JLC, PCBWay, LCSC availability, assembly
-strategy). Prices are indicative 2026 figures — re-quote before ordering.
+```
+hardware/kicad/generated/fab/right/  thumbdeck_right_gerbers.zip + bom.csv + positions.csv
+hardware/kicad/generated/fab/left/   thumbdeck_left_gerbers.zip  + bom.csv + positions.csv
+```
 
-## Why the domes/trackpad can't be turnkey
-Snap domes are **mechanical spring contacts** — they oxidise/warp in a reflow oven,
-so **no house machine-places them**. The Cirque is a **connectorized sub-module**,
-also not reflowable. So the split is always:
+Rough cost target **~$150–250 delivered for 5 sets** of both boards assembled
+(indicative 2026 figures — **re-quote at order time**; the E73 price and stock move).
 
-| Stage | Parts | Who |
+## Placing the two orders
+
+For each board: upload the `*_gerbers.zip`, choose PCBA, then upload `bom.csv` and
+`positions.csv` (they're already in JLC's column format).
+
+| Option | Right board | Left board |
 |---|---|---|
-| SMT reflow (single-sided, **back**) | Ebyte E73 module · 81× SOD-323 diodes · ~20–40 passives · USB-C · MCP73831 · USBLC6-2 · JST-GH · SMD LiPo connector | **fab SMT line (~95–100% of joints)** |
-| Mechanical | press 81 domes under the Snaptron **Peel-N-Place** retention array · laminate keymat · mate LiPo · close shell · (optional trackpad) | **you** |
+| Layers / material | **4-layer**, 1.6 mm FR-4 | same |
+| Surface finish | **ENIG — mandatory** (snap domes press on bare pads; HASL oxidises within weeks of key cycling) | same |
+| Assembly | **Standard** (forced: the E73 is an Extended part that needs X-ray inspection) | **Economic** is fine (42 diodes + one FFC connector) |
+| Assembly side | **Bottom** (all parts are on the back; the front must stay bare for the domes) | Bottom |
+| Panelize? | **No.** Two different designs — panelizing them costs more than two small orders. | No |
 
-## Part changes to make it turnkey (from → to)
+### Why two orders, not one panel
 
-| Part | From | To (LCSC/JLC) | Why |
+Earlier drafts assumed "panelize L+R into one panel, pay setup once". Quoted for
+real: a mixed panel of two distinct designs triggers JLC's multi-design surcharges
+and a bigger stencil, and the left board no longer shares the right board's Standard
+assembly requirement. Two separate orders — the trivial left one on Economic — comes
+out cheaper.
+
+## DFM preview checklist (before paying)
+
+Expect one DFM confirmation hold on the right board: **the E73 module body
+overhangs the bottom board edge by ~0.75 mm by design** (its antenna must clear
+the PCB). Reply "proceed as designed" — the overhang is intentional and the
+shell has a matching wall relief.
+
+
+`gen_fab.py` exports KiCad-native rotations; JLC's library orientation can differ
+per part. In the DFM/component preview, verify and rotate if needed:
+
+1. **Charge LED D80 polarity** — the classic JLC 180° flip. Cathode toward the
+   MCP73831 STAT side.
+2. **SOT-23-5 / SOT-23-6 rotation** (U2 MCP73831, U3 USBLC6-2SC6).
+3. **USB-C (J1)** seated on the pad pattern, shell at the board edge.
+4. **E73 (U1) orientation** — antenna edge pointing off the bottom board edge.
+5. Confirm every part is placed in the **single-pass SMT assembly** — nothing is
+   hand-soldered. (The USB-C shell's plated stakes and the FFC/slide-switch
+   locating pegs are the only through-board features, and they go on in the same
+   pass; if the preview asks for a separate THT/hand-solder step, something is
+   wrong.)
+
+## Key parts (LCSC numbers as ordered)
+
+| Part | LCSC | Tier | Notes |
 |---|---|---|---|
-| **nRF52840 module** | Raytac MDBT50Q-1MV2 | **Ebyte E73-2G4M08S1C** (C356849) | Raytac was **out of stock** / not reliably JLC-placeable. E73 is in the JLC library, is the community-standard ZMK module, and machine-places. **The change that enables turnkey.** *(Backup: Holyiot 18010/22066.)* |
-| **Trackpad** | Cirque TM023023 FFC module | **PCB-integrated pad + Azoteq IQS7211E** controller | v0.11: a copper pad on the front + one SMD controller on the back **is turnkey-assemblable** (unlike a Cirque FFC module, which can't be reflowed) and any size we want. No hand-assembly step. Trade: needs the community Azoteq ZMK driver. |
-| **Diode** | generic 1N4148WS | **1N4148WS SOD-323, C2128** (Basic) | Basic part → cheapest tier, no extended-feeder fee (feeder billed once per unique part, not per placement). |
-| **USB-C** | unspecified | **fully-SMD 16P, C165948** | A THT-shell USB-C adds $3.50/order + $0.017/joint and breaks 100 % reflow. |
-| **Charger** | MCP73831 (generic) | **MCP73831T-2ACI/OT, C424093** | Correct 4.2 V-regulation variant; library-placeable. Don't sub the -2ATI (different Vreg). |
-| **ESD** | USBLC6-2 | **USBLC6-2SC6, C7519** | Library part. |
-| **Bridge** | 1× ≥15-pos JST-GH | **confirm SMD GH; likely 2× SM10B-GHS-TB (C2683602)** | Placeable GH tops out ~10-pin — split (or reduce pins) to stay machine-placeable; must be top-entry **SMD**, not THT. |
-| **Layout** | mixed sides | **all reflow parts on the BACK** | Front carries zero reflow parts (domes only), so single-sided SMT = one stencil/paste/pass/setup (~$25 vs $50). Biggest cost lever after part choice. |
-| **LiPo connector** | hand-wired leads | **SMD JST battery connector** | Moves the battery joint onto the line; only the cell mate-up stays manual. |
+| Ebyte E73-2G4M08S1C | **C356849** | **Extended + X-ray, stock VOLATILE** (observed from ~1000 down to ~20 units within days) | **Check jlcpcb.com/parts for C356849 and reserve/backorder the modules BEFORE anything else.** Forces Standard assembly on the right board. Backup: Holyiot 18010 — requires a footprint change (rev-B). |
+| USB-C 16P full-SMD | C165948 | Extended | |
+| MCP73831T-2ACI/OT | C424093 | Extended | Don't sub -2ATI (different Vreg behaviour). |
+| USBLC6-2SC6 | C7519 | Extended | |
+| FFC ZIF AFA07-S16FCC-00 | C13744 | Extended | One per board. |
+| JST-PH S2B-PH-SM4-TB | C295747 | Extended | |
+| MSK12C02 slide switch | C431540 | Extended | |
+| TS-1187A reset tact | C318884 | Extended | |
+| 1N4148WS SOD-323 | C2128 | **Basic** | 79 across both boards. |
+| Red LED 0603 | C2286 | Basic | |
+| All R/C (0402/0805) | C25900, C25905, C26083, C11702, C52923, C1525, C1779 | **Basic** | The 4.7 µF is deliberately **0805 25 V** (C1779) — a 0402 4µ7 derates to ~1 µF at 5 V bias. |
 
-## Cost (minimum run, 5× of each grip, panelized)
+## What stays manual (either fab house)
 
-- **JLCPCB ~$150–230 delivered:** PCB+ENIG ~$25–45 · assembly setup $25 (single-side)
-  · stencil ~$8 · extended feeders ~$5–6 · placement ~$2 · module X-ray ~$3–16 ·
-  components ~$85 (the E73 at ~$6×10 dominates) · shipping ~$20–30.
-- **PCBWay ~$300–600:** ENIG ~$40–70 · stencil ~$10–30 · SMT labor ~$60–125 · parts
-  at cost (verify — a report saw ~2× markup) · **+** the reason to choose them:
-  quote-only manual dome-sheet application.
-- **Both exclude** the domes+retention sheet, LiPo, shell, and the (dropped) trackpad.
+Snap domes are mechanical spring contacts — they oxidise/warp in reflow, so no
+house machine-places them. Your steps after delivery: press the **79 domes** under
+the Snaptron retention array, print shells + keymats, install the FFC jumper and
+battery, close the shell. PCBWay can quote manual dome-sheet application, but it
+roughly doubles the cost — pressing them yourself is a calm 20-minute job.
 
-## Open decisions (these pick the house / finalize the order)
-1. **Domes:** press them yourself → **JLCPCB** (cheapest), or have the fab apply the
-   retention sheet → **PCBWay** (quote-only, ~2×). *This single choice picks the house.*
-2. **Panelize** L+R into one panel (pay setup/stencil once)? — cost-optimal default **yes**.
-3. **Trackpad:** drop (recommended, unpopulated footprint) or keep as a hand-fit option?
-4. **Bridge pin count:** confirm exact count; split into 2× SM10B-GHS-TB or keep ≤10 so it stays SMD-placeable.
-5. **Which grip hosts the module** (only one gets the module + X-ray fixture cost).
-6. **Domes as a Peel-N-Place array** (one-sheet application) not loose domes.
-7. **Plain ENIG** on dome pads (cheap, sufficient) vs selective hard gold (quote-only, only for very high actuation counts).
+## Cost shape (5× each board, assembled)
+
+Flat fees dominate at qty 5: 4-layer PCB + ENIG, one Standard assembly setup +
+stencil (right), one Economic setup (left), Extended-feeder fees, E73 X-ray, parts
+(~$6 × 5 for the E73 dominates), shipping. Per-board cost only falls with volume.
+**Both orders exclude** the domes + retention array, LiPo, printed parts, M2
+hardware and the FFC jumper — see [bill-of-materials.md](bill-of-materials.md).
 
 ## Caveats
-- **Verify E73 stock and reserve it** (only ~42 units at check; Extended, X-ray-required).
-- A ≥15-pos JST-GH SMD single part may not be stocked — plan to split.
-- Every **through-hole** joint breaks 100 % reflow — confirm each connector shows **SMD**.
-- **ENIG is mandatory** on the dome pads — state it explicitly in the quote.
-- At qty ~5 the flat setup/stencil/fixture fees dominate; per-board cost only falls with volume.
+
+- **E73 stock is volatile** (~1000 → ~20 units observed within days): check
+  jlcpcb.com/parts for **C356849** and **reserve/backorder the modules before
+  anything else**. The Holyiot 18010 backup requires a footprint change (rev-B).
+- **ENIG is mandatory** — state it explicitly; don't let a quote default to HASL.
+- Selective hard gold on dome pads is a production-volume upgrade; plain ENIG is
+  fine for a personal build.
+- Rotations: trust the DFM preview over the CPL numbers (see checklist above).

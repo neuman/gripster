@@ -1,8 +1,12 @@
 name: Build ZMK firmware
 
-# Self-contained build so the nested firmware/zmk-config/ (per repo structure)
-# builds without relying on the reusable workflow's root-config assumption.
-# This is the real functional gate: it compiles both halves for the XIAO nRF52840.
+# Self-contained build (NOT ZMK's reusable build-user-config workflow: that one
+# runs `west init -l <config>` and then `west update` from the REPO root, which
+# only works when the config's parent IS the repo root — ours lives under
+# firmware/zmk-config/, so the reusable workflow provably cannot pass here).
+# ZMK is pinned to v0.3.0 in firmware/zmk-config/config/west.yml (last
+# HWMv1-compatible release, Zephyr 3.5). The board is a real board definition
+# (config/boards/arm/thumbdeck) discovered via ZMK_CONFIG, not a shield.
 on:
   push:
     paths:
@@ -16,44 +20,38 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: zmkfirmware/zmk-build-arm:stable
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - shield: thumbdeck
-            board: nice_nano_v2
+    defaults:
+      run:
+        working-directory: firmware/zmk-config
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Cache west workspace
+      - name: Cache west modules
         uses: actions/cache@v4
         with:
           path: |
-            modules/
-            tools/
-            zephyr/
-            bootloader/
-            zmk/
-          key: zmk-${{ hashFiles('firmware/zmk-config/config/west.yml') }}
+            firmware/zmk-config/modules
+            firmware/zmk-config/tools
+            firmware/zmk-config/zephyr
+            firmware/zmk-config/zmk
+          key: west-${{ hashFiles('firmware/zmk-config/config/west.yml') }}
 
       - name: West init + update
-        working-directory: firmware/zmk-config
         run: |
-          west init -l config
+          test -d .west || west init -l config
           west update
           west zephyr-export
 
-      - name: Build ${{ matrix.shield }}
-        working-directory: firmware/zmk-config
+      - name: Build thumbdeck
         run: |
-          west build -s zmk/app -b ${{ matrix.board }} -- \
-            -DSHIELD=${{ matrix.shield }} \
+          west build -s zmk/app -p always -b thumbdeck -- \
             -DZMK_CONFIG="${GITHUB_WORKSPACE}/firmware/zmk-config/config"
 
-      - name: Upload firmware
+      - name: Rename firmware
+        run: cp build/zephyr/zmk.uf2 thumbdeck-zmk.uf2
+
+      - name: Upload UF2
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.shield }}-${{ matrix.board }}
-          path: firmware/zmk-config/build/zephyr/zmk.uf2
-          if-no-files-found: warn
+          name: thumbdeck-zmk-uf2
+          path: firmware/zmk-config/thumbdeck-zmk.uf2

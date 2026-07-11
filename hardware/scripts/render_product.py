@@ -106,7 +106,7 @@ def render(iter_tag="product"):
                 arrowprops=dict(arrowstyle="<->", color="#9aa"))
     ax.text(0, -12, f"{total_w:.0f} mm overall", ha="center", color="#9aa", fontsize=8)
     ax.text(0, P["right"]["board_h"] + 6,
-            "LEFT grip: QWERT-half + D-pad/OK + mouse L/R      RIGHT grip: YUIOP-half + PgUp/PgDn + optional trackpad",
+            "LEFT grip: QWERT-half + D-pad/OK + mouse L/R      RIGHT grip: YUIOP-half + PgUp/PgDn (pointer = ZMK mouse keys)",
             ha="center", color="#9aa", fontsize=7.5)
 
     lx = P["left_origin"][0]

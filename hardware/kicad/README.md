@@ -1,51 +1,49 @@
-# hardware/kicad — manual KiCad workflow (SCAFFOLD)
+# hardware/kicad — generated boards + autonomous fab pipeline (rev-A)
 
-The Section 7 loop produced the converged **placement + board outline**. This is
-where that becomes a routed, fabricable board. Steps are manual and **not**
-auto-produced (PROJECT_SPEC §10) — no fabricated routing.
+Everything in `generated/` is produced headlessly by the pipeline in
+`hardware/scripts/`. **Both boards are fully routed and DRC-clean** (0 violations,
+0 unconnected, kicad-cli 9.0.9) and the JLC fab package is exported. Nothing here
+is hand-drawn; to change the board, change the model/scripts and regenerate.
 
-## What's already generated for you
+## The pipeline
 
-`generated/` (from `hardware/scripts/gen_kicad.py`, real geometry):
+```bash
+cd hardware/scripts
+python3 gen_board.py                  # placement + full netlist + deterministic USB copper
+                                      #   + GND escape vias -> generated/thumbdeck_{right,left}.kicad_pcb
+./route.sh right                      # Specctra DSN (In1 marked power) -> Freerouting (-Xss16m)
+./route.sh left                       #   -> SES import -> stitch.py (GND vias + zone fill) -> DRC -> renders
+python3 gen_fab.py                    # gerbers/BOM/CPL per side; REFUSES to export unless DRC is 0/0
+python3 sim_matrix.py                 # 79-key matrix ghosting/NKRO proof (final pass)
+```
+
+Requirements: **KiCad 9** (`pcbnew` Python module + `kicad-cli`), a Java runtime
+and **freerouting.jar** (paths at the top of `route.sh`). Details and quirks in
+[`docs/routing-status.md`](../../docs/routing-status.md).
+
+## What's in `generated/`
 
 | file | what |
 |---|---|
-| `thumbdeck_right.kicad_pcb` / `thumbdeck_left.kicad_pcb` | openable board: Edge.Cuts outline, mount-hole cutouts, keep-out rects (controller/LiPo/USB-C), and a placement cross + `SWn`/`Dn` ref at every converged key centre |
-| `thumbdeck_*_outline.dxf` | board edge only, importable into KiCad/CAD |
-| `thumbdeck_*_placement.csv` | `ref, value, x_mm, y_mm, rotation, side` for every switch, diode, keep-out |
+| `thumbdeck_right.kicad_pcb` / `thumbdeck_left.kicad_pcb` | routed, DRC-clean 4-layer boards (F.Cu / In1 GND plane / In2 / B.Cu) |
+| `thumbdeck_*.kicad_pro/.kicad_prl/.kicad_dru` | project + 0.2 mm rules (via 0.6/0.3) |
+| `thumbdeck_*.dsn` / `thumbdeck_*.ses` | Freerouting in/out (kept for reproducibility) |
+| `drc_right.json` / `drc_left.json` | DRC results: **0 violations, 0 unconnected** (error severity) |
+| `fab/right/`, `fab/left/` | **the order package**: `thumbdeck_*_gerbers.zip` + `bom.csv` + `positions.csv` (JLC format) |
+| `thumbdeck_*_placement.csv` | placement summary (ref, value, x, y, rot, side) |
 
-> The switch footprint in these files is **provisional** (marked on silk). Verify
-> it before routing — see `hardware/footprints/README.md`.
+## Ordering
 
-### Wiring reference for the routing step
-
-- `renders/wiring_schematic.png` — the logical 5×10 matrix (rows R0–R4 × cols
-  C0–C9), switch+diode per node, RIGHT/LEFT board split, and the bridge nets.
-- `renders/wiring_assembly_right.png` / `_left.png` — per-board solder-pad
-  placement + the 10-pin **bridge connector pinout** (which conductor is which
-  row/column, and the matching nice!nano `pro_micro` pin). Use these to net the
-  schematic and to wire the bridge connector.
-
-## Manual steps to a fab package
-
-1. **Schematic** (`thumbdeck.kicad_sch`): 25 switches + 25 diodes (1N4148W,
-   `col2row`) + nRF52840 module + LiPo connector (+ optional power switch), per
-   half. Wire the 5×5 matrix on the pins in `docs/matrix-and-diodes.md`.
-2. **Assign footprints:** SOD-123 for diodes (standard); the **datasheet-verified**
-   switch footprint; the XIAO nRF52840 module footprint; a JST/solder LiPo pad.
-3. **Layout:** open the generated `.kicad_pcb` (or import the DXF outline). Place
-   each switch at its `SWn` cross, diodes at the `Dn` guides, the controller/LiPo
-   in their keep-outs, USB-C at the bottom-edge keep-out. Keep the inner edge flat
-   (clamp mating reference) and the 2 inner mount holes clear.
-4. **Route** the matrix (rows one layer, cols the other is the easy start), power,
-   and USB. Pour grounds. Run **DRC**.
-5. **Export gerbers + drill**, generate the JLCPCB fab package (1.6 mm, HASL).
-   Optional: BOM + centroid for PCBA.
+Two **separate** JLCPCB PCBA orders (right + left — don't panelize two different
+designs): 4-layer, 1.6 mm FR-4, **ENIG (mandatory — snap-dome contacts)**, assembly
+side **bottom**, Standard assembly for the right board (E73 = Extended + X-ray),
+Economic OK for the left. Check the DFM preview for part rotations (LED polarity,
+SOT-23s, USB-C, E73). Full walkthrough:
+[`docs/fabrication-sourcing.md`](../../docs/fabrication-sourcing.md).
 
 ## Notes
 
-- KiCad is not installed in the generation environment, so the `.kicad_pcb` is
-  hand-authored (outline + placement only). Opening it in KiCad 7/8 and running
-  DRC is the first thing to do.
-- Central = right, peripheral = left by default (firmware decides via which
-  shield you flash; the two boards are mirror images).
+- The boards are frozen build artifacts — regenerate rather than hand-edit; the
+  DRC gate in `gen_fab.py` protects the export either way.
+- Opening them in the KiCad 9 GUI is fine for inspection; the pipeline does not
+  depend on the GUI for anything.

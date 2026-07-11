@@ -3,6 +3,14 @@
 Layout observations recorded to guide the render. Described, not copied — no
 images imported.
 
+> **Historical document.** The i8+ observations below are still the reference,
+> but the "How thumbdeck reinterprets it" section describes the **v0.3 50-key**
+> reduction and is **superseded**: the current design is **79 keys** (9×10
+> matrix, 6×6/half + clusters, 2u space bars), a D-pad + OK + mouse buttons on
+> the left, PgUp/PgDn on the right, and **no trackpad in v1** (rev-B option via
+> the I²C breakout). See the [README](../README.md) and
+> [evaluation.md](evaluation.md) for the current layout.
+
 ## The real i8+ (from product listings / manuals)
 
 - **~92 backlit keys** around a compact **QWERTY** block, US layout available.
@@ -17,7 +25,7 @@ images imported.
 
 Sources: riitek.com product pages; The Pi Hut; Amazon listings; Windows Central review.
 
-## How thumbdeck reinterprets it
+## How thumbdeck reinterprets it (v0.3 — HISTORICAL, superseded)
 
 The i8+ is a single ~92-key slab thumb-typed with both thumbs. **thumbdeck** is
 an *i8+-inspired* reduction, not a faithful half:

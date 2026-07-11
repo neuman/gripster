@@ -74,21 +74,26 @@ class Config:
     key_h: float = 8.0
     col_stagger: float = 0.0      # ortholinear (was 1.3 arc-stagger through v0.4)
     arc_bow: float = 0.0          # ortholinear (was 0.06 through v0.4)
-    inner_margin: float = 6.0
+    # v0.15: 6 -> 8 so the 16-pin FFC ZIF bridge connector (6.7mm deep) fits on the
+    # inner edge without touching the key field (dome courtyards start at margin+0.1).
+    inner_margin: float = 8.0
     grip_margin: float = 7.0
     outer_bow: float = 6.0
     # v0.10: LiPo moved to the central SPINE (behind the MagSafe ring), so the grip
     # bottom zone only needs USB-C + charger + bridge — shrinks the grip height so it
     # no longer dwarfs the phone (target ~grip = phone_short + ~2x12mm overhang, i8+-like).
-    bottom_strip: float = 14.0
+    # v0.15: 14 -> 19: the E73 now sits antenna-down at the bottom EDGE (RF-correct)
+    # which needs the full 18mm module length below the key field, and the passive
+    # lane (SWD pads / row pulldowns / divider) needs its own strip above the module.
+    bottom_strip: float = 19.0
     # v0.9 (PCBA sourcing): MCU module is the **Ebyte E73-2G4M08S1C** nRF52840
     # (JLC C356849) — the Raytac MDBT50Q was out of stock / not reliably
     # JLC-placeable. The E73 is in the JLC library, is the community-standard
     # ZMK nRF52840 module, and machine-places (Extended, X-ray). On the BACK.
     # Still a certified radio: no FCC/RED cert, RF match, crystals or Zephyr port.
-    ctrl_w: float = 20.5          # Ebyte E73-2G4M08S1C module width
-    ctrl_h: float = 12.0          # module length; PCB-antenna end faces outer-top corner
-    antenna_h: float = 5.0        # module antenna zone: no-copper keep-out, >=15mm from magnets
+    ctrl_w: float = 13.0          # Ebyte E73-2G4M08S1C module width (13 x 18 mm)
+    ctrl_h: float = 18.0          # module length; ceramic-antenna end faces the BOTTOM edge
+    antenna_h: float = 5.0        # module antenna zone: no-copper keep-out (all layers), at the board edge
     usb_gap: float = 6.0          # access gap
     top_pad: float = 4.0
     phone_len: float = 160.0
@@ -171,12 +176,13 @@ def _outline(c: Config, keys):
 
 
 def _bridge_conn(board_h):
-    """Static internal harness connector — rotated VERTICAL at the INNER edge so the
-    flex exits toward the spine and runs straight across (behind the phone) to the
-    other grip's mirror connector at the same height. Latching JST-GH (signals only,
-    ~22-24 conductors: 9 rows + 5 left cols + interleaved GND). ~5mm wide x 18mm tall,
-    low so the flex clears the spine battery above it. Power stays in this grip."""
-    return [1.5, 12.0, 5.0, 18.0]
+    """Static internal harness connector — a 16-pin 1.0mm-pitch FFC ZIF (SMT, ~2mm
+    tall, bottom contacts) rotated VERTICAL at the INNER edge; the 16-way type-A FFC
+    jumper exits toward the spine and runs flat across (behind the phone, at back-
+    cavity level) to the other grip's connector. 9 rows + 5 left cols + 2 GND.
+    Low on the board so the ribbon clears the spine battery above it. Power stays
+    in this grip. [x, y, w, h] advisory box in deck mm."""
+    return [0.5, 12.5, 6.5, 21.0]
 
 
 def _right_edge_x(y, outline):
@@ -197,15 +203,16 @@ def _keepouts_mcu(c, board_w, board_h, outer_base, outline, keys):
         re = min(_right_edge_x(y, outline), _right_edge_x(y + h, outline),
                  _right_edge_x(y + h / 2, outline)) - margin
         return round(re - w, 2)
-    # ALL electronics live in the BOTTOM zone (clear of the rounded top corner + the
-    # trackpad above). Module + charger inner-bottom, USB-C + antenna clamped to the
-    # outer-bottom edge. LiPo is in the spine (deck.product), not here.
-    ko["controller"] = [8.0, 2.0, c.ctrl_w, c.ctrl_h]                 # Ebyte E73, inner-bottom
-    ko["charger"] = [round(8.0 + c.ctrl_w + 2.0, 2), 2.5, 5.0, 3.5]
-    ko["usb_c"] = [clamp_right(1.0, 4.5, 9.0), 1.0, 9.0, 4.5]          # port at outer-bottom edge
-    # PCB MEANDER antenna (front copper, ground cut-out), outer-bottom, far from the
-    # centre magnets; short RF run from the module. Drawn as a squiggle, not a box.
-    ko["antenna"] = [clamp_right(7.5, 6.0, 13.0), 7.5, 13.0, 6.0]
+    # ALL electronics live in the BOTTOM strip. v0.15 layout (matches gen_board.py):
+    # E73 antenna-DOWN at the bottom edge (inner-ish), USB-C mid-bottom (mouth flush
+    # with the edge), ESD inline, charger + battery-cap + LED + power/reset switches
+    # to the right, FFC bridge + JST-PH battery on the inner edge, passive lane
+    # (SWD / spare-GPIO / row pulldowns / divider) in the strip above the module.
+    # LiPo is in the spine (deck.product), not here.
+    ko["controller"] = [9.5, -0.5, c.ctrl_w, c.ctrl_h]        # Ebyte E73, antenna-down at edge
+    ko["antenna"] = [7.5, -1.5, 17.0, 6.5]                    # module antenna keep-out zone
+    ko["usb_c"] = [32.5, 0.0, 9.5, 9.5]                       # J1 mouth flush with bottom edge
+    ko["charger"] = [43.0, 1.0, 18.0, 8.0]                    # U2/U3 + caps + LED + switches
     ko["bridge"] = _bridge_conn(board_h)
     return ko
 
@@ -248,11 +255,9 @@ def _features(geo: dict, c: Config) -> list:
     # D-pad's bottom key clears the F-row and its top key clears the board edge.
     cy_lo = (field_top + geo["board_h"]) / 2.0        # upper-zone mid
     if geo["side"] == "right":
-        # inner edge at x=0; grip body toward +x. PCB-integrated capacitive trackpad
-        # (IQS7211E), sized to fit the upper zone with NO overhang.
-        feats.append({"type": "trackpad", "label": "IQS7211E pad",
-                      "x": round(ob * 0.40, 2), "y": round((field_top + geo["board_h"]) / 2, 2),
-                      "w": c.trackpad_w, "h": c.trackpad_h})
+        # inner edge at x=0; grip body toward +x. (The PCB-integrated trackpad was
+        # DROPPED for v1 — pointer duty goes to ZMK mouse keys; the I2C pins are
+        # broken out to spare pads for a rev-B trackpad. No feature emitted.)
         ox = ob - 8.5                                 # page keys inboard of the outer edge
         feats.append({"type": "key", "label": "PGUP", "x": round(ox, 2), "y": round(cy_lo + 5.5, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "PGDN", "x": round(ox, 2), "y": round(cy_lo - 5.5, 2), "d": c.feat_key_d})

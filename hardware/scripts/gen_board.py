@@ -1,30 +1,98 @@
 #!/usr/bin/env python3
 """
-gen_board.py — ROUTE-COMPLETE KiCad board per grip (supersedes gen_kicad_pcbnew.py).
+gen_board.py — rev-A KiCad board generator, one board per grip.
 
-Places REAL footprints, builds the FULL netlist, routes the 79-key matrix (columns
-on F.Cu, rows on B.Cu, via per key), routes power/USB/I2C, and adds GND zones.
+Places REAL footprints and builds the FULL netlist for both grips; routing is done
+afterwards by route.sh (Freerouting) — this file adds only the deterministic copper
+(USB same-net pad ties). KiCad 9 headless: DRC, zone fill and Specctra export all
+work (the old KiCad-7 caveats are gone).
 
-HONEST LIMITS of this headless KiCad-7 environment (see docs/routing-status.md):
-  * no DRC/ERC CLI  -> must open in the KiCad GUI once to run DRC + ERC
-  * ZONE_FILLER segfaults headless -> GND zones are added UNFILLED; the GUI fills them
-  * the E73 / IQS7211E / JST-GH footprints + the module PINOUT are built here and must
-    be VERIFIED against the datasheets before fab.
-So the deliverable is a board that opens ready-to-finish, NOT signed-off gerbers.
+rev-A electrical scope (see docs/design-review.md):
+  * Ebyte E73-2G4M08S1C antenna-DOWN at the bottom board edge (module keep-out zone
+    crosses the edge; GND pours stay clear on all 4 layers).
+  * Bridge = 16-pin 1.0 mm FFC ZIF (SMT, bottom contacts) on each grip's inner edge;
+    a straight type-A FFC jumper crosses the spine. Left-grip pad nets are assigned
+    by RIBBON GEOMETRY (conductor y-position match), not by pin number, so a straight
+    jumper is correct by construction.
+  * Battery = JST-PH SMT (polarized); MSK12C02 power slide switch between the cell
+    and the VBAT rail (charger stays on the cell side -> charges while off).
+  * MCP73831 with its stability caps AT the chip; USBLC6-2 inline in the data path;
+    reset tact (shell pinhole); charge LED on STAT; battery divider + filter cap;
+    SWD + spare-I2C/GPIO test pads.
+  * Snap domes use the production snaptron_7mm_contact footprint (continuous leg
+    ring, mask aperture, pour keep-out, vent).
 
-Frame: KiCad Y-down (we flip deck.py's Y-up geometry with _fy).
+Frame: KiCad Y-down (deck.py geometry is Y-up; flipped with _fy).
 """
 from __future__ import annotations
-import os, csv
+import os
 import pcbnew
 from pcbnew import VECTOR2I as V, FromMM as MM
 import deck
 
-OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "kicad", "generated"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.abspath(os.path.join(HERE, "..", "kicad", "generated"))
 STOCK = "/usr/share/kicad/footprints"
+LOCAL = os.path.abspath(os.path.join(HERE, "..", "footprints", "thumbdeck.pretty"))
 NROWS, NCOLS_HALF = 9, 5
-TRACE = 0.25   # mm signal trace
-PWR = 0.5      # mm power trace
+TRACE = 0.25   # mm signal trace (Default netclass)
+PWR = 0.5      # mm power trace (Power netclass)
+
+# ---- E73 pad -> net. Pad N == Ebyte datasheet pin N (marbastlib footprint,
+# verified 1:1 vs the official Ebyte E73-2G4M08S1C User Manual pin table).
+# Bridge columns (COL5-9) on castellated edge pads. COL9 moved off pad 11
+# (P0.00/XL1) to pad 18 (P0.04/AIN2) so the XL pins stay free — firmware runs the
+# LF clock from the internal RC, but keeping XTAL pins unused removes the failure
+# mode entirely. Pads 15/4/8 (P0.05/P0.28/P0.29) are broken out to spare test pads
+# (rev-B trackpad / expansion I2C + IRQ).
+E73_PINMAP = {
+    "1": "ROW0", "2": "ROW1", "6": "ROW2", "12": "ROW3", "14": "ROW4",
+    "16": "ROW5", "17": "ROW6", "20": "ROW7", "22": "ROW8",
+    "28": "COL0", "30": "COL1", "32": "COL2", "33": "COL3", "34": "COL4",
+    "35": "COL5", "3": "COL6", "9": "COL7", "10": "COL8", "18": "COL9",
+    "7": "VBAT_SENSE",                      # P0.02/AIN0, 1M/1M divider + 100nF
+    "15": "SDA", "4": "SCL", "8": "TP_INT",  # spare I2C/IRQ breakout (rev-B)
+    "19": "3V3", "23": "VBAT", "5": "GND", "21": "GND", "24": "GND",
+    "27": "VBUS", "29": "USB_DM", "31": "USB_DP",
+    "37": "SWDIO", "39": "SWDCLK", "26": "RESET",
+}
+
+LIBS = {"TD": LOCAL,
+        "SOT": STOCK + "/Package_TO_SOT_SMD.pretty",
+        "R": STOCK + "/Resistor_SMD.pretty",
+        "C": STOCK + "/Capacitor_SMD.pretty",
+        "LED": STOCK + "/LED_SMD.pretty",
+        "USB": STOCK + "/Connector_USB.pretty",
+        "FFC": STOCK + "/Connector_FFC-FPC.pretty",
+        "JST": STOCK + "/Connector_JST.pretty",
+        "SW": STOCK + "/Button_Switch_SMD.pretty",
+        "TP": STOCK + "/TestPoint.pretty"}
+
+FFC_FP = ("TD", "ffc_afa07_s16fcc")   # JUSHUO AFA07-S16FCC-00 (LCSC C13744)
+
+USBC_NETS = {"A4": "VBUS", "B4": "VBUS", "A9": "VBUS", "B9": "VBUS",
+             "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "S1": "GND",
+             "A5": "CC1", "B5": "CC2",
+             "A6": "USB_DP", "B6": "USB_DP", "A7": "USB_DM", "B7": "USB_DM"}
+
+# JLC/LCSC part assignment (stamped on footprints + exported to the BOM by
+# gen_fab.py). Values verified against the JLC parts library — see
+# docs/fabrication-sourcing.md.
+LCSC = {
+    "E73-2G4M08S1C": "C356849",       # nRF52840 module (Standard assy, X-ray)
+    "1N4148WS": "C2128",              # SOD-323, Basic
+    "USB-C": "C165948",               # HRO TYPE-C-31-M-12 16P
+    "MCP73831": "C424093",            # MCP73831T-2ACI/OT SOT-23-5
+    "USBLC6-2SC6": "C7519",           # SOT-23-6 ESD
+    "4k7": "C25900", "5k1": "C25905", "1M": "C26083", "1k": "C11702",
+    "100nF": "C1525", "1uF": "C52923",
+    "4u7/0805": "C1779",              # 0805 X5R >=16V
+    "LED_RED": "C2286",               # 0603 red
+    "FFC16": "C13744",                # JUSHUO AFA07-S16FCC-00, 1.0mm 16P bottom-contact
+    "JST-PH-2": "C295747",            # S2B-PH-SM4-TB side entry
+    "MSK12C02": "C431540",            # SPDT slide
+    "TS-1187A": "C318884",            # reset tact
+}
 
 
 def _fy(y, H):
@@ -35,18 +103,30 @@ def vec(x, y):
     return V(MM(x), MM(y))
 
 
+def elec_rc(i, side):
+    """Electrical (row, col) for key index i on a grip — the ONE definition shared
+    with gen_firmware.py so board and firmware cannot drift."""
+    assert i < NROWS * NCOLS_HALF, f"key index {i} overflows the {NROWS}x{NCOLS_HALF} half-matrix"
+    col_off = 0 if side == "right" else NCOLS_HALF
+    return (i // NCOLS_HALF), col_off + (i % NCOLS_HALF)
+
+
 class Board:
     def __init__(self, geo, side):
         self.geo = geo; self.side = side; self.H = geo["board_h"]
         self.b = pcbnew.BOARD()
-        self.b.GetDesignSettings().m_CopperEdgeClearance = MM(0.2)   # keep copper off the edge
+        ds = self.b.GetDesignSettings()
+        ds.m_CopperEdgeClearance = MM(0.2)   # JLC routed-edge spec
+        ds.m_TrackMinWidth = MM(0.15)
+        ds.m_MinClearance = MM(0.127)
         # 4-layer stackup: F.Cu(sig) / In1.Cu(GND plane) / In2.Cu(sig+pwr) / B.Cu(sig).
-        # The GND plane gives the antenna a reference + lowers matrix crosstalk; the inner
-        # In2 signal layer makes the dense E73 fan-in routable (the 2-layer blocker).
+        # The GND plane gives the module antenna a reference + lowers matrix
+        # crosstalk; the inner In2 signal layer makes the dense E73 fan-in routable.
         self.b.SetCopperLayerCount(4)
         self.nets = {}
         self.net("GND"); self.net("3V3"); self.net("VBAT"); self.net("VBUS")
         self.rows_csv = []
+        self.j2_pads = None      # [(net_name, deck_y)] of the RIGHT grip's J2, for ribbon mapping
 
     def net(self, name):
         if name not in self.nets:
@@ -80,7 +160,8 @@ class Board:
     def mount_holes(self):
         # NPTH mount holes as Edge.Cuts circle cut-outs (the MountingHole *footprint*
         # breaks KiCad's Specctra/DSN export; Edge.Cuts circles round-trip fine) + a
-        # keepout ring so the autorouter/pour stays clear of each hole.
+        # keepout ring so the autorouter/pour stays clear of each hole. The shell
+        # boss lands r=3.0 around each hole — gen_board asserts no components there.
         for h in self.geo["mount_holes"]:
             cx, cy = h["x"], _fy(h["y"], self.H)
             c = pcbnew.PCB_SHAPE(self.b); c.SetShape(pcbnew.SHAPE_T_CIRCLE)
@@ -91,10 +172,6 @@ class Board:
     def track(self, x1, y1, x2, y2, layer, net, w=TRACE):
         t = pcbnew.PCB_TRACK(self.b); t.SetStart(vec(x1, y1)); t.SetEnd(vec(x2, y2))
         t.SetWidth(MM(w)); t.SetLayer(layer); t.SetNet(net); self.b.Add(t)
-
-    def via(self, x, y, net):
-        v = pcbnew.PCB_VIA(self.b); v.SetPosition(vec(x, y)); v.SetDrill(MM(0.3)); v.SetWidth(MM(0.6))
-        v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu); v.SetNet(net); self.b.Add(v)
 
     def gnd_zone(self, layer):
         z = pcbnew.ZONE(self.b); z.SetLayer(layer); z.SetNet(self.net("GND"))
@@ -107,53 +184,59 @@ class Board:
         z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)   # drop only padless islands
         self.b.Add(z)
 
+    def silk(self, txt, x, y, size=0.8, front=False):
+        """Reference text on the silkscreen (deck coords). Back-side text is mirrored."""
+        t = pcbnew.PCB_TEXT(self.b)
+        t.SetText(txt); t.SetPosition(vec(x, _fy(y, self.H)))
+        t.SetTextSize(V(MM(size), MM(size))); t.SetTextThickness(MM(0.12))
+        t.SetLayer(pcbnew.F_SilkS if front else pcbnew.B_SilkS)
+        if not front:
+            t.SetMirrored(True)
+        self.b.Add(t)
+
     # ---- footprints ----
-    _SNAP = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "footprints", "thumbdeck.pretty"))
-
-    def switch(self, ref, x, y, col_net, dnode, rot=0):
-        """Snaptron 7mm dome, ROUTING footprint (2 simple circular pads: 1=centre/col,
-        2=ring/diode-node). The arc-pad variant (snaptron_7mm_contact_pad) can't be
-        Specctra-exported for the autorouter, so we route on simple circular pads
-        (electrically valid dome contacts). rot mirrors the ring pad direction so the
-        LEFT grip's ring pads point OUTWARD (like the right grip), clear of the inner
-        bridge header."""
-        fp = pcbnew.FootprintLoad(self._SNAP, "snaptron_7mm_simple")
-        fp.SetReference(ref); fp.SetValue("SNAP7"); fp.SetPosition(vec(x, y)); self.b.Add(fp)
-        if rot:
-            fp.SetOrientationDegrees(rot)
-        for p in fp.Pads():
-            p.SetNet(col_net if p.GetNumber() == "1" else dnode)
+    def load(self, lib, name):
+        fp = pcbnew.FootprintLoad(LIBS[lib], name)
+        assert fp is not None, f"footprint {lib}/{name} not found"
         return fp
 
-    def diode(self, ref, x, y, dnode, row_net):
-        fp = pcbnew.FootprintLoad(STOCK + "/Diode_SMD.pretty", "D_SOD-323")
-        fp.SetReference(ref); fp.SetValue("1N4148WS"); fp.SetPosition(vec(x, y)); self.b.Add(fp)
-        fp.Flip(fp.GetPosition(), False)   # to B.Cu
-        for pad in fp.Pads():
-            pad.SetNet(row_net if pad.GetNumber() == "1" else dnode)  # K->row, A->node
-        return fp
-
-    def place_stock(self, lib, name, ref, val, x, y, netmap, back=False, rot=0):
-        fp = pcbnew.FootprintLoad(f"{STOCK}/{lib}.pretty", name)
-        fp.SetReference(ref); fp.SetValue(val); fp.SetPosition(vec(x, _fy(y, self.H)))
-        self.b.Add(fp)
+    def place(self, fp, ref, val, x, y, netmap=None, back=True, rot=0):
+        """Place at deck (x,y). Flip first, then rotate — rotations are then in the
+        flipped frame, which is what the empirical orientation constants assume."""
+        fp.SetReference(ref); fp.SetValue(val)
+        fp.SetPosition(vec(x, _fy(y, self.H))); self.b.Add(fp)
         if back:
-            fp.Flip(fp.GetPosition(), False)
-        if rot:
-            fp.SetOrientationDegrees(rot)
-        for pad in fp.Pads():
-            nm = netmap.get(pad.GetNumber())
-            if nm:
-                pad.SetNet(self.net(nm))
+            fp.Flip(fp.GetPosition(), False)   # NB: Flip() itself sets rot=180
+        fp.SetOrientationDegrees(rot)          # always set — rot is in the flipped frame
+        if netmap:
+            for p in fp.Pads():
+                nm = netmap.get(p.GetNumber())
+                if nm:
+                    p.SetNet(self.net(nm))
+        if val in LCSC and LCSC[val]:
+            set_field(fp, "LCSC", LCSC[val])
         return fp
+
+    def assert_clear_of_bosses(self):
+        """No component courtyard may enter the shell standoff-boss disc (r=3.0)
+        around any mount hole — the PCB must seat flat on the bosses."""
+        import math
+        for h in self.geo["mount_holes"]:
+            hx, hy = h["x"], _fy(h["y"], self.H)
+            for fp in self.b.GetFootprints():
+                bb = fp.GetBoundingBox(False)
+                cx = min(max(MM(hx), bb.GetLeft()), bb.GetRight())
+                cy = min(max(MM(hy), bb.GetTop()), bb.GetBottom())
+                d = math.hypot(cx - MM(hx), cy - MM(hy)) / 1e6
+                assert d >= 3.0, (f"{self.side}: {fp.GetReference()} is {d:.2f}mm from "
+                                  f"mount hole ({h['x']},{h['y']}) — inside the 3.0mm boss")
 
     def save(self):
         p = os.path.join(OUT, f"thumbdeck_{self.side}.kicad_pcb")
         pcbnew.SaveBoard(p, self.b)
-        # Scoped DRC waiver: the USB-C receptacle's shield pads (GND) sit ~0.09 mm from
-        # the connector's own mouth cut-out — inherent to the vendor footprint, not a
-        # board defect. Let GND *pads* (shields / mounting grounds) sit closer to the
-        # edge; traces-to-edge stay strict at the 0.2 mm global rule.
+        # Scoped DRC waiver: the USB-C receptacle's shield pads (GND) legitimately sit
+        # closer to the board edge than the global 0.2mm rule (mouth flush with the
+        # edge). GND *pads* only; traces-to-edge stay strict.
         dru = os.path.join(OUT, f"thumbdeck_{self.side}.kicad_dru")
         with open(dru, "w") as f:
             f.write('(version 1)\n'
@@ -163,141 +246,358 @@ class Board:
         return p
 
 
+def set_field(fp, name, val):
+    """Stamp a named field (e.g. LCSC) on a footprint, hidden."""
+    fp.SetField(name, val)
+    f = fp.GetFieldByName(name)
+    if f is not None:
+        f.SetVisible(False)
+
+
 def build_matrix(bd):
-    """PLACE switches (F) + diodes (B) at every key and assign row/col/diode-node
-    nets. No manual routing — Freerouting routes the whole board from the DSN (KiCad's
-    Specctra exporter fails on boards that already contain tracks/vias)."""
+    """PLACE switches (F, production ring-pad footprint: 13 overlapping circles
+    spanning 292deg + a 67.5deg escape gap for the column trace) + diodes (B) at
+    every key and assign row/col/diode-node nets. The overlapping ring circles are
+    left as separate same-net pads — Freerouting joins them itself; pre-welding
+    them with track chains crashes its trace-combine recursion."""
     geo = bd.geo; H = bd.H
-    col_off = 0 if bd.side == "right" else NCOLS_HALF
     keys = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
+    assert len(keys) <= NROWS * NCOLS_HALF, f"{bd.side}: {len(keys)} keys > matrix half capacity"
     for i, k in enumerate(keys):
-        r = (i // NCOLS_HALF) % NROWS
-        c = col_off + (i % NCOLS_HALF)
+        r, c = elec_rc(i, bd.side)
         x, y = k["x"], _fy(k["y"], H)
         dn = bd.net(f"DN_{bd.side[0].upper()}{i+1}")
-        swrot = 180 if bd.side == "left" else 0   # mirror ring-pad direction on the left grip
-        bd.switch(f"SW{i+1}", x, y, bd.net(f"COL{c}"), dn, rot=swrot)
-        bd.diode(f"D{i+1}", x, y - 3.0, dn, bd.net(f"ROW{r}"))   # diode below the dome (B.Cu)
-        bd.rows_csv.append((f"SW{i+1}", k.get("label", "?"), f"ROW{r}", f"COL{c}", round(x, 2), round(y, 2)))
+        sw = bd.load("TD", "snaptron_7mm_contact")
+        sw.SetReference(f"SW{i+1}"); sw.SetValue("SNAP7"); sw.SetPosition(vec(x, y)); bd.b.Add(sw)
+        for p in sw.Pads():
+            p.SetNet(bd.net(f"COL{c}") if p.GetNumber() == "1" else dn)
+        d = pcbnew.FootprintLoad(STOCK + "/Diode_SMD.pretty", "D_SOD-323")
+        d.SetReference(f"D{i+1}"); d.SetValue("1N4148WS"); d.SetPosition(vec(x, y - 3.0)); bd.b.Add(d)
+        d.Flip(d.GetPosition(), False)   # to B.Cu
+        for pad in d.Pads():
+            pad.SetNet(bd.net(f"ROW{r}") if pad.GetNumber() == "1" else dn)  # K->row, A->node
+        set_field(d, "LCSC", LCSC["1N4148WS"])
+        bd.rows_csv.append((f"SW{i+1}", k.get("label", "?"), f"ROW{r}", f"COL{c}",
+                            round(x, 2), round(y, 2)))
+
+
+# Bridge contact nets in RIBBON ORDER (16 conductors): rows, left cols, 2x GND.
+BRIDGE_NETS = [f"ROW{i}" for i in range(9)] + [f"COL{5+i}" for i in range(5)] + ["GND", "GND"]
+
+
+def place_bridge(bd, right_j2_map):
+    """FFC ZIF on the inner edge, contacts along Y, ribbon exit toward the spine.
+    RIGHT grip: nets assigned pin1->ROW0 ... pin16->GND, and the (net, deck_y) list
+    is returned. LEFT grip: each contact takes the net of the RIGHT contact at the
+    same deck y — a straight type-A jumper is then correct by construction
+    (both connectors are back-mounted bottom-contact, entries facing each other,
+    so the flat ribbon meets both contact sets on the same conductor face)."""
+    H = bd.H
+    fp = bd.load(*FFC_FP)
+    if bd.side == "right":
+        # entry (ribbon) faces -x: contacts run along Y. Empirical rot below.
+        bd.place(fp, "J2", "FFC16", 3.6, 24.5, back=True, rot=270)
+    else:
+        W = bd.geo["board_w"]
+        bd.place(fp, "J2", "FFC16", W - 3.6, 24.5, back=True, rot=90)
+    # collect the 16 signal pads sorted by y
+    sig = [p for p in fp.Pads() if p.GetNumber().isdigit()]
+    sig.sort(key=lambda p: p.GetPosition().y)
+    assert len(sig) == 16, f"expected 16 FFC contacts, got {len(sig)}"
+    if bd.side == "right":
+        for p, net in zip(sig, BRIDGE_NETS):
+            p.SetNet(bd.net(net))
+        mapping = [(p.GetNetname(), round(_fy(p.GetPosition().y / 1e6, H), 3)) for p in sig]
+    else:
+        assert right_j2_map is not None, "right grip must be generated first"
+        for p in sig:
+            dy = round(_fy(p.GetPosition().y / 1e6, H), 3)
+            net = min(right_j2_map, key=lambda m: abs(m[1] - dy))
+            assert abs(net[1] - dy) < 0.5, f"no ribbon conductor at y={dy} (nearest {net})"
+            p.SetNet(bd.net(net[0]))
+        mapping = None
+    for p in fp.Pads():                      # mechanical tabs -> GND
+        if not p.GetNumber().isdigit():
+            p.SetNet(bd.net("GND"))
+    bd.silk("J2 FFC16 <- pin1", 3.6 if bd.side == "right" else bd.geo["board_w"] - 3.6, 36.0)
+    return mapping
+
+
+def place_components(bd):
+    """Right grip: E73 (antenna-down at the bottom edge), USB front-end, charger,
+    battery connector + power switch, reset, LED, passives, test pads. All SMT,
+    all on the BACK (single-sided reflow). Left grip: bridge only (passive)."""
+    if bd.side != "right":
+        return
+    H = bd.H
+
+    # E73 module, antenna end at/over the bottom edge (rot=0 in the flipped frame
+    # puts the antenna zone at deck y<3 and USB/SWD pads on the +x edge — verified
+    # empirically; asserted below).
+    u1 = bd.place(bd.load("TD", "nRF52840_E73-2G4M08S1C"), "U1", "E73-2G4M08S1C",
+                  16.0, 8.5, E73_PINMAP, rot=0)
+    zb = list(u1.Zones())[0].GetBoundingBox()
+    assert zb.GetBottom() > MM(H), "E73 antenna keep-out must cross the bottom board edge"
+
+    # USB-C, mouth flush with the bottom edge (metal face at local +3.65 -> y=3.6
+    # puts it ~0.05mm proud). rot=180 in the flipped frame points the mouth at the edge.
+    bd.place(bd.load("USB", "USB_C_Receptacle_HRO_TYPE-C-31-M-12"), "J1", "USB-C",
+             37.0, 3.6, USBC_NETS, rot=180)
+    # Deterministic ties for the interleaved same-net data-pad pairs (B6 A7 A6 B7 at
+    # 0.5mm pitch) that no autorouter can join at these clearances. VBUS/GND pairs
+    # (A9/B4 etc.) are co-located in this footprint and need no tie. Pattern (all
+    # relative to the pad row so it tracks J1 moves): D- joins with a bar just below
+    # the row; D+ hops over it on In2 via two vias. All resulting gaps >=0.25mm (DRC-checked).
+    j1 = bd.b.FindFootprintByReference("J1")
+    pads = {p.GetNumber(): p.GetPosition() for p in j1.Pads()}
+    dm_net, dp_net = bd.net("USB_DM"), bd.net("USB_DP")
+    xa7, xb7 = pads["A7"].x, pads["B7"].x
+    xa6, xb6 = pads["A6"].x, pads["B6"].x
+    py = pads["A7"].y
+    y_dm, y_dp, y_up = py - MM(1.31), py - MM(2.26), py + MM(1.24)
+
+    def seg(x1, y1, x2, y2, net, layer=pcbnew.B_Cu):
+        t = pcbnew.PCB_TRACK(bd.b)
+        t.SetStart(V(int(x1), int(y1))); t.SetEnd(V(int(x2), int(y2)))
+        t.SetWidth(MM(0.2)); t.SetLayer(layer); t.SetNet(net); bd.b.Add(t)
+
+    def via(x, y, net):
+        v = pcbnew.PCB_VIA(bd.b); v.SetPosition(V(int(x), int(y)))
+        v.SetDrill(MM(0.3)); v.SetWidth(MM(0.6))
+        v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu); v.SetNet(net); bd.b.Add(v)
+
+    seg(xa7, py, xa7, y_dm, dm_net); seg(xb7, py, xb7, y_dm, dm_net)
+    seg(xa7, y_dm, xb7, y_dm, dm_net)                     # D- bar
+    seg(xb6, py, xb6, y_dp, dp_net)                       # B6 stub down
+    seg(xa6, py, xa6, y_up, dp_net); via(xa6, y_up, dp_net)   # A6 stub up + via
+    seg(xa6, y_up, xb6 - MM(0.55), y_dp, dp_net, pcbnew.In2_Cu)  # In2 hop over D- bar
+    v2x = xb6 - MM(0.55)
+    via(v2x, y_dp, dp_net)
+    seg(v2x, y_dp, xb6, y_dp, dp_net)                     # close D+ pair
+
+    # Deterministic inner-layer runs J1 -> module for the data pair (Freerouting
+    # plateaus on this corridor; fixed copper is DRC-verified and it routes around).
+    # Lanes on In2 below the module's USB pad rows; resurface next to pads 29/31.
+    up = {p.GetNumber(): p.GetPosition() for p in u1.Pads()}
+    p29, p31 = up["29"], up["31"]                          # USB_DM / USB_DP pads
+    assert abs(p29.x - p31.x) < 1000, "module USB pads expected on one column"
+    In2 = pcbnew.In2_Cu
+    yA, yB = py - MM(7.05), py - MM(6.25)                  # DM / DP In2 lanes
+    vx = MM(23.2)                                          # resurface via column
+    # D-: extend the B7 tie stub down, dive to In2, low lane west, up to p29
+    via(xb7, py - MM(2.46), dm_net)
+    seg(xb7, y_dm, xb7, py - MM(2.46), dm_net)
+    seg(xb7, py - MM(2.46), xb7, yA, dm_net, In2)
+    seg(xb7, yA, vx, yA, dm_net, In2)
+    seg(vx, yA, vx, p29.y, dm_net, In2)
+    via(vx, p29.y, dm_net)
+    seg(vx, p29.y, p29.x, p29.y, dm_net)
+    # D+: from the pair-close via, mid lane west, elbow north of the DM via, to p31
+    seg(v2x, y_dp, v2x, yB, dp_net, In2)
+    seg(v2x, yB, MM(24.0), yB, dp_net, In2)
+    seg(MM(24.0), yB, MM(24.0), p31.y, dp_net, In2)
+    seg(MM(24.0), p31.y, vx, p31.y, dp_net, In2)
+    via(vx, p31.y, dp_net)
+    seg(vx, p31.y, p31.x, p31.y, dp_net)
+
+    # USBLC6-2SC6 inline between the connector and the module's USB pads:
+    # 1&6 = D+ pair, 3&4 = D- pair, 2=GND, 5=VBUS (verified vs ST datasheet).
+    bd.place(bd.load("SOT", "SOT-23-6"), "U3", "USBLC6-2SC6", 28.5, 3.5,
+             {"1": "USB_DP", "6": "USB_DP", "3": "USB_DM", "4": "USB_DM",
+              "2": "GND", "5": "VBUS"})
+
+    # reset tact (top actuator -> pinhole in the shell floor), between module and USB-C
+    bd.place(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 27.5, 9.0,
+             {"1": "RESET", "2": "GND"})
+    bd.silk("RST", 27.5, 12.5)
+
+    # charger MCP73831 (SOT-23-5): 1=STAT 2=VSS 3=VBAT(cell) 4=VDD(VBUS) 5=PROG,
+    # with BOTH datasheet stability caps AT the chip (C3 VDD, C5 VBAT_CELL).
+    bd.place(bd.load("SOT", "SOT-23-5"), "U2", "MCP73831", 48.5, 7.5,
+             {"1": "STAT", "2": "GND", "3": "VBAT_CELL", "4": "VBUS", "5": "PROG"})
+    bd.place(bd.load("C", "C_0805_2012Metric"), "C3", "4u7/0805", 44.6, 7.5, {"1": "VBUS", "2": "GND"})
+    bd.place(bd.load("C", "C_0805_2012Metric"), "C5", "4u7/0805", 52.4, 7.5, {"1": "VBAT_CELL", "2": "GND"})
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R24", "5k1", 48.5, 10.5, {"1": "PROG", "2": "GND"})
+    # charge LED: VBUS -> R25 -> LED -> STAT (STAT sinks while charging)
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R25", "1k", 42.0, 10.5, {"1": "VBUS", "2": "LED_A"})
+    bd.place(bd.load("LED", "LED_0603_1608Metric"), "D80", "LED_RED", 45.0, 10.5,
+             {"1": "STAT", "2": "LED_A"})   # pad1 = cathode
+    bd.silk("CHG", 45.0, 12.3)
+
+    # power slide switch on the bottom edge (knob through the shell wall):
+    # cell side (VBAT_CELL, always on charger) -> switch -> VBAT rail (module+divider)
+    bd.place(bd.load("TD", "msk12c02_slide"), "SW90", "MSK12C02", 48.5, 2.0,
+             {"1": "VBAT_CELL", "2": "VBAT"})
+    bd.silk("PWR", 48.5, 5.0)
+
+    # battery JST-PH (polarized, SMT side entry), wire exits toward the spine
+    bd.place(bd.load("JST", "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal"),
+             "J3", "JST-PH-2", 60.0, 13.0, {"1": "VBAT_CELL", "2": "GND"}, rot=90)
+    bd.silk("+", 65.0, 12.0); bd.silk("-", 65.0, 14.0); bd.silk("BAT", 65.5, 16.5)
+
+    # USB CC 5.1k pulldowns — east of the connector, OUT of the D+/D- escape
+    # corridor (x 32-38 above the pad row must stay open for the data-pair fan-in)
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R20", "5k1", 39.8, 11.8, {"1": "CC1", "2": "GND"})
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R21", "5k1", 42.3, 11.8, {"1": "CC2", "2": "GND"})
+
+    # battery divider (1M/1M -> AIN0) + SAADC filter cap, inner strip between the
+    # FFC bridge (above) and the mount-hole boss / antenna zone (below+left)
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R22", "1M", 7.9, 11.5, {"1": "VBAT", "2": "VBAT_SENSE"})
+    bd.place(bd.load("R", "R_0402_1005Metric"), "R23", "1M", 7.9, 9.5, {"1": "VBAT_SENSE", "2": "GND"})
+    bd.place(bd.load("C", "C_0402_1005Metric"), "C6", "100nF", 7.9, 7.5, {"1": "VBAT_SENSE", "2": "GND"})
+
+    # module decoupling: 1uF at VDD (3V3 out), 100nF + 4u7 bulk at VDDH, 1uF at VBUS
+    bd.place(bd.load("C", "C_0402_1005Metric"), "C1", "1uF", 16.6, 19.0, {"1": "3V3", "2": "GND"})
+    bd.place(bd.load("C", "C_0402_1005Metric"), "C2", "100nF", 19.2, 19.0, {"1": "VBAT", "2": "GND"})
+    bd.place(bd.load("C", "C_0805_2012Metric"), "C4", "4u7/0805", 12.2, 19.0, {"1": "VBAT", "2": "GND"})
+    bd.place(bd.load("C", "C_0402_1005Metric"), "C7", "1uF", 24.3, 13.9, {"1": "VBUS", "2": "GND"})
+
+    # 9 row pull-downs in the passive lane between module and key field
+    for i in range(9):
+        bd.place(bd.load("R", "R_0402_1005Metric"), f"R{i+1}", "4k7",
+                 32.0 + i * 3.0, 21.3, {"1": f"ROW{i}", "2": "GND"})
+
+    # SWD + spare-I2C test pads (back), labeled. x >= 10 keeps them clear of the
+    # FFC bridge body on the inner edge; y 21.3 clears the cap row below and the
+    # dome courtyards above.
+    tps = [("TP1", "SWDIO", 10.0), ("TP2", "SWDCLK", 13.0), ("TP3", "RESET", 16.0),
+           ("TP4", "3V3", 19.0), ("TP5", "GND", 22.0),
+           ("TP6", "SDA", 24.8), ("TP7", "SCL", 27.3), ("TP8", "TP_INT", 29.8)]
+    for ref, net, x in tps:
+        tp = bd.place(bd.load("TP", "TestPoint_Pad_1.5x1.5mm"), ref, net, x, 21.3, {"1": net})
+        tp.SetExcludedFromPosFiles(True); tp.SetExcludedFromBOM(True)
+        bd.silk(net if net != "TP_INT" else "INT", x, 23.4, size=0.8)
+
+
+def gnd_escapes(bd):
+    """Pre-routed GND plane tie for EVERY small-part GND pad: a short B.Cu track to
+    a via into the solid In1 plane, placed while the board is still track-free (the
+    only obstacles are pads/holes/rule-areas, all known). Without this, Freerouting
+    non-deterministically walls in 1-4 of these pads' pour blobs per run and the
+    post-route stitcher can find no legal via spot in the congestion."""
+    import math
+    b = bd.b; gnd = bd.net("GND")
+    pads = [(p, p.GetBoundingBox()) for p in b.GetPads()]
+    holes = [(p.GetPosition().x, p.GetPosition().y, p.GetDrillSize().x // 2)
+             for p in b.GetPads() if p.GetDrillSize().x > 0]
+    zones = [z for fp in b.GetFootprints() for z in fp.Zones()
+             if z.GetIsRuleArea() and z.GetDoNotAllowVias()]
+    zones += [z for z in b.Zones() if z.GetIsRuleArea() and z.GetDoNotAllowVias()]
+    W, H = bd.geo["board_w"], bd.H
+    placed = []
+    fixed = [t for t in b.Tracks() if t.GetNetname() != "GND"]  # pre-routed USB copper
+
+    def _seg_dist(px2, py2, t):
+        x1, y1 = t.GetStart().x, t.GetStart().y
+        x2, y2 = t.GetEnd().x, t.GetEnd().y
+        dx, dy = x2 - x1, y2 - y1
+        L2 = dx * dx + dy * dy
+        u = 0 if L2 == 0 else max(0.0, min(1.0, ((px2 - x1) * dx + (py2 - y1) * dy) / L2))
+        return ((px2 - (x1 + u * dx)) ** 2 + (py2 - (y1 + u * dy)) ** 2) ** 0.5
+
+    def clear_of_pads(x, y, r, own):
+        for q, bb in pads:
+            if q is own or q.GetNetname() == "GND":
+                continue
+            dx = max(bb.GetLeft() - x, 0, x - bb.GetRight())
+            dy = max(bb.GetTop() - y, 0, y - bb.GetBottom())
+            if (dx * dx + dy * dy) ** 0.5 < r + MM(0.2):
+                return False
+        return True
+
+    def spot_ok(x, y, own):
+        if not (MM(1.2) < x < MM(W - 1.2) and MM(1.2) < y < MM(H - 1.2)):
+            return False
+        if not clear_of_pads(x, y, MM(0.3), own):
+            return False
+        for hx, hy, hr in holes:
+            if math.hypot(hx - x, hy - y) < MM(0.15) + hr + MM(0.25):
+                return False
+        for vx, vy in placed:
+            if math.hypot(vx - x, vy - y) < MM(0.85):
+                return False
+        for t in fixed:
+            if _seg_dist(x, y, t) < MM(0.3) + MM(0.2) + t.GetWidth() // 2:
+                return False
+        pt = pcbnew.VECTOR2I(int(x), int(y))
+        for z in zones:
+            if z.Outline().Collide(pt, int(MM(0.35))):
+                return False
+        return True
+
+    n = 0
+    for fp in b.GetFootprints():
+        ref = fp.GetReference()
+        if ref.startswith("SW") and fp.GetValue() == "SNAP7":
+            continue                              # domes: front side, no GND
+        if ref.startswith(("TP", "D")) and fp.GetValue() in ("1N4148WS",):
+            continue                              # diodes have no GND
+        if ref in ("U1", "J1", "J2"):
+            continue                              # module/USB/FFC: big pads, dense fan-in — stitcher territory
+        for p in fp.Pads():
+            if p.GetNetname() != "GND" or p.GetAttribute() != pcbnew.PAD_ATTRIB_SMD:
+                continue
+            px, py = p.GetPosition().x, p.GetPosition().y
+            spot = None
+            for rad in (MM(1.0), MM(1.2), MM(1.5), MM(1.8), MM(2.2)):
+                for k in range(16):
+                    a = 2 * math.pi * k / 16
+                    x, y = px + rad * math.cos(a), py + rad * math.sin(a)
+                    if not spot_ok(x, y, p):
+                        continue
+                    okc = True                     # corridor pad centre -> via
+                    steps = 6
+                    for s2 in range(steps + 1):
+                        cx = px + (x - px) * s2 / steps
+                        cy = py + (y - py) * s2 / steps
+                        if not clear_of_pads(cx, cy, MM(0.15), p):
+                            okc = False; break
+                    if okc:
+                        spot = (x, y); break
+                if spot:
+                    break
+            assert spot, f"{bd.side}: no GND escape spot for {ref} pad {p.GetNumber()}"
+            x, y = spot
+            t = pcbnew.PCB_TRACK(b)
+            t.SetStart(p.GetPosition()); t.SetEnd(pcbnew.VECTOR2I(int(x), int(y)))
+            t.SetWidth(MM(0.3)); t.SetLayer(pcbnew.B_Cu); t.SetNet(gnd); b.Add(t)
+            v = pcbnew.PCB_VIA(b); v.SetPosition(pcbnew.VECTOR2I(int(x), int(y)))
+            v.SetDrill(MM(0.3)); v.SetWidth(MM(0.6))
+            v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu); v.SetNet(gnd); b.Add(v)
+            placed.append((x, y)); n += 1
+    if n:
+        print(f"  {bd.side}: {n} GND escape vias pre-placed")
+
+
+def gen(side, right_j2_map=None):
+    geo = deck.build(deck.Config(side=side))
+    bd = Board(geo, side)
+    bd.outline(); bd.mount_holes()
+    build_matrix(bd)
+    j2map = place_bridge(bd, right_j2_map)
+    place_components(bd)
+    gnd_escapes(bd)
+    bd.assert_clear_of_bosses()
+    # GND: pours on F/B + a SOLID plane on In1.Cu (RF ref + return path).
+    # In2.Cu stays bare = the inner signal layer for the module fan-in.
+    bd.gnd_zone(pcbnew.F_Cu); bd.gnd_zone(pcbnew.B_Cu); bd.gnd_zone(pcbnew.In1_Cu)
+    p = bd.save()
+    rb = pcbnew.LoadBoard(p); rb.BuildConnectivity()
+    unc = rb.GetConnectivity().GetUnconnectedCount(False)
+    print(f"{side}: {len(bd.rows_csv)} keys, {rb.GetNetCount()} nets, "
+          f"unrouted ratsnest={unc} ({geo['board_w']:.1f}x{geo['board_h']:.1f}mm)")
+    # per-key placement/legend CSV (docs + firmware cross-check)
+    import csv
+    with open(os.path.join(OUT, f"thumbdeck_{side}_placement.csv"), "w", newline="") as f:
+        w = csv.writer(f); w.writerow(["ref", "legend", "row", "col", "x_mm", "y_mm"])
+        w.writerows(bd.rows_csv)
+    return j2map
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for side in ("right", "left"):
-        geo = deck.build(deck.Config(side=side))
-        bd = Board(geo, side)
-        bd.outline(); bd.mount_holes()
-        build_matrix(bd)
-        place_components(bd)
-        # GND: pours on F/B (fill around signals) + a SOLID plane on In1.Cu (RF ref +
-        # return path). In2.Cu is left bare = the inner signal layer for the fan-in.
-        bd.gnd_zone(pcbnew.F_Cu); bd.gnd_zone(pcbnew.B_Cu); bd.gnd_zone(pcbnew.In1_Cu)
-        p = bd.save()
-        # connectivity: unconnected ratsnest count
-        rb = pcbnew.LoadBoard(p); rb.BuildConnectivity()
-        unc = rb.GetConnectivity().GetUnconnectedCount(False)
-        print(f"{side}: {len(bd.rows_csv)} keys routed, {rb.GetNetCount()} nets, "
-              f"unrouted ratsnest={unc} ({geo['board_w']:.1f}x{geo['board_h']:.1f}mm)")
-
-
-
-
-# ---- E73 pad -> net. Pad N == Ebyte datasheet pin N (marbastlib footprint,
-# verified 1:1 vs the official Ebyte E73-2G4M08S1C User Manual pin table).
-# The five BRIDGE columns (COL5-9) go to J2, so they must escape the module to
-# reach the inner edge — assigned to CASTELLATED EDGE pads (35,3,9,10,11) so they
-# route on 2 layers (the 0.8mm INNER pads 36/38/40/42 cannot escape at 0.2mm rules).
-E73_PINMAP = {
-    "1":"ROW0","2":"ROW1","6":"ROW2","12":"ROW3","14":"ROW4","16":"ROW5","17":"ROW6","20":"ROW7","22":"ROW8",
-    "28":"COL0","30":"COL1","32":"COL2","33":"COL3","34":"COL4",              # local cols -> local keys
-    "35":"COL5","3":"COL6","9":"COL7","10":"COL8","11":"COL9",                # bridge cols -> J2 (edge pads)
-    "7":"VBAT_SENSE",   # AIN0 battery divider. Trackpad (SDA/SCL/TP_DR on pads 15/4/8) DROPPED for v1.
-    "19":"3V3","23":"VBAT","5":"GND","21":"GND","24":"GND","27":"VBUS",
-    "29":"USB_DM","31":"USB_DP","37":"SWDIO","39":"SWDCLK","26":"RESET",
-}
-LIBS = {"E73":os.path.abspath("../footprints/thumbdeck.pretty"),
-        "SOT":STOCK+"/Package_TO_SOT_SMD.pretty", "R":STOCK+"/Resistor_SMD.pretty",
-        "C":STOCK+"/Capacitor_SMD.pretty", "USB":STOCK+"/Connector_USB.pretty",
-        "TP":STOCK+"/TestPoint.pretty", "HDR":STOCK+"/Connector_PinHeader_2.54mm.pretty"}
-USBC_NETS = {"A4":"VBUS","B4":"VBUS","A9":"VBUS","B9":"VBUS","A1":"GND","A12":"GND","B1":"GND","B12":"GND","S1":"GND",
-             "A5":"CC1","B5":"CC2","A6":"USB_DP","B6":"USB_DP","A7":"USB_DM","B7":"USB_DM"}
-
-
-def _load(lib, name):
-    return pcbnew.FootprintLoad(LIBS[lib], name)
-
-
-def place_components(bd):
-    """Right grip: place E73 module (back, rotated), USB-C, charger, ESD, battery
-    JST, bridge header, essential passives, SWD pads — and net them. Left grip: just
-    the bridge header. No manual routing of these; Freerouting does the fan-in."""
-    H = bd.H; b = bd.b
-    def add(fp, ref, val, x, y, netmap=None, back=False, rot=0):
-        fp.SetReference(ref); fp.SetValue(val); fp.SetPosition(vec(x, _fy(y, H))); b.Add(fp)
-        if rot: fp.SetOrientationDegrees(rot)
-        if back: fp.Flip(fp.GetPosition(), False)
-        if netmap:
-            for p in fp.Pads():
-                nm = netmap.get(p.GetNumber())
-                if nm: p.SetNet(bd.net(nm))
-        return fp
-    # bridge header (both grips), inner edge — carries ROW0-8 + COL5-9 + GND
-    bridge_nets = {str(i+1):f"ROW{i}" for i in range(9)}
-    bridge_nets.update({str(10+i):f"COL{5+i}" for i in range(5)})
-    bridge_nets["15"]="GND"; bridge_nets["16"]="GND"
-    # compact 2x08 bridge header at the INNER margin, clear of the key field. The
-    # RIGHT grip's inner edge is x=0; the LEFT grip is mirrored so ITS inner edge is
-    # x=board_w -> put J2 at board_w-3.2 (the old code hardcoded 3.2 for both, landing
-    # the left connector on the OUTER edge where the harness can't reach).
-    jx = 3.2 if bd.side == "right" else round(bd.geo["board_w"] - 5.0, 2)
-    # J2 on the BACK (bottom-shell cavity) so the connector body + flex clear the
-    # top shell + keymat on the front (a front-mounted connector clashes them).
-    add(_load("HDR","PinHeader_2x08_P2.54mm_Vertical"), "J2","BRIDGE_16", jx, 34.0, bridge_nets, back=True)
-    if bd.side != "right":
-        return
-    # E73 module — BACK, rotated 90 (18 wide x 13 tall), bottom-inner. Its USB/SWD
-    # edge (pins 26-43) sits at board y~95 (deck y~14.5); the power pins (VDD 19,
-    # VDDH 23) at the module's left edge (board x~11).
-    add(_load("E73","nRF52840_E73-2G4M08S1C"), "U1","E73-2G4M08S1C", 20.0, 8.0, E73_PINMAP, back=True, rot=90)
-    ob = bd.geo["outer_base"]
-    # --- ALL reflow parts on the BACK (single-sided SMT / turnkey). The USB front-end
-    # is clustered along the bottom edge to the RIGHT of the module so USB D+/D- and
-    # VBUS runs stay short (module USB pins at board x15-18; connector cluster x28-46). ---
-    # USB-C at the bottom edge, to the RIGHT of the module (module right edge ~x26;
-    # was at the far outer corner x60 = 44mm D+/D-, now ~x36 = ~20mm, on the front)
-    add(_load("USB","USB_C_Receptacle_HRO_TYPE-C-31-M-12"), "J1","USB-C", 37.0, 4.0, USBC_NETS, back=True)
-    # ESD USBLC6-2SC6 (SOT-23-6) INLINE on the data pair, at the connector:
-    #   D+ = I/O pair pin1<->pin6 ; D- = I/O pair pin3<->pin4 ; pin2=GND, pin5=VBUS.
-    #   (the old map put D- on pin6, which is internally the SAME node as pin1/D+ -> a
-    #    dead short of D+ to D-. Verified vs the ST USBLC6-2SC6 datasheet.)
-    add(_load("SOT","SOT-23-6"), "U3","USBLC6-2SC6", 47.0, 3.5,
-        {"1":"USB_DP","6":"USB_DP","3":"USB_DM","4":"USB_DM","2":"GND","5":"VBUS"}, back=True)
-    # charger MCP73831 (SOT-23-5): 1=STAT 2=VSS(GND) 3=VBAT 4=VDD(VBUS) 5=PROG
-    add(_load("SOT","SOT-23-5"), "U2","MCP73831", 53.0, 3.5,
-        {"2":"GND","3":"VBAT","4":"VBUS","5":"PROG"}, back=True)
-    # battery JST (2P) — VBAT / GND, right of the charger
-    add(_load("HDR","PinHeader_1x02_P2.54mm_Vertical"), "J3","LiPo", 58.0, 5.5, {"1":"VBAT","2":"GND"}, back=True)
-    # 9 row pull-downs to GND, above the module (board y~91, in the module->keyfield gap)
-    for i in range(9):
-        add(_load("R","R_0402_1005Metric"), f"R{i+1}","4k7", 31.0+i*3.2, 18.5, {"1":f"ROW{i}","2":"GND"}, back=True)
-    # USB CC 5.1k pulldowns, above the connector cluster
-    add(_load("R","R_0402_1005Metric"), "R20","5k1", 35.0, 10.0, {"1":"CC1","2":"GND"}, back=True)
-    add(_load("R","R_0402_1005Metric"), "R21","5k1", 38.0, 10.0, {"1":"CC2","2":"GND"}, back=True)
-    # VBAT-sense divider (1M/1M ->AIN0) at the module's left edge (near VBAT pin)
-    add(_load("R","R_0402_1005Metric"), "R22","1M", 6.0, 6.0, {"1":"VBAT","2":"VBAT_SENSE"}, back=True)
-    add(_load("R","R_0402_1005Metric"), "R23","1M", 6.0, 9.0, {"1":"VBAT_SENSE","2":"GND"}, back=True)
-    # charger PROG resistor: 5.1k -> ~196 mA fast-charge (~0.5C of a 400mAh cell). The
-    # old 2k programmed ~505 mA (>1C for the documented 400-500 mAh cell). IREG=1000/Rk.
-    add(_load("R","R_0402_1005Metric"), "R24","5k1", 53.0, 8.0, {"1":"PROG","2":"GND"}, back=True)
-    # decoupling: 1uF on VDD(3V3), 100nF + 4.7uF BULK on VBAT/VDDH, 4.7uF on VBUS
-    add(_load("C","C_0402_1005Metric"), "C1","1uF", 9.0, 6.0, {"1":"3V3","2":"GND"}, back=True)
-    add(_load("C","C_0402_1005Metric"), "C2","100nF", 9.0, 9.0, {"1":"VBAT","2":"GND"}, back=True)
-    add(_load("C","C_0805_2012Metric"), "C4","4u7", 6.0, 13.0, {"1":"VBAT","2":"GND"}, back=True)  # VBAT bulk
-    add(_load("C","C_0402_1005Metric"), "C3","4u7", 47.0, 8.0, {"1":"VBUS","2":"GND"}, back=True)
-    # SWD test pads (back), in the gap just above the module's SWD pins (board x21-22),
-    # clear of the bottom key-row diodes above and the row-pulldowns (y18.5)
-    for i,(ref,net) in enumerate([("TP1","SWDIO"),("TP2","SWDCLK"),("TP3","RESET"),("TP4","3V3"),("TP5","GND")]):
-        add(_load("TP","TestPoint_Pad_1.5x1.5mm"), ref, net, 14.0+i*3.0, 18.0, {"1":net}, back=True)
+    j2map = gen("right")
+    gen("left", right_j2_map=j2map)
 
 
 if __name__ == "__main__":

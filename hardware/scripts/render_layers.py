@@ -154,13 +154,14 @@ def pcb_front(ax, P):
                              facecolor="#8a6a3a", edgecolor=COPPER, lw=1.2, hatch="xx", alpha=0.5, zorder=4))
                 ax.text(f["x"] + ox, f["y"] + oy, "cap. trackpad\n(front copper)", ha="center",
                         va="center", fontsize=5, color="#f1e2c8", zorder=6)
-        if "antenna" in geo["keepouts"]:                 # fat squiggly PCB antenna
+        if "antenna" in geo["keepouts"]:                 # module antenna keep-out at the edge
             axk, ay, aw, ah = geo["keepouts"]["antenna"]
-            _meander(ax, axk + ox, ay + oy + 1, aw, ah - 2)
-            ax.text(axk + ox + aw / 2, ay + oy - 1.5, "PCB meander antenna (2.4GHz)", ha="center",
-                    va="top", fontsize=4.2, color=COPPER, zorder=6)
+            ax.add_patch(Rectangle((axk + ox, ay + oy), aw, ah, facecolor="none",
+                         edgecolor=COPPER, ls=":", lw=1.0, hatch="//", alpha=0.5, zorder=4))
+            ax.text(axk + ox + aw / 2, ay + oy + ah + 1, "E73 antenna keep-out (all layers)", ha="center",
+                    va="bottom", fontsize=4.2, color=COPPER, zorder=6)
         ax.text(ox + geo["board_w"] * 0.5, oy - 4,
-                "FRONT copper: vertical COLUMNS · inner row-feeders · trackpad · antenna   ● = via to back",
+                "FRONT copper: vertical COLUMNS · inner row-feeders · dome pads   ● = via to back",
                 ha="center", fontsize=5.2, color=COPPER, zorder=7)
 
 
@@ -193,14 +194,14 @@ def pcb_back(ax, P):
                 ax.plot([axx, bxx], [ayy, byy], color=COPPER, lw=1.2, alpha=0.7, zorder=3)
             mcx, mcy = cen("controller")
             ax.plot([mcx, 3.2 + ox], [mcy, mcy], color=COPPER, lw=1.0, alpha=0.5, zorder=3)  # -> row via column
-        if "antenna" in ko:                              # ground cut-out under the front meander
+        if "antenna" in ko:                              # all-layer keep-out under the module antenna
             axk, ay, aw, ah = ko["antenna"]
             ax.add_patch(Rectangle((axk + ox, ay + oy), aw, ah, facecolor="none",
                          edgecolor=COPPER, ls=":", lw=1.0, hatch="//", alpha=0.5, zorder=4))
-            ax.text(axk + ox + aw / 2, ay + oy + ah / 2, "GND\ncut-out", ha="center",
+            ax.text(axk + ox + aw / 2, ay + oy + ah / 2, "antenna\nkeep-out", ha="center",
                     va="center", fontsize=3.4, color=COPPER, zorder=5)
         refs = {"controller": "U1 Ebyte E73", "usb_c": "J1 USB-C",
-                "charger": "U2 MCP73831", "bridge": "J2 JST-GH"}
+                "charger": "U2 + pwr", "bridge": "J2 FFC-16"}
         for name, (kx, ky, kw, kh) in ko.items():
             if name == "antenna":
                 continue
@@ -208,12 +209,6 @@ def pcb_back(ax, P):
                          edgecolor="#7f98c0", lw=1.0, zorder=4))
             ax.text(kx + ox + kw / 2, ky + oy + kh / 2, refs.get(name, name.upper()),
                     ha="center", va="center", fontsize=4.0, color="#cdd6ff", zorder=5)
-        if key == "right":                               # trackpad controller, BESIDE the pad (not behind it)
-            tp = [f for f in geo["features"] if f["type"] == "trackpad"][0]
-            ix, iy = tp["x"] + ox + tp["w"] / 2 + 4, tp["y"] + oy - 4
-            ax.add_patch(Rectangle((ix - 3.2, iy - 2), 6.4, 4, facecolor="#20303f",
-                         edgecolor="#7f98c0", lw=1.0, zorder=4))
-            ax.text(ix, iy, "U4 IQS7211E", ha="center", va="center", fontsize=3.4, color="#cdd6ff", zorder=5)
         ax.text(ox + geo["board_w"] * 0.5, oy - 4,
                 "BACK copper: horizontal ROWS · diodes · chips   layers join ONLY through vias (●) — no crossings",
                 ha="center", fontsize=5.2, color=COPPER, zorder=7)

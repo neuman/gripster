@@ -1,7 +1,9 @@
 /*
  * thumbdeck.dts — ZMK board for the bare Ebyte E73-2G4M08S1C (nRF52840) soldered
- * directly to the thumbdeck PCB. Models the same flash layout as nice!nano v2 so the
- * Adafruit nRF52 UF2 bootloader (flashed once over SWD) works drag-and-drop after.
+ * directly to the thumbdeck PCB. Flash partitions copied VERBATIM from nice!nano v2
+ * (Adafruit nRF52840 UF2 bootloader layout: SoftDevice @0x0, app @0x26000, settings
+ * storage @0xec000, bootloader @0xf4000) so the Adafruit bootloader (flashed once
+ * over SWD) works drag-and-drop after.
  * The matrix (kscan + transform) is in the GENERATED thumbdeck.dtsi. High-voltage
  * power mode: the cell drives VDDH; VDD is the internal REG0 3.3V output.
  *   >>> VALIDATE WITH THE ZMK GITHUB-ACTIONS BUILD before trusting for fab. <<<
@@ -36,14 +38,28 @@
 &gpio1 { status = "okay"; };
 &usbd { status = "okay"; };
 
+/* nice!nano v2 / Adafruit nRF52840 bootloader flash layout (labels mirror
+ * zmk/app/boards/arm/nice_nano/nice_nano.dtsi at v0.3.0). CONFIG_USE_DT_CODE_PARTITION
+ * links the app at &code_partition (0x26000), after the S140 SoftDevice. */
 &flash0 {
     partitions {
         compatible = "fixed-partitions";
         #address-cells = <1>;
         #size-cells = <1>;
-        sd_partition: partition@0 { reg = <0x00000000 0x00001000>; };
-        code_partition: partition@1000 { reg = <0x00001000 0x000d3000>; };
-        storage_partition: partition@d4000 { reg = <0x000d4000 0x00020000>; };
-        adafruit_boot_partition: partition@f4000 { reg = <0x000f4000 0x0000c000>; };
+
+        sd_partition: partition@0 {
+            reg = <0x00000000 0x00026000>;
+        };
+        code_partition: partition@26000 {
+            reg = <0x00026000 0x000c6000>;
+        };
+
+        storage_partition: partition@ec000 {
+            reg = <0x000ec000 0x00008000>;
+        };
+
+        boot_partition: partition@f4000 {
+            reg = <0x000f4000 0x0000c000>;
+        };
     };
 };

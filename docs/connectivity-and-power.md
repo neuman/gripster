@@ -1,80 +1,80 @@
-> ⚠️ **SUPERSEDED / VERSION-DRIFTED.** This file describes an earlier design (50-key nice!nano BQ24075 split). The current board is a **79-key 9×10 Ebyte E73 (nRF52840)** with an external **MCP73831** charger. See [`docs/evaluation.md`](evaluation.md) and the code for the authoritative design.
+# Connectivity & power — rev-A (v0.15)
 
-# Connectivity & power (v0.3 — single controller)
-
-## One controller, a wired bridge — how real telescoping controllers work
-
-thumbdeck v0.3 uses **one** nRF52840 (nice!nano v2), in the **right** grip. The
-**left** grip is a passive 5×5 switch matrix wired to the right grip through the
-telescoping bridge. This mirrors how real Backbone-style controllers are built
-(single MCU + battery + radio in one grip; the other grip's inputs run across the
-bridge) — not two boards doing a wireless handshake.
+One controller, one battery, one USB-C. The **right grip** carries the E73
+(nRF52840) module and the entire power front-end; the **left grip** is a passive
+matrix over a fixed internal FFC ribbon. This supersedes all earlier versions of
+this file (nice!nano/BQ24075, JST-GH harness, telescoping-cable era).
 
 ```
-   LEFT grip (passive)                 RIGHT grip (MCU)
-   25 switches + diodes  ── bridge ──  nRF52840 + LiPo + USB-C  ⇄ host (BLE or USB-C)
-   (no chip, no battery)   cable       scans all 50 keys
+   LEFT grip (passive)                      RIGHT grip (MCU)
+   42 domes + diodes  ── 16-way FFC ──      E73 nRF52840 + charger + USB-C  ⇄ host (BLE HID)
+   (no chip, no battery)  straight type-A   scans all 79 keys
 ```
 
-### Why not two controllers over BLE?
+## The power tree
 
-The v2 design put an nRF52840 in *each* grip and linked them over a BLE split
-(the mechanical-keyboard convention). For a device whose halves are joined by a
-bridge, that's over-engineered: it doubles the controllers, batteries, chargers
-and USB ports, needs two separate charge sessions, and adds a wireless hop
-between the halves. Since the bridge already spans the gap, a cable through it is
-simpler in every dimension. See [design-decisions.md](design-decisions.md).
+```
+LiPo cell (JST-PH, J3)
+   ├── MCP73831 charger (U2) ← USBLC6-2 ← USB-C VBUS      # charger on the CELL side
+   └── MSK12C02 slide switch (SW90)
+          └── VBAT rail ── E73 VDDH (pad 23)               # high-voltage / REG0 mode
+                              └── internal REG0 → 3V3 (pad 19, output only)
+```
 
-## The bridge cable
+- **Charger on the cell side of the switch** — the battery charges while the
+  device is switched **off**. The switch only gates the load.
+- **LiPo-direct (high-voltage) mode:** raw cell 3.0–4.2 V into **VDDH** only.
+  **VDD (pad 19) is the internal REG0 3.3 V output** — decoupled (C1), never
+  driven. The Adafruit bootloader sets `UICR.REGOUT0 = 3.3 V` at first flash. The
+  E73 module has **no DCDC inductors**, so the regulator runs in LDO mode —
+  correct, and why `CONFIG_BOARD_ENABLE_DCDC` is absent from the firmware.
+- **Charging:** USB-C VBUS → **USBLC6-2SC6 inline** → MCP73831 (**-2ACI**, 4.2 V).
+  PROG = 5.1 kΩ (R24) → **~196 mA**, ~0.5 C of a 400 mAh cell — safe for any cell
+  in the 400–700 mAh band. 4.7 µF 0805 25 V stability caps sit **at the chip** on
+  both supply pins (C3) and the cell node (C5), per datasheet; C4 is VBAT bulk.
+- **Charge LED (D80):** VBUS → 1 kΩ (R25) → LED → MCP73831 STAT. Lights while
+  charging, off when full; visible through a 1.5 mm hole in the shell floor.
+- **Battery gauge:** 1 MΩ/1 MΩ divider (R22/R23) + **100 nF SAADC filter (C6)** on
+  VBAT_SENSE → P0.02/AIN0. The 100 nF is what makes the reading stable — the
+  SAADC's sampling cap on a 500 kΩ source impedance needs a reservoir.
 
-10 conductors run from the right grip's bridge connector to the left grip's:
+## USB
 
-- **5 shared row lines** (`pro_micro 4,5,6,7,8`) — the scan rows reach both grips.
-- **5 left-grip column lines** (`pro_micro 18,19,20,21,1`) — driven from the MCU,
-  out to the left grip's columns.
+- **USB-C (J1, full-SMD 16P):** CC1/CC2 each pull down via 5.1 kΩ (R20/R21) —
+  without them a Type-C charger never turns on VBUS. VBUS → module pad 27 (USB
+  detect) and the charger.
+- **Data pair:** the receptacle's pin pairs (A6/B6, A7/B7) are interleaved on this
+  connector, so `gen_board.py` draws **deterministic copper** — a D− bar plus a
+  D+ In2 hop and fixed In2 runs to module pads 29/31. Autorouters can't solve that
+  pattern; it rides through routing as fixed wires.
+- USB is for **charging and UF2 flashing**. (ZMK can also do wired HID over it.)
 
-The right grip's own 5 columns (`pro_micro 9,10,14,15,16`) stay local. The left
-grip needs **no power** — it's a passive matrix of switches + diodes.
+## Radio
 
-> **Alternative (`TODO(user)`):** put an **MCP23017** I²C GPIO expander in the
-> left grip and cross only **4 wires** (SDA `pro_micro 2`, SCL `pro_micro 3`,
-> V+, GND). Trades a chip for a thinner cable. The default direct-wire approach
-> needs no chip.
+- BLE HID to the host as **"thumbdeck"** — one device, no inter-half pairing.
+- The E73's ceramic antenna points **down, off the bottom board edge**, with an
+  all-layer copper keep-out crossing the edge and a 0.6 mm relief in the shell
+  wall. This replaced an earlier placement that aimed the antenna mid-board at the
+  USB shell over ground pour (detuned).
+- **No 32.768 kHz crystal on the module** — firmware runs the LF clock from the
+  internal RC (`CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC` + 500 PPM). Without that
+  setting BLE never starts; it's already in `thumbdeck_defconfig`.
+- Residual reality: the phone and your hands flank the antenna — expect reduced
+  range vs an open board. Fine for a device used at arm's length.
 
-## Connectivity modes
+## Controls through the shell
 
-- **Wireless:** the MCU pairs to the host over BLE and presents the whole keyboard.
-- **Wired:** plug the right grip into the host over USB-C for wired HID
-  (`CONFIG_ZMK_USB`). Either way it's one USB/BLE device — no inter-half pairing.
+| Control | Part | Access |
+|---|---|---|
+| Power | MSK12C02 slide (SW90) | knob through an 8 × 2.8 mm slot in the bottom shell wall |
+| Reset / UF2 | TS-1187A tact (SW91), top-actuated | paperclip through a 1.6 mm pinhole in the shell floor (double-tap = bootloader) |
+| Charge state | red LED (D80) | 1.5 mm light hole in the shell floor |
 
-## Power / charging
+## Safety
 
-- **One LiPo**, in the right grip, on the nice!nano's **onboard charger** (BQ24075).
-- **One USB-C**, one charge session (the pain point of v2's two-battery design is
-  gone).
-- ZMK reports the single battery level over BLE.
-- Optional slide power switch in the right grip.
-
-### Charge current vs. cell C-rating (EE review)
-
-The nice!nano's default **charge current is ~100 mA** (set by a 10 kΩ PROG
-resistor). Into a 100 mAh cell that is **1C** — aggressive; many small pouch cells
-spec **0.5C** charge. Therefore: use a **protected** cell **rated for 1C charge**,
-*or* fit a **≥200 mAh** cell, *or* change the PROG resistor to lower the current.
-Never charge unattended.
-
-## Antenna / RF placement (EE review #1)
-
-The nRF52840's 2.4 GHz antenna needs a **no-copper keep-out** on every layer under
-the RF path. The nice!nano is therefore mounted **vertically at the top of the
-grip with its antenna end overhanging the top board edge** (nothing under it), the
-**LiPo kept far away** (≥ board length — metal detunes it), and the module's USB-C
-accessed via a shell notch below it. Even so, the antenna is flanked by the phone
-and the user's hand — expect reduced range vs. an open board; keep the bridge
-cable and its shield away from the antenna end.
-
-## Safety (see also assembly.md)
-
-Use a **protected** LiPo of appropriate capacity. Rely on the nice!nano's onboard
-charging circuit. **Never charge unattended.** Keep the cell in its keep-out, away
-from soldering heat and switch travel.
+- Use a **protected** 1S pouch cell. **Never charge unattended.**
+- **Polarity:** the JST-PH connector is polarized, but vendors wire PH pigtails
+  **both ways** — meter the pigtail against the **"+"/"−" silk beside J3** (pin 1
+  = "+", nearer the bottom board edge) before first plug-in.
+- ~196 mA charge current is ≤0.5 C for every recommended cell size; no PROG change
+  needed within the 400–700 mAh band.
