@@ -1,4 +1,4 @@
-# Bill of materials — rev-A (v0.15)
+# Bill of materials — rev-A (v0.16)
 
 Authoritative electrical BOM is machine-exported per board to
 [`hardware/kicad/generated/fab/right/bom.csv`](../hardware/kicad/generated/fab/right/bom.csv)
@@ -50,10 +50,10 @@ assembly is fine.
 | Dome retention | Snaptron taped polyimide array (Peel-N-Place) or 0.2–0.3 mm laser-cut polyimide spacer | 2 | **Required** — laterally retains each dome; the tape channels also vent them. |
 | FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥160 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not 150 mm:** the J2 contact rows are 151.2 mm apart and each ZIF drawer needs ~4 mm of insertion — a 150 mm ribbon cannot mate. |
 | LiPo | 1S 400–700 mAh pouch, JST-PH pigtail | 1 | Sits in the spine behind the MagSafe ring. **Meter polarity against the "+"/"−" silk at J3 first** (pin 1 = "+", nearer the bottom board edge). |
-| MagSafe ring | Ø56 N52 ring, 2.0 mm | 1 | Seats in the front shell's Ø57 × 1.8 recess (sits 0.2 mm proud). |
-| Shells | back + front, 3D-printed (PETG) | 1 set | From `hardware/cad/build/` (STL/STEP). |
+| MagSafe ring | Ø56 N52 ring, 2.0 mm | 1 | Epoxied into the center panel's Ø57 × 1.8 recess (sits 0.2 mm proud). |
+| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. |
 | Keymats | per-grip, **TPU 95A** | 2 | Living-hinge web; coupon-test >10 k cycles first. |
-| M2 hardware | screws + heat-set inserts (3.2 mm bores) | 10 | 5 mount holes per grip. |
+| M2 hardware | **M2×10 button-head** screws + heat-set inserts (3.2 mm bores) | 16 + 16 | One screw SKU: 5 per grip (unchanged), 4 panel-floor at the x=0 seam, 2 panel-ring anchors in the transverse walls. |
 | Bootloader flash rig | SWD probe (J-Link/CMSIS-DAP/pi) + 5 jumper wires | 1 | One-time Adafruit-bootloader flash on TP1–5. |
 
 ## Deliberately absent (vs earlier drafts)

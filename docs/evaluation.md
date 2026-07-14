@@ -1,4 +1,4 @@
-# thumbdeck — fab-readiness evaluation (rev-A, v0.15, 2026-07-11)
+# thumbdeck — fab-readiness evaluation (rev-A, v0.16, 2026-07-13)
 
 Authoritative status of the design's readiness to be produced. Supersedes the
 v0.14 evaluation and all older review notes. Where any other doc disagrees with
@@ -34,7 +34,7 @@ first-article run of 5 and run the bring-up checkpoints in
 | **Bridge correctness** | Left-grip FFC nets assigned by ribbon geometry; verified net-at-same-height matches 1:1 → a straight type-A jumper is correct by construction. |
 | **Footprints** | Production `snaptron_7mm_contact` (ring + 67.5° escape gap, pour/via keepouts); E73 43-pad land pattern with embedded antenna keepout; **no hand-soldered parts** — the USB-C shell's plated stakes and the FFC/slide-switch locating pegs are the only through-board features, all placed in the same single-pass JLC assembly. |
 | **Board outline / mounts** | Closed, non-self-intersecting, **76.5 × 114.5 mm**; **5× M2** per grip clear of keep-outs. |
-| **Mechanical fit** | `deck3d.py --check`: **0 collisions** across shell + PCB (real part heights) + domes + keymat + LiPo + ring + phone; 6.3 mm back cavity clears the mated JST-PH by 0.24 mm. |
+| **Mechanical fit** | `deck3d.py --check`: **0 collisions** across the 5-part shell set (back halves, grip lids, center panel) + PCB (real part heights) + domes + keymat + LiPo + ring + phone; 6.3 mm back cavity clears the mated JST-PH by 0.24 mm; every printed part gated to fit an Ender 3 V2 bed (`--all`). |
 | **Firmware buildability** | 5 build-breakers fixed (v0.3.0 pin, pointing.h include, DCDC removed, LF-RC clock, exact Adafruit/nice!nano-v2 flash partition layout); board definition at `config/boards/arm/thumbdeck`; CI = a **self-contained ZMK v0.3.0 build** (`west init -l config` inside `firmware/zmk-config`, `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2`) — ZMK's reusable workflow cannot handle a nested config dir. **No green run yet — see below.** |
 
 ## What is NOT yet verified (needs the physical prototype)

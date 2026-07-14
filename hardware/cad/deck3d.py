@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """deck3d.py — parametric 3D generator for the thumbdeck: PCB fit-model (real
-component dimensions), bottom shell, top shell, keymats, + the phone / LiPo / flex,
-assembled in the deck.product() frame and collision-checked so nothing physically
-overlaps. Same source of truth as the PCB (hardware/scripts/deck.py).
+component dimensions), the 5-part shell set (left/right back halves, left/right
+grip lids, center front panel — every part fits an Ender 3 V2 220x220 bed flat),
+keymats, + the phone / LiPo / flex, assembled in the deck.product() frame and
+collision-checked so nothing physically overlaps. Same source of truth as the
+PCB (hardware/scripts/deck.py).
+
+Split concept (sketches/All.png, side.png): cyan grip lids left+right, pink back +
+pink center panel ("the front of the back"). Staggered splices: the panel bridges
+the back seam at x=0; the back halves bridge the front reveal seams at the grip
+edges — every cross-section keeps one continuous structural member.
 
 See docs/cad-process.md. Run:  deck3d.py --all --check --render
 Frame: deck.py Y-up, origin bottom-left of the RIGHT grip; z=0..1.6 = PCB, +z = front
-(dome / top-shell side), -z = back (module / bottom-shell side).
+(dome / lid side), -z = back (module / back-shell side).
 """
 import os, sys, argparse, math, json, subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -153,18 +160,30 @@ def _grip_poly_product(side):
     pts = _dedupe(geo["outline"])
     return Polygon([(x+ox, y+oy) for x, y in pts]), geo, (ox, oy)
 
-def _key_centers_product():
-    """All dome/key centres (both grips, incl. cluster features) in product frame."""
+def _key_centers_product(only_side=None):
+    """Dome/key centres (incl. cluster features) in product frame; both grips by
+    default, one grip when only_side is given (the split lids cut per-side)."""
     prod = _product(); out = []
     for side in ("right", "left"):
+        if only_side and side != only_side:
+            continue
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
         keys = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
         for k in keys:
             out.append((k["x"]+ox, k["y"]+oy, k.get("d", 7.0)))
     return out
 
+def _seam_frame():
+    """x-stations of the split (product frame): grip inner edges at +-gx, back-shell
+    halves part at x=0, panel spans |x| <= gx-SEAM_GAP. Derived, never hard-coded."""
+    prod = _product()
+    gx = prod["right_origin"][0]                 # right grip inner edge (= 73.8)
+    assert abs(gx + (prod["left_origin"][0] + prod["left"]["board_w"])) < 1e-6
+    return gx
+
 def full_footprint():
-    """Union of both grips + a central spine slab under the phone -> one-piece shell."""
+    """Union of both grips + a central spine slab under the phone: the shared 2D
+    footprint every shell part is derived from (split into 5 parts since v0.16)."""
     prod = _product()
     rp, _, _ = _grip_poly_product("right")
     lp, _, _ = _grip_poly_product("left")
@@ -178,9 +197,9 @@ def full_footprint():
 import cadquery as cq
 
 # --- vertical stack (all derived so the parts always line up) ---
-FLOOR = 1.6            # bottom-shell floor thickness
+FLOOR = 1.6            # back-half floor thickness
 WALL_T = 2.5          # shell wall thickness
-TOP_T = 2.0           # top-shell plate thickness
+TOP_T = 2.0           # grip-lid plate thickness
 STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH (J3) + 0.24 margin
 PHONE_CLR = 0.6       # phone pocket clearance (total, both sides)
 POCKET_D = 2.0        # phone pocket depth (rim height above the pocket floor)
@@ -191,8 +210,18 @@ KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.5, 6.2   # keymat web / plunger height / plung
 PCB_Z = FLOOR + STANDOFF                     # grip-local PCB z=0 maps here
 DOME_TOP = PCB_Z + PCB_T + DOME_H            # top of a seated snap dome
 KM_Z0 = DOME_TOP + 1.0                       # keymat web bottom (nub reaches the dome)
-TOP_Z = KM_Z0 + KM_WEB + GAP                 # top-shell plate bottom
+TOP_Z = KM_Z0 + KM_WEB + GAP                 # front parts sit above the cavity
 WALL = TOP_Z - FLOOR                         # cavity height (derived)
+
+# --- 5-part split (grip lids + center panel + back halves), Ender 3 V2 bed ---
+BED_XY = 204.0        # printable footprint per part: 220mm bed minus 2x8mm brim
+PANEL_T = 2.6         # center-panel plate thickness (ring membrane = PANEL_T-RING_REC_D-... see RECESS_FLOOR)
+PANEL_TOP = TOP_Z + PANEL_T                  # 14.9
+PLATEAU_TOP = PANEL_TOP + POCKET_D           # 16.9 (pocket rim / device front)
+SEAM_GAP = 0.3        # front reveal gap between panel edge and lid edge (deliberate V)
+LAP_CLR = 0.25        # printed-joint in-plane clearance (FDM: elephant foot + warp)
+XWALL_T = 2.5         # transverse spine wall (closes each half's torsion box, seats panel)
+PANEL_SCREWS = [(-10.0, 10.0), (10.0, 10.0), (-10.0, 105.0), (10.0, 105.0)]  # straddle x=0 seam
 
 def _cq_from_poly(geom, z0, h):
     """Extrude a shapely Polygon/MultiPolygon (with holes) to a CadQuery solid."""
@@ -266,7 +295,9 @@ def support_post_locations(side):
     _POSTS[side] = chosen
     return chosen
 
-def bottom_shell():
+def _back_solid():
+    """Full-width back tray as a single CadQuery solid (split into halves by
+    back_half): legacy tray + transverse spine walls + panel bosses."""
     fp = full_footprint()
     prod = _product()
     # walls go OUTSIDE the PCB envelope: outer = fp+wall+clr, cavity = fp+clr (so the
@@ -275,7 +306,7 @@ def bottom_shell():
     inner = _cq_from_poly(fp.buffer(PCB_CLR), FLOOR, WALL+1)
     shell = outer.cut(inner)
     # (v0.14: the old MagSafe "ring pocket" cut here extruded BELOW z=0 — outside the
-    #  solid, a no-op — and the ring now seats in the TOP shell's phone pocket.)
+    #  solid, a no-op — the ring seats in the center panel's phone pocket since v0.16.)
     # PCB standoff bosses + M2 heat-set bores at each grip's mount holes
     for side in ("right", "left"):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
@@ -318,11 +349,111 @@ def bottom_shell():
     ax_, ay_, aw, ah = prod["right"]["keepouts"]["antenna"]
     shell = shell.cut(cq.Workplane("XY").workplane(offset=4.0)
                       .center(ax_ + ox + aw/2, -0.65).box(aw, 0.7, PCB_Z - 3.9, centered=(True, True, False)))
-    return _to_trimesh(shell, "bottom_shell")
+
+    # ---- transverse spine walls at each grip boundary (v0.16 split): close each
+    # half's torsion box where the front seam breaks the top plate, seat the panel
+    # edge at TOP_Z, and host one Ø8 boss at MagSafe-ring height so phone detach
+    # pull anchors in line with the ring instead of peeling the panel edge.
+    gx = _seam_frame()
+    bh = prod["right"]["board_h"]
+    ms = prod["magsafe"]
+    for s in (1, -1):
+        x1 = s * (gx - SEAM_GAP); x0 = x1 - s * XWALL_T
+        xw = (cq.Workplane("XY").workplane(offset=FLOOR)
+              .center((x0+x1)/2, (-PCB_CLR + bh + PCB_CLR)/2)
+              .box(XWALL_T, bh + 2*PCB_CLR, WALL, centered=(True, True, False)))
+        # FFC pass-through: the bridge ribbon (10mm wide, centred on the placed J2
+        # ZIF, z~5.4) crosses here; window keeps 3.3mm of wall above as a printed
+        # bridge so the panel stays supported over the lane
+        _, jy2 = _find_fp("right" if s > 0 else "left", "ffc_afa07")
+        xw = xw.cut(cq.Workplane("XY").workplane(offset=FLOOR)
+                    .center((x0+x1)/2, jy2).box(XWALL_T+2, 16.0, 9.0-FLOOR, centered=(True, True, False)))
+        # battery-lead pass-through on the side that carries J3 (side-entry JST-PH)
+        try:
+            side = "right" if s > 0 else "left"
+            _, jy = _find_fp(side, "JST_PH_S2B")
+            xw = xw.cut(cq.Workplane("XY").workplane(offset=FLOOR)
+                        .center((x0+x1)/2, jy).box(XWALL_T+2, 12.0, 10.5-FLOOR, centered=(True, True, False)))
+        except KeyError:
+            pass
+        shell = shell.union(xw)
+        # ring-height panel anchor: Ø8 D-boss on the wall's spine face, clipped
+        # flush at the panel-edge plane so it clears the PCB edge at |x|=gx
+        bx = s * (abs(x1) - 2.3)
+        boss = (cq.Workplane("XY").workplane(offset=FLOOR).center(bx, ms["cy"]).circle(4.0).extrude(WALL)
+                .cut(cq.Workplane("XY").workplane(offset=-1)
+                     .center(s*(abs(x1)+6), ms["cy"]).box(12, 20, WALL+4, centered=(True, True, False))))
+        shell = shell.union(boss)
+    # ---- 4 panel bosses straddling the x=0 back seam (2 per half): with the two
+    # ring-height wall bosses these make the screwed-on panel the seam's splice plate
+    for (px, py) in PANEL_SCREWS:
+        shell = shell.union(cq.Workplane("XY").workplane(offset=FLOOR)
+                            .center(px, py).circle(3.5).extrude(WALL))
+    # bores are cut from the FINISHED shell, not the boss primitives — a pre-bored
+    # boss unioned into overlapping material (the transverse wall spans the ring
+    # boss axis) gets its bore silently re-filled. Depths leave >=1.2mm before an
+    # M2x10 tip can bottom out (ISO length tolerance ~0.3): ring anchors reach
+    # z 2.3 (tip lands 3.5), panel-floor screws z 3.3 (tip lands 4.9).
+    for s in (1, -1):
+        shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
+                          .center(s*(gx - SEAM_GAP - 2.3), ms["cy"]).circle(1.6).extrude(-10.0))
+    for (px, py) in PANEL_SCREWS:
+        shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
+                          .center(px, py).circle(1.6).extrude(-9.0))
+    return shell
+
+
+_BACK = None
+def _back_full():
+    global _BACK
+    if _BACK is None:
+        _BACK = _back_solid()
+    return _BACK
+
+def back_half(side):
+    """One printable back-shell half (splits the tray at x=0 so each half fits an
+    Ender 3 V2 bed). Joinery is printed + screwless: two full-thickness floor tabs
+    (right) into cleared notches (left) register the halves in-plane, and each
+    perimeter wall gets an 8mm vertical shiplap (vertical faces — prints clean flat)
+    for shear/torsion continuity; the screwed-on center panel is the bolted splice."""
+    prod = _product(); bh = prod["right"]["board_h"]
+    s = 1 if side == "right" else -1
+    half = cq.Workplane("XY").workplane(offset=-2).center(s*250, bh/2).box(500, 500, 30, centered=(True, True, False))
+    tabs = [(30.0, 38.0), (78.0, 86.0)]
+    # front/back perimeter walls: outer faces at y=-2.9 / bh+2.9; split each wall's
+    # thickness for the shiplap (right keeps the outer layer over x in [-7.75, 0])
+    wo0, wi0 = -(WALL_T + PCB_CLR), -PCB_CLR              # front wall y-faces
+    wo1, wi1 = bh + WALL_T + PCB_CLR, bh + PCB_CLR        # back wall y-faces
+    t_split = 1.125                                        # tongue = outer 1.125 of the 2.5 wall
+    if side == "right":
+        for (y0, y1) in tabs:   # floor tabs, flush top and bottom (z 0..FLOOR)
+            half = half.union(cq.Workplane("XY").workplane(offset=0)
+                              .center(-5.0/2, (y0+y1)/2).box(5.0, y1-y0, FLOOR, centered=(True, True, False)))
+        for (yo, sgn) in ((wo0, 1), (wo1, -1)):  # wall tongues: outer layer, 7.75 long
+            half = half.union(cq.Workplane("XY").workplane(offset=0)
+                              .center(-7.75/2, yo + sgn*t_split/2).box(7.75, t_split, FLOOR+WALL, centered=(True, True, False)))
+    else:
+        for (y0, y1) in tabs:   # tab notches, LAP_CLR clearance on x and y
+            half = half.cut(cq.Workplane("XY").workplane(offset=-1)
+                            .center((-(5.0+LAP_CLR) + 1.0)/2, (y0+y1)/2)
+                            .box(5.0+LAP_CLR+1.0, (y1-y0) + 2*LAP_CLR, FLOOR+2, centered=(True, True, False)))
+        for (yo, sgn) in ((wo0, 1), (wo1, -1)):  # shiplap reliefs: tongue + LAP_CLR
+            yin = yo + sgn*(t_split+LAP_CLR)     # relief's inner face (clearance incl.)
+            yout = yo - sgn*0.5                  # extend past the outer wall face
+            half = half.cut(cq.Workplane("XY").workplane(offset=-1)
+                            .center((-8.0 + 5.0)/2, (yin+yout)/2)
+                            .box(13.0, abs(yin-yout), FLOOR+WALL+2, centered=(True, True, False)))
+    part = _back_full().intersect(half)
+    # 0.4mm 45-degree V along the seam's outer floor edge: elephant-foot relief on
+    # both butt faces + a deliberate shadow line so residual mismatch reads as design
+    groove = (cq.Workplane("XY").box(0.566, 500, 0.566)
+              .rotate((0, 0, 0), (0, 1, 0), 45).translate((0, bh/2, 0)))
+    part = part.cut(groove)
+    return _to_trimesh(part, f"back_{side}")
 
 def _keymat_field(side):
     """Keymat web outline (product frame): union of plunger discs buffered 2.0.
-    Shared by keymats() and the top shell's clamp rim so they line up exactly."""
+    Shared by keymats() and the grip lids' clamp rims so they line up exactly."""
     prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
     keys = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
     from shapely.ops import unary_union
@@ -330,55 +461,92 @@ def _keymat_field(side):
                                   for t in np.linspace(0, 2*math.pi, 16)]) for k in keys]).buffer(2.0)
     return field, keys
 
-def top_shell():
+def _edge_wedge(x_edge, z_top, c=0.8, bh=114.5):
+    """45-degree top-edge chamfer prism along a straight x-station: a diamond of
+    half-diagonal c centred on the edge line — cuts a c x c chamfer; the outboard
+    half of the diamond lies in air."""
+    return (cq.Workplane("XY").box(c*2**0.5*0.9999, 500, c*2**0.5*0.9999)
+            .rotate((0, 0, 0), (0, 1, 0), 45)
+            .translate((x_edge, bh/2, z_top)))
+
+def grip_lid(side):
+    """Per-grip front lid (cyan in the concept sketches): the legacy top plate
+    restricted to its grip — same keymat clamp rim, key openings and 5 screw
+    positions — cut straight at the grip's inner edge with a 0.8mm top chamfer
+    toward the panel reveal. ~79 x 120mm: prints cosmetic-face-down on a 220 bed."""
     fp = full_footprint()
     prod = _product()
-    z0 = TOP_Z                # top plate sits above the cavity
-    plate = _cq_from_poly(fp.buffer(WALL_T+PCB_CLR), z0, TOP_T)   # match the bottom-shell outline
-    # SOLID spine + raised plateau: the old through-window was LARGER than the phone
-    # (phone+1) — the phone and ring would fall through. Instead the spine plate is
-    # solid, with a POCKET_D-deep phone pocket whose rim captures the phone's long
-    # edges (the grips abut the phone's short ends exactly, so the pocket is open in
-    # x; lateral retention is the MagSafe ring's job) and a ring recess inside it.
-    rx = prod["right_origin"][0]; lxr = prod["left_origin"][0] + prod["left"]["board_w"]
+    gx = _seam_frame(); s = 1 if side == "right" else -1
+    z0 = TOP_Z
     bh = prod["right"]["board_h"]
-    spine = Polygon([(lxr-1, 0), (rx+1, 0), (rx+1, bh), (lxr-1, bh)])
-    plateau = spine.intersection(fp.buffer(WALL_T+PCB_CLR)).buffer(0)
-    plate = plate.union(_cq_from_poly(plateau, z0 + TOP_T, POCKET_D))
-    ph = prod["phone"]
-    pocket = (cq.Workplane("XY").workplane(offset=z0 + TOP_T)
-              .center(ph["x"]+ph["w"]/2, ph["y"]+ph["h"]/2)
-              .box(ph["w"] + 2.4, ph["h"] + PHONE_CLR, POCKET_D + 0.2, centered=(True, True, False)))
-    plate = plate.cut(pocket)
-    # MagSafe N52 ring recess Ø57 x 1.8 deep in the pocket floor: the 2.0mm ring sits
-    # 0.2 proud, the phone rests on ring + pocket floor. (0.2mm membrane under the
-    # ring — one print layer, backed by the glued-in steel/N52 ring itself.)
-    ms = prod["magsafe"]
-    plate = plate.cut(cq.Workplane("XY").workplane(offset=RECESS_FLOOR)
-                      .center(ms["cx"], ms["cy"]).circle(RING_REC_R).extrude(RING_REC_D + 0.05))
-    # keymat clamp: continuous downstand rim on the underside around each key-field
-    # perimeter, pressing the keymat web down 0.1mm when the shells are screwed
+    region = Polygon([(s*gx, -60), (s*400, -60), (s*400, bh+60), (s*gx, bh+60)])
+    poly = fp.buffer(WALL_T+PCB_CLR).intersection(region).buffer(0)
+    plate = _cq_from_poly(poly, z0, TOP_T)
+    # keymat clamp: continuous downstand rim on the underside around the key-field
+    # perimeter, pressing the keymat web down 0.1mm when the lid is screwed
     web_top = KM_Z0 + KM_WEB
-    for side in ("right", "left"):
-        field, _ = _keymat_field(side)
-        rim = field.buffer(-0.15).difference(field.buffer(-1.65))
-        plate = plate.union(_cq_from_poly(rim, web_top - 0.1, z0 - (web_top - 0.1)))
+    field, _ = _keymat_field(side)
+    rim = field.buffer(-0.15).difference(field.buffer(-1.65))
+    plate = plate.union(_cq_from_poly(rim, web_top - 0.1, z0 - (web_top - 0.1)))
     # key openings at every dome centre (cut AFTER the rim union, deep enough to keep
     # the full plunger bore clear through the rim band)
     holes = None
-    for (x, y, d) in _key_centers_product():
+    for (x, y, d) in _key_centers_product(side):
         c = (cq.Workplane("XY").workplane(offset=web_top - 0.2).center(x, y)
              .circle(d/2 + 0.4).extrude(TOP_T + (z0 - web_top) + 0.4))
         holes = c if holes is None else holes.union(c)
     if holes is not None:
         plate = plate.cut(holes)
-    # screw clearance holes aligned to the bottom bosses
-    for side in ("right", "left"):
-        geo = prod[side]; ox, oy = prod[f"{side}_origin"]
-        for hh in geo["mount_holes"]:
-            h = cq.Workplane("XY").workplane(offset=z0-0.1).center(hh["x"]+ox, hh["y"]+oy).circle(1.2).extrude(TOP_T+0.2)
-            plate = plate.cut(h)
-    return _to_trimesh(plate, "top_shell")
+    # screw clearance holes aligned to this grip's bottom bosses (5, unchanged)
+    geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    for hh in geo["mount_holes"]:
+        h = cq.Workplane("XY").workplane(offset=z0-0.1).center(hh["x"]+ox, hh["y"]+oy).circle(1.2).extrude(TOP_T+0.2)
+        plate = plate.cut(h)
+    # 0.8mm 45-degree chamfer on the inner top edge (the cyan side of the reveal)
+    plate = plate.cut(_edge_wedge(s*gx, z0+TOP_T, bh=bh))
+    return _to_trimesh(plate, f"grip_lid_{side}")
+
+def center_panel():
+    """Center front panel (pink, 'the front of the back'): one 4.6mm slab over the
+    spine — phone pocket, MagSafe ring recess and all 6 panel screws live here. It
+    spans the x=0 back seam and is its bolted splice. A deliberate SEAM_GAP reveal
+    separates it from the lids (no overlap: no screw-head clash, no mid-air mating
+    faces — it prints back-face-down, pocket up, support-free). Removable on its
+    own: the spine service hatch for battery + FFC.
+    The pocket rim captures the phone's long edges (pocket open in x as before —
+    lateral retention is the MagSafe ring's job); the Ø57 x 1.8 ring recess leaves
+    a 0.8mm printed web (4 layers) under the glued-in N52 ring, and the ring sits
+    0.2mm proud so the phone rests on ring + pocket floor exactly as in v0.15."""
+    fp = full_footprint()
+    prod = _product()
+    gx = _seam_frame(); px_edge = gx - SEAM_GAP
+    bh = prod["right"]["board_h"]
+    region = Polygon([(-px_edge, -60), (px_edge, -60), (px_edge, bh+60), (-px_edge, bh+60)])
+    poly = fp.buffer(WALL_T+PCB_CLR).intersection(region).buffer(0)
+    panel = _cq_from_poly(poly, TOP_Z, PLATEAU_TOP - TOP_Z)     # solid 12.3..16.9
+    ph = prod["phone"]
+    pocket = (cq.Workplane("XY").workplane(offset=PANEL_TOP)
+              .center(ph["x"]+ph["w"]/2, ph["y"]+ph["h"]/2)
+              .box(ph["w"] + 2.4, ph["h"] + PHONE_CLR, POCKET_D + 0.2, centered=(True, True, False)))
+    panel = panel.cut(pocket)
+    ms = prod["magsafe"]
+    panel = panel.cut(cq.Workplane("XY").workplane(offset=RECESS_FLOOR)
+                      .center(ms["cx"], ms["cy"]).circle(RING_REC_R).extrude(RING_REC_D + 0.05))
+    # 4 seam-splice screws in the plateau strips outside the pocket: Ø2.6 through,
+    # Ø6 x 2.0 counterbore so the M2x10 button head seats on the 2.6mm plate
+    for (sx, sy) in PANEL_SCREWS:
+        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z-0.1).center(sx, sy).circle(1.3).extrude(PLATEAU_TOP+0.2))
+        panel = panel.cut(cq.Workplane("XY").workplane(offset=PANEL_TOP).center(sx, sy).circle(3.0).extrude(POCKET_D+0.2))
+    # 2 ring-height anchors in the pocket floor (into the transverse-wall bosses):
+    # heads sink 1.4 so they finish under the phone (ring sits 0.2 proud above them)
+    for s in (1, -1):
+        sx, sy = s * (abs(px_edge) - 2.3), ms["cy"]
+        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z-0.1).center(sx, sy).circle(1.3).extrude(PANEL_T+0.2))
+        panel = panel.cut(cq.Workplane("XY").workplane(offset=PANEL_TOP-1.4).center(sx, sy).circle(3.0).extrude(1.6))
+    # 0.8mm 45-degree chamfers on both outer top edges (the pink side of the reveal)
+    for s in (1, -1):
+        panel = panel.cut(_edge_wedge(s*px_edge, PLATEAU_TOP, bh=bh))
+    return _to_trimesh(panel, "center_panel")
 
 def keymats(side):
     """Per-grip one-piece keymat: plungers over each dome joined by a thin web plate."""
@@ -402,8 +570,9 @@ def phone_body():
 
 def battery_body():
     sb = _product()["spine_battery"]
-    # realistic ~500mAh pouch: fits the pocket, ~5mm thick (not the full 52x36 pocket)
-    m = _box(34, 50, 5.0)
+    # realistic ~500mAh 503450 pouch, ~5mm thick, oriented long-side-x so it fits
+    # the 52x36 reserved rect (v0.16: was 34x50 — rotated 90deg, overflowed the rect)
+    m = _box(50, 34, 5.0)
     return _place(m, sb["x"]+sb["w"]/2, sb["y"]+sb["h"]/2, 0)
 
 def magsafe_ring():
@@ -442,8 +611,8 @@ def height_report(side="right"):
     print(f"  back cavity: STANDOFF {STANDOFF} vs deepest part {deepest[1]} {deepest[0]:.2f} "
           f"-> margin {STANDOFF - deepest[0]:.2f}mm to the floor")
     print(f"  stack (product z): floor top {FLOOR} | PCB {PCB_Z}..{PCB_Z+PCB_T} | dome top {DOME_TOP} | "
-          f"keymat web {KM_Z0}..{KM_Z0+KM_WEB} | top plate {TOP_Z}..{TOP_Z+TOP_T} | "
-          f"spine plateau top {TOP_Z+TOP_T+POCKET_D} | ring {MAGSAFE_Z-RING_H/2:.1f}..{MAGSAFE_Z+RING_H/2:.1f} | "
+          f"keymat web {KM_Z0}..{KM_Z0+KM_WEB} | grip lids {TOP_Z}..{TOP_Z+TOP_T} | "
+          f"panel {TOP_Z}..{PANEL_TOP} plateau top {PLATEAU_TOP} | ring {MAGSAFE_Z-RING_H/2:.1f}..{MAGSAFE_Z+RING_H/2:.1f} | "
           f"phone {PHONE_Z-3.9:.1f}..{PHONE_Z+3.9:.1f}")
 
 
@@ -469,16 +638,21 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
 # z-stack (product frame): back-shell floor at 0; PCB rests on STANDOFF bosses.
 # (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / WALL are all derived up top.)
 RING_H = 2.0                                    # N52 ring thickness
-RECESS_FLOOR = TOP_Z + TOP_T - RING_REC_D       # ring recess floor (inside the phone pocket)
+RECESS_FLOOR = PANEL_TOP - RING_REC_D           # ring recess floor (in the panel's pocket floor)
 MAGSAFE_Z = RECESS_FLOOR + RING_H/2             # ring body centre (sits IN the recess)
 PHONE_Z = RECESS_FLOOR + RING_H + 7.8/2         # phone rests on the 0.2mm-proud ring
 BATT_Z = FLOOR + 2.5                   # ~5mm cell sitting on the spine floor in the cavity
 FLEX_Z = PCB_Z - 2.5                   # ribbon behind the phone, at the back-connector level
 
+SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel")
+
 def assemble():
     A = {}
-    A["bottom_shell"] = bottom_shell()
-    A["top_shell"] = top_shell()
+    A["back_right"] = back_half("right")
+    A["back_left"] = back_half("left")
+    A["grip_lid_right"] = grip_lid("right")
+    A["grip_lid_left"] = grip_lid("left")
+    A["center_panel"] = center_panel()
     A["keymat_right"] = keymats("right")
     A["keymat_left"] = keymats("left")
     prod = _product()
@@ -501,8 +675,9 @@ def _allowed(a, b):
     s = {a, b}
     km = any(x.startswith("keymat") for x in s)
     if km and any(":SW" in x and not x.endswith(("_pwr", "_rst")) for x in s): return True  # nub presses dome
-    if km and "top_shell" in s: return True    # clamp rim presses the web 0.1mm (intended preload)
-    if s == {"phone", "magsafe"} or s == {"magsafe", "top_shell"}: return True              # rests on/in
+    if km and any(x.startswith("grip_lid") for x in s): return True  # clamp rim presses the web 0.1mm (intended preload)
+    if s == {"phone", "magsafe"} or s == {"magsafe", "center_panel"}: return True           # rests on/in
+    if s == {"back_right", "back_left"}: return True   # seam tabs/shiplap mate face-to-face
     return False
 
 def collide(A, tol_gross=3.0, tol_shell=0.2):
@@ -512,7 +687,7 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
     keymat, phone, battery, flex) keep 3.0mm^3 to absorb STL-tessellation noise on
     large curved contact faces. Returns (clashes, contacts, checked); contacts are
     whitelisted pairs with measurable overlap (reported, not failed)."""
-    shells = ("bottom_shell", "top_shell")
+    shells = SHELLS
     def tol(a, b):
         if (a in shells and ":" in b) or (b in shells and ":" in a):
             return tol_shell
@@ -546,21 +721,41 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
     return clashes, contacts, checked
 
 
+def bed_fit(m, name):
+    """Every printed part must fit an Ender 3 V2 (220x220x250) laid flat, with
+    brim margin: xy bbox <= BED_XY (=204). Returns True when it fits."""
+    dx, dy, dz = m.extents
+    ok = dx <= BED_XY and dy <= BED_XY and dz <= 250
+    tag = "fits" if ok else "DOES NOT FIT"
+    print(f"  bed-fit {name}: {dx:.1f} x {dy:.1f} x {dz:.1f} mm -> {tag} (limit {BED_XY:.0f} xy = 220 bed - 2x8 brim)")
+    return ok
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--render", action="store_true")
+    ap.add_argument("--sync-models", action="store_true",
+                    help="copy the printable STLs from build/ to the tracked models/ dir")
     args = ap.parse_args()
     os.makedirs(BUILD, exist_ok=True)
     if args.report:
         height_report("right"); height_report("left")
+    ok = True
     if args.all:
-        for fn, nm in [(bottom_shell, "bottom_shell"), (top_shell, "top_shell")]:
+        for fn, nm in [(lambda: back_half("right"), "back_right"),
+                       (lambda: back_half("left"), "back_left"),
+                       (lambda: grip_lid("right"), "grip_lid_right"),
+                       (lambda: grip_lid("left"), "grip_lid_left"),
+                       (center_panel, "center_panel")]:
             m = fn(); print(f"  {nm}: watertight={m.is_watertight} vol={m.volume/1000:.1f}cm3 bbox={[round(v,1) for v in m.extents]}")
+            ok = bed_fit(m, nm) and ok
         for side in ("right", "left"):
             m = keymats(side); print(f"  keymat_{side}: watertight={m.is_watertight} bbox={[round(v,1) for v in m.extents]}")
+            ok = bed_fit(m, f"keymat_{side}") and ok
+        if not ok:
+            sys.exit("bed-fit FAILED: a part exceeds the Ender 3 V2 printable area")
     if args.check:
         A = assemble()
         print(f"assembly: {len(A)} bodies")
@@ -576,19 +771,34 @@ def main():
         A = assemble()
         _render_assembly(A)
         _render_exploded(A)
-        _render_parts()
+        _render_parts(A)
+    if args.sync_models:
+        import shutil
+        mdir = os.path.join(HERE, "models")
+        os.makedirs(mdir, exist_ok=True)
+        parts = [f"{n}.stl" for n in SHELLS] + ["keymat_right.stl", "keymat_left.stl"]
+        missing = [p for p in parts if not os.path.exists(os.path.join(BUILD, p))]
+        if missing:
+            sys.exit(f"--sync-models: build/ is missing {missing} — run --all first")
+        for old in os.listdir(mdir):          # drop stale part files from before a rename
+            if old.endswith((".stl", ".step")) and old not in parts:
+                os.remove(os.path.join(mdir, old))
+        for p in parts:
+            shutil.copy2(os.path.join(BUILD, p), os.path.join(mdir, p))
+        print(f"  synced {len(parts)} STLs -> {mdir}")
 
 
 def _explode_offset(k):
     """Vertical explode offset by role (for the exploded assembly render)."""
-    if k == "bottom_shell": return -35
+    if k.startswith("back_"): return -35
     if k == "battery":      return -18
     if k == "flex":         return -10
     if ":" in k:            return 0        # PCB stack (board + components)
     if k.startswith("keymat"): return 22
-    if k == "top_shell":    return 40
-    if k == "magsafe":      return 58
-    if k == "phone":        return 75
+    if k.startswith("grip_lid"): return 40
+    if k == "center_panel": return 52
+    if k == "magsafe":      return 68
+    if k == "phone":        return 84
     return 0
 
 def _render_exploded(A):
@@ -598,13 +808,15 @@ def _render_exploded(A):
         mm = m.copy(); mm.apply_translation((0, 0, _explode_offset(k)))
         meshes.append((mm, col(k)))
     render_iso(meshes, os.path.join(RENDERS, "assembly3d_exploded.png"),
-               "thumbdeck — exploded stack (back shell · PCB · domes · keymats · front shell · MagSafe · phone)",
+               "thumbdeck — exploded stack (back halves · PCB · domes · keymats · grip lids · center panel · MagSafe · phone)",
                elev=14, azim=-72)
 
 def _asm_col(k):
-    if k == "bottom_shell": return [0.30,0.32,0.36,1]
-    if k == "top_shell":    return [0.42,0.45,0.50,0.6]
-    if k.startswith("keymat"): return [0.15,0.5,0.65,0.92]
+    # concept colors: pink back halves + center panel, cyan grip lids (sketches)
+    if k.startswith("back_"): return [0.82,0.36,0.50,1]
+    if k == "center_panel": return [0.95,0.48,0.62,0.85]
+    if k.startswith("grip_lid"): return [0.25,0.75,0.80,0.75]
+    if k.startswith("keymat"): return [0.55,0.45,0.85,0.92]
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
     if k == "magsafe":      return [0.72,0.72,0.74,1]
@@ -614,27 +826,19 @@ def _asm_col(k):
     if any(x in k for x in (":U",":J")): return [0.2,0.2,0.24,1]
     return [0.5,0.5,0.25,1]
 
-def _render_parts():
-    for fn, nm, title in [(bottom_shell,"bottom_shell","bottom shell (one-piece: grips + spine)"),
-                          (top_shell,"top_shell","top shell (79 key openings + phone pocket + ring recess)"),
-                          (lambda: keymats("right"),"keymat_right","right keymat (plungers + hinge web)")]:
-        m = fn()
-        render_iso([(m,[0.4,0.45,0.5,1])], os.path.join(RENDERS, f"part_{nm}.png"),
+def _render_parts(A):
+    titles = {"back_right": "right back half (grip bay + half spine, seam joinery)",
+              "back_left": "left back half (grip bay + half spine, seam joinery)",
+              "grip_lid_right": "right grip lid (key openings + clamp rim)",
+              "grip_lid_left": "left grip lid (key openings + clamp rim)",
+              "center_panel": "center panel (phone pocket + MagSafe recess + 6 screws)",
+              "keymat_right": "right keymat (plungers + hinge web)"}
+    for nm, title in titles.items():
+        render_iso([(A[nm], [0.4, 0.45, 0.5, 1])], os.path.join(RENDERS, f"part_{nm}.png"),
                    f"thumbdeck — {title}", elev=40, azim=-60)
 
 def _render_assembly(A):
-    def col(k):
-        if k == "bottom_shell": return [0.30,0.32,0.36,1]
-        if k == "top_shell":    return [0.42,0.45,0.50,0.55]
-        if k.startswith("keymat"): return [0.15,0.5,0.65,0.9]
-        if k == "phone":        return [0.05,0.05,0.08,1]
-        if k == "battery":      return [0.6,0.5,0.15,1]
-        if k == "magsafe":      return [0.7,0.7,0.72,1]
-        if k == "flex":         return [0.7,0.5,0.2,1]
-        if ":pcb" in k:         return [0.16,0.35,0.24,1]
-        if ":SW" in k:          return [0.85,0.7,0.2,1]
-        return [0.28,0.28,0.30,1]
-    meshes = [(m, col(k)) for k, m in A.items()]
+    meshes = [(m, _asm_col(k)) for k, m in A.items()]
     render_iso(meshes, os.path.join(RENDERS, "assembly3d.png"), "thumbdeck — full assembly (real dims)", elev=26, azim=-58)
 
 

@@ -9,7 +9,7 @@ passive matrix wired across a fixed internal FFC bridge.
 
 ![thumbdeck product view](renders/product.png)
 
-> **Status: rev-A (v0.15) — routed, DRC-clean, fab package generated; not yet
+> **Status: rev-A (v0.16) — routed, DRC-clean, fab package generated; not yet
 > built.** Both boards are **fully routed and DRC-clean** (0 violations, 0
 > unconnected, KiCad 9), all parts are real LCSC-stocked SMT parts, the gerber +
 > BOM + CPL package for JLCPCB is in
@@ -27,7 +27,7 @@ passive matrix wired across a fixed internal FFC bridge.
 
 | | value |
 |---|---|
-| Form | phone in **LANDSCAPE**, MagSafe-mounted centre, two dome-key grips, **fixed one-piece shell** (Steam-Deck-style) |
+| Form | phone in **LANDSCAPE**, MagSafe-mounted centre, two dome-key grips, **fixed shell in 5 printed parts** (Steam-Deck-style; every part fits an Ender 3 V2 bed) |
 | Keys | **79 Snaptron 7 mm snap domes** (right 37, left 42) · **9.5 mm** ortholinear pitch (~1.5 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6) + **PgUp/PgDn**, plus the module and the whole power front-end |
@@ -72,8 +72,9 @@ Five renders on an **identical canvas** (2400×1050) that overlay pixel-for-pixe
 flip through as an animation. Scrolling down peels the device from the front face to
 the back. Generate with `python3 hardware/scripts/render_layers.py`.
 
-**5 · Front shell** — key openings, phone pocket, screw holes, and the
-MagSafe N52 ring seated in its recess.
+**5 · Front layer** (2D concept; printed as 3 parts since v0.16 — two grip lids +
+center panel) — key openings, phone pocket, screw holes, and the MagSafe N52 ring
+seated in its recess.
 
 ![Front shell](renders/layer_5_front_shell.png)
 
@@ -93,8 +94,9 @@ connector, and all passives. Everything soldered lives here.
 
 ![PCB back](renders/layer_2_pcb_back.png)
 
-**1 · Back shell** — the case, screw bosses, support posts under the key field, the
-MagSafe + LiPo pockets in the spine, and the USB-C / power-switch / pinhole cutouts.
+**1 · Back layer** (2D concept; printed as left/right halves since v0.16) — the
+case, screw bosses, support posts under the key field, the MagSafe + LiPo pockets
+in the spine, and the USB-C / power-switch / pinhole cutouts.
 
 ![Back shell](renders/layer_1_back_shell.png)
 
@@ -131,27 +133,33 @@ and they are all placed in the same single-pass JLC assembly.
 The mechanical parts are generated from the **same** parametric model as the PCB
 ([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) via CadQuery, so key openings
 land on dome pads and bosses land on mount holes *by construction*. The whole stack —
-back shell, PCB with **real-dimension** components (E73 module, USB-C, connectors,
-SOT-23s, 0402s, snap-domes), LiPo, FFC jumper, keymats, front shell, MagSafe ring,
-phone — is assembled in one frame and **collision-checked**: `deck3d.py --check`
-reports **0 impossible overlaps**. Full method:
+back halves, PCB with **real-dimension** components (E73 module, USB-C, connectors,
+SOT-23s, 0402s, snap-domes), LiPo, FFC jumper, keymats, grip lids, center panel,
+MagSafe ring, phone — is assembled in one frame and **collision-checked**:
+`deck3d.py --check` reports **0 impossible overlaps**. Full method:
 [`docs/cad-process.md`](docs/cad-process.md).
 
 ![Full assembly](renders/assembly3d.png)
 
-**Exploded** — back shell · PCB + domes · keymats · front shell · MagSafe · phone:
+**Exploded** — back halves · PCB + domes · keymats · grip lids · center panel · MagSafe · phone:
 
 ![Exploded assembly](renders/assembly3d_exploded.png)
 
-The printable parts (STEP for verification + STL for slicing) — one-piece back
-shell (grips + spine), front shell with the 79 key openings + phone pocket + MagSafe
-ring recess, and the per-grip keymats (plungers + living-hinge web, TPU 95A):
+The shell is **five printed parts** (v0.16, per the concept sketches: cyan grip
+lids, pink back + center panel), so everything prints flat on a **220 × 220 mm
+Ender 3 V2 bed** — the old one-piece shells needed a 350-class printer. The two
+back halves join at mid-spine with printed tabs + wall shiplaps (no seam screws);
+the screwed-on center panel bridges that seam, carries the phone pocket + MagSafe
+ring recess, and doubles as the **battery/FFC service hatch** (6 screws, grips
+untouched). Per-grip keymats unchanged (plungers + living-hinge web, TPU 95A).
 
-Bottom shell | Top shell | Keymat (one grip)
-:---:|:---:|:---:
-![bottom](renders/part_bottom_shell.png) | ![top](renders/part_top_shell.png) | ![keymat](renders/part_keymat_right.png)
+Back half | Grip lid | Center panel | Keymat
+:---:|:---:|:---:|:---:
+![back](renders/part_back_right.png) | ![lid](renders/part_grip_lid_right.png) | ![panel](renders/part_center_panel.png) | ![keymat](renders/part_keymat_right.png)
 
-Regenerate: `hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render`.
+Regenerate: `hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render`
+(`--all` also gates every part on the Ender 3 V2 bed-fit; `--sync-models` refreshes
+the tracked STLs in `hardware/cad/models/`).
 
 ---
 
@@ -181,7 +189,7 @@ and the FFC jumper.
 | Charger IC | **MCP73831T-2ACI/OT** (JLC **C424093**) | 1 | Module has no charger. PROG = 5.1 kΩ → ~196 mA (~0.5 C of a 400 mAh cell). Don't sub -2ATI (different Vreg). 4.7 µF 0805 at **both** VDD and VBAT per datasheet. |
 | USB-C receptacle | **fully-SMD 16P** (JLC **C165948**) + **2× 5.1 kΩ** CC1/CC2 | 1 | Must be SMD — a THT shell breaks 100 % reflow. Missing CC = never charges. |
 | ESD array | **USBLC6-2SC6** (JLC **C7519**) **inline** between USB-C and module | 1 | |
-| Power switch | **MSK12C02** slide (C431540) between cell+ and VBAT | 1 | Charger stays on the cell side — it charges while switched off. Knob through a slot in the bottom shell wall. |
+| Power switch | **MSK12C02** slide (C431540) between cell+ and VBAT | 1 | Charger stays on the cell side — it charges while switched off. Knob through a slot in the back-half wall. |
 | Reset button | **TS-1187A** tact (C318884), top-actuated | 1 | Pressed through a 1.6 mm pinhole in the shell floor — UF2 double-tap without opening the shell. |
 | Charge LED | 0603 red (C2286) + 1 kΩ | 1 | On MCP73831 STAT; visible through a 1.5 mm floor hole. |
 | Battery connector | **JST-PH 2.0 mm side-entry SMT** (S2B-PH-SM4-TB, C295747) | 1 | Polarized; the hobby-LiPo standard. |
@@ -203,8 +211,8 @@ rev-B option if field ESD issues appear.
 | Item | Spec | Qty | Notes |
 |---|---|---|---|
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package pre-exported in `hardware/kicad/generated/fab/`. |
-| Shell | top + bottom prints, **MagSafe N52 ring** in the front-shell recess | 1 | MagSafe = alignment; the phone pocket takes the load. |
-| M2 hardware | screws + heat-set inserts (3.2 mm bores) | 10 | 5 mount holes/grip. |
+| Shell | 5 prints (2 back halves, 2 grip lids, center panel), **MagSafe N52 ring** in the panel recess | 1 | MagSafe = alignment; the phone pocket takes the load. All parts fit a 220 × 220 bed. |
+| M2 hardware | **M2×10** screws + heat-set inserts (3.2 mm bores) | 16 | 5/grip + 6 on the center panel (4 seam + 2 ring-height). |
 
 ---
 
@@ -246,10 +254,13 @@ JLCPCB package is already exported.
 ## Step 3 — Assemble
 
 - Everything soldered arrives soldered — there is **no hand-soldering step**.
-- Seat each board on its 3 support posts + perimeter bosses; screw the shells (M2).
-- **FFC jumper:** ≥160 mm type-A ribbon (200 mm stock length) between the two ZIF
-  connectors, **contacts facing the board at both ends** (bottom-contact ZIFs);
-  flip the latches closed.
+- **FFC jumper first** (the ZIFs hide under the lids): ≥160 mm type-A ribbon
+  (200 mm stock length) between the two ZIF connectors, **contacts facing the
+  board at both ends** (bottom-contact ZIFs); flip the latches closed.
+- Seat each board on its 3 support posts + perimeter bosses; screw on each grip
+  lid (5 × M2×10), join the back halves (printed tabs + shiplaps, screwless),
+  then the center panel last (6 × M2×10) — it splices the seam and is the
+  battery/FFC service hatch. Full order: [`docs/assembly.md`](docs/assembly.md).
 - **Battery:** meter the pigtail against the **"+"/"−" silk at J3** first (vendors
   wire PH pigtails both ways) — but **do not connect the cell until after the
   first flash** (REGOUT0 must be programmed first — see

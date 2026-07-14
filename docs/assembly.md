@@ -1,4 +1,4 @@
-# Assembly, first flash, charge, pair & test — rev-A (v0.15)
+# Assembly, first flash, charge, pair & test — rev-A (v0.16)
 
 Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
 machine-placed) — there is **no hand-soldering** in this build. Your work is
@@ -9,15 +9,20 @@ mechanical + one one-time SWD flash.
 1. **Boards:** two JLCPCB PCBA orders from `hardware/kicad/generated/fab/` —
    see [fabrication-sourcing.md](fabrication-sourcing.md), including the DFM
    preview checklist (LED polarity!).
-2. **Prints:** back shell + front shell (PETG) and the two keymats (TPU 95A) from
-   `hardware/cad/build/` (STL for slicing; STEP alongside). Coupon-test a 3×3
-   keymat patch for hinge fatigue (>10 k presses) before printing the full mats.
+2. **Prints:** five PETG shell parts — `back_left`, `back_right`,
+   `grip_lid_left`, `grip_lid_right`, `center_panel` — and the two keymats
+   (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
+   `hardware/cad/build/`, STEP alongside). Every part fits a 220 × 220 bed
+   (Ender 3 V2) flat; orientations + slicer notes in
+   [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
+   fatigue (>10 k presses) before printing the full mats.
 3. **Order alongside:** 79+ Snaptron 7 mm domes with the taped retention array,
    a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥160 mm**
    — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
    contact rows sit 151.2 mm apart plus ~4 mm ZIF insertion each end, so a 150 mm
    ribbon cannot mate — plus a 1S 400–700 mAh JST-PH LiPo, Ø56 N52 MagSafe ring,
-   M2 heat-set inserts + screws.
+   **16 M2 heat-set inserts + 16 M2×10 button-head screws** (one SKU: 10 grip,
+   4 panel-floor, 2 panel-ring).
 
 ## 1. Press the domes
 
@@ -32,25 +37,39 @@ Per grip, on the **front** (bare gold) side:
 
 ## 2. Mechanical assembly
 
-1. Heat-set the **M2 inserts** into the back-shell bosses (3.2 mm bores, 5 per grip).
-2. Drop each board in, **parts down**, onto its perimeter bosses + the **3 support
-   posts** under the key field. Check the USB-C sits in its wall opening, the
-   slide-switch knob reaches its slot, and the reset tact + LED align with the
-   floor pinhole + light hole.
-3. **FFC jumper:** open both ZIF latches, feed the ribbon (≥160 mm type-A) across
-   the spine, **contacts facing the board at both ends** (the ZIFs are
-   bottom-contact and the jumper is type-A/same-side — a straight ribbon is
-   correct by construction; do not twist it). Close the latches.
-4. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
+Order matters with the split shells: **FFC into the boards first, lids before
+panel, panel last** (it overlaps nothing but is the seam splice + service hatch).
+
+1. Heat-set the **16 M2 inserts**: 5 per grip in each back half's PCB bosses,
+   2 per half in the panel bosses beside the x=0 seam, and 1 per half in the
+   Ø8 boss on the transverse spine wall (all 3.2 mm bores).
+2. **FFC jumper first:** with the boards loose, open both ZIF latches and seat
+   the ribbon (≥160 mm type-A), **contacts facing the board at both ends** (the
+   ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
+   ribbon is correct by construction; do not twist it). Close the latches. The
+   ZIFs are unreachable once the lids are on.
+3. Drop each board in, **parts down**, onto its perimeter bosses + the **3
+   support posts** under the key field. Check the USB-C sits in its wall
+   opening, the slide-switch knob reaches its slot, and the reset tact + LED
+   align with the floor pinhole + light hole.
+4. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
+   clamps the keymat web); drive the **5 M2×10 screws per grip**.
+5. **Join the back halves:** thread the FFC slack through the transverse-wall
+   windows, engage the two floor tabs and the wall shiplaps at x=0, and press
+   the halves flush. No screws here — the center panel is the splice.
+6. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
    JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
    wire lands on the pin marked **"+"** on the back silk beside J3 — that is
    **pin 1, the pin nearer the bottom board edge** ("−" marks pin 2). Seat the
-   cell in the spine pocket but leave it **unplugged** and the power switch
-   **OFF** — the cell is connected only *after* the first flash (§3); see the
-   REGOUT0 warning there.
-5. Lay the keymats over the domes, seat the **MagSafe ring** in the front-shell
-   recess, fit the front shell (its rim lightly clamps the keymat web) and drive
-   the 10 M2 screws.
+   cell on the spine floor (adhesive on **one half only**, so a future seam
+   split doesn't pry the pouch), route the leads through the wall window to J3,
+   but leave it **unplugged** and the power switch **OFF** — the cell is
+   connected only *after* the first flash (§3); see the REGOUT0 warning there.
+7. Seat the **MagSafe ring** in the panel recess (epoxy the full annulus — the
+   bond, not the 0.8 mm web, takes the detach pull), then fit the **center
+   panel** and drive its **6 M2×10 screws**: 4 in the plateau strips straddling
+   the back seam, 2 in the pocket floor at ring height (they sink 1.4 mm — the
+   phone clears them). To service battery/FFC later, only these 6 come back out.
 
 ## 3. First flash (one-time SWD, then UF2 forever)
 

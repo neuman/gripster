@@ -320,9 +320,9 @@ def product(c: Config) -> dict:
                   "x": round(-span_x / 2, 2), "y": round(cy - span_y / 2, 2)},
         "magsafe": {"cx": 0.0, "cy": round(cy, 2), "d": c.magsafe_d},
         # LiPo sits INSIDE the spine, directly BEHIND the MagSafe ring (centred on it),
-        # sandwiched between the back shell and front shell. The N52 ring is applied to
-        # the OUTSIDE of the front shell (top of the stack); the phone mates to it.
-        # Short wire to the right-grip charger; does NOT cross the left bridge.
+        # on the back-half floor under the center panel (v0.16 5-part shell). The N52
+        # ring is epoxied into the panel's pocket recess, 0.2mm proud; the phone mates
+        # to it. Short wire to the right-grip charger; does NOT cross the left bridge.
         "spine_battery": {"w": 52.0, "h": 36.0, "x": -26.0, "y": round(cy - 18.0, 2)},
         "config": asdict(c),
     }

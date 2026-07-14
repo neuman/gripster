@@ -3,7 +3,51 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.15 (first entry).
+current design is rev-A / v0.16 (first entry).
+
+## v0.16 — 5-part shell split for a 220 mm bed (2026-07-13)
+
+Concept change from the sketches (`sketches/All.png`, `top_shell.png`, `side.png`):
+the front is **two cyan grip lids** and a **pink center panel** that is visually
+"the front of the back"; the back stays pink. Driver: the one-piece shells were
+306 × 120 mm — they don't fit a Creality **Ender 3 V2 (220 × 220)** at any
+rotation (min enclosing square ~302 mm); the target printer is now first-class.
+
+- **Part set: 5 shells** — `back_left` + `back_right` (tray split at x=0 mid-
+  spine, ~161/153 × 120 mm), `grip_lid_left/right` (~79 × 120), `center_panel`
+  (~147 × 120). `deck3d.py --all` gates every part on **bbox ≤ 204 mm** (220 −
+  2×8 brim). Keymats unchanged.
+- **Staggered splices** — the bolted-on panel bridges the back seam at x=0; the
+  continuous back halves bridge the front seams at the grip edges: every
+  cross-section keeps one uncut structural member.
+- **Back seam is screwless printed joinery** (adversarial design review killed
+  the lap-screw variant: M2 inserts don't fit a 0.8 mm floor flap, and a
+  horizontal lap is a 120 mm unprintable one-sided cantilever): floor butt +
+  two full-thickness tabs into cleared notches, an 8 mm **vertical shiplap** in
+  each perimeter wall (vertical faces print clean; 0.25 mm clearances), and a
+  0.4 mm 45° outer V-groove = elephant-foot relief + intentional shadow line.
+- **Panel/lid joint is a 0.3 mm open reveal, no overlap** — a shiplap/rebate
+  here either lands on the inner lid screw heads (3.2 mm from the grip edge,
+  fab-locked) or creates more mid-air mating faces; the reveal needs neither.
+  Both edges get 0.8 mm 45° chamfers, so the seam reads as a design line.
+- **Transverse spine wall at each grip boundary** (new, in each back half):
+  closes each half's torsion box where the front plate is now cut, seats the
+  panel edge, and carries a **Ø8 boss at MagSafe-ring height** — phone-detach
+  pull anchors in line with the ring instead of peeling the panel. FFC and
+  battery-lead windows are cut from the placed J2/J3 positions.
+- **Panel plate 2.0 → 2.6 mm**: the Ø57 ring recess now leaves a **0.8 mm
+  (4-layer) web** instead of one 0.2 mm layer; ring still sits 0.2 mm proud;
+  spine grows 16.3 → 16.9 mm. Panel = spine **service hatch**: 6 screws expose
+  battery + FFC without touching the grips.
+- **Fasteners: 10 → 16 M2 (one SKU, M2×10 button-head)** — grips keep their 5
+  per side untouched; the panel adds 4 floor bosses straddling the back seam +
+  the 2 ring-height wall bosses.
+- **Fixed en route:** `battery_body()` modeled the 503450 pouch rotated 90°
+  (34 × 50 overflowed the 52 × 36 reserved rect y-span); `--sync-models` now
+  refreshes the tracked `hardware/cad/models/` STLs (they had gone stale/orphan).
+- `deck3d.py --check` = **0 collisions** (203 bodies); back-seam interpenetration
+  asserted 0.000 mm³; both cosmetic faces verified flat for their print
+  orientation.
 
 ## v0.15 / rev-A — the production audit pass (2026-07-11)
 
