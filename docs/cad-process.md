@@ -1,4 +1,16 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.16
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.17
+
+**v0.17 regeneration (2026-07-14).** All parts regenerated for the re-proportioned
+97 mm Rii-height grips: keymat plungers / lid openings are now the **rectangular
+8.5 × 7 mm keycaps** (18.5 mm 2u space; cluster keys stay round Ø6.2/Ø7.8), the
+USB-C opening + power-switch slot + antenna wall relief moved to the **top** wall,
+the slide-knob direction is derived from the placed footprint rotation, panel seam
+screws are derived from the phone-pocket span, and every cluster key now gets a
+**3 mm living-hinge strip** tying it into the keymat web (nearest grid key +
+nearest other feature, as the 2D concept always drew — previously the cluster
+plungers were silently disconnected islands; the web now asserts single-piece
+connectivity). `--all --check`: all 7 parts watertight + bed-fit, 203 bodies,
+**0 collisions**.
 
 **v0.16 shell split.** The shells are now **five printed parts** instead of two,
 so every part prints flat on a **Creality Ender 3 V2 (220 × 220 mm)** — the old
@@ -65,13 +77,14 @@ layer), **22.9 mm** including the mounted phone.
   ribbon is modeled ~2 mm below its physical run in the fit-check (clearances in
   that region are ≥4 mm, so it was not re-modeled).
 - **Back halves (`back_left` / `back_right`)** — the tray split at **x=0**
-  (mid-spine), each half = one grip bay + half the spine (~161 × 120 mm max):
+  (mid-spine), each half = one grip bay + half the spine (163.9/156.2 × 102.8 mm):
   walls, 6.3 mm PCB standoffs + **M2 heat-set bosses (3.2 mm bores, 5/grip)** at
   the mount coords, and **3 support posts per grip under the key field** so the
   PCB no longer flexes between perimeter bosses under thumb load.
   Through-features cut from the **real part placement**: a **13.5 × 7.0 mm USB-C
   wall opening** centred on the connector with a stepped outer relief for the
-  plug overmold, an **8 × 2.8 mm slide-switch slot** in the bottom wall, a
+  plug overmold (both in the TOP wall since v0.17), an **8 × 2.8 mm slide-switch
+  slot** in the top wall, a
   **1.6 mm reset pinhole** and a **1.5 mm charge-LED light hole** in the floor
   (both located from the placed SW91/D80), and a **0.6 mm antenna wall relief**
   at the E73 edge. The LiPo sits on the spine floor spanning the seam (adhere it
@@ -84,13 +97,13 @@ layer), **22.9 mm** including the mounted phone.
   battery-lead pass-throughs) closes each half's torsion box, seats the panel
   edge, and carries a **Ø8 boss at MagSafe-ring height**.
 - **Grip lids (`grip_lid_left` / `grip_lid_right`)** — per-grip face plates
-  (~79 × 120 mm), cyan in the concept: **key openings at the exact dome
-  centres** and a **rim that clamps the keymat web with ~0.1 mm preload** so the
+  (82.4 × 102.8 mm), cyan in the concept: **rounded-rect key openings at the exact
+  dome centres** (cap + 0.2 mm/side; round for the cluster keys) and a **rim that clamps the keymat web with ~0.1 mm preload** so the
   mat can't float or rattle; the **5 screw positions per grip are unchanged**
   from rev-A. The inner edge is cut straight at the grip boundary with a 0.8 mm
   top chamfer (its half of the reveal V). Print cosmetic-face-down.
 - **Center panel (`center_panel`)** — the pink "front of the back"
-  (~147 × 120 mm, 2.6 mm plate + 2.0 mm plateau): phone in a **2.0 mm-deep
+  (147.0 × 102.8 mm, 2.6 mm plate + 2.0 mm plateau): phone in a **2.0 mm-deep
   pocket in the raised plateau**, open at the x-ends — the grips abut the
   phone's short ends, the pocket rim captures its long edges. Inside the pocket
   floor: a **Ø57 × 1.8 mm recess** for the Ø56 N52 MagSafe ring — the 2.0 mm

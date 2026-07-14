@@ -52,9 +52,10 @@ LiPo cell (JST-PH, J3)
 ## Radio
 
 - BLE HID to the host as **"thumbdeck"** — one device, no inter-half pairing.
-- The E73's ceramic antenna points **down, off the bottom board edge**, with an
-  all-layer copper keep-out crossing the edge and a 0.6 mm relief in the shell
-  wall. This replaced an earlier placement that aimed the antenna mid-board at the
+- The E73's ceramic antenna points **up, off the top board edge** (centre-top,
+  farthest from the phone and LiPo), with an all-layer copper keep-out crossing
+  the edge and a 0.6 mm relief in the shell wall (shell relief position pending
+  regeneration for v0.17). This replaced an earlier placement that aimed the antenna mid-board at the
   USB shell over ground pour (detuned).
 - **No 32.768 kHz crystal on the module** — firmware runs the LF clock from the
   internal RC (`CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC` + 500 PPM). Without that
@@ -69,6 +70,12 @@ LiPo cell (JST-PH, J3)
 | Power | MSK12C02 slide (SW90) | knob through an 8 × 2.8 mm slot in the bottom shell wall |
 | Reset / UF2 | TS-1187A tact (SW91), top-actuated | paperclip through a 1.6 mm pinhole in the shell floor (double-tap = bootloader) |
 | Charge state | red LED (D80) | 1.5 mm light hole in the shell floor |
+
+> **v0.17:** the E73 and the whole power front-end moved to the **top** zone —
+> the USB-C opening and the power-switch slot are now in the **top shell wall**;
+> the reset pinhole and charge light-hole stay in the floor at the relocated
+> positions. Shells regenerated + fit-checked 2026-07-14 (`deck3d.py --check`
+> = 0 collisions).
 
 ## Safety
 

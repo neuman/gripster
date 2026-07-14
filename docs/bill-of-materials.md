@@ -11,7 +11,7 @@ see git history and [design-decisions.md](design-decisions.md).
 
 | Comment | Designators | Package / footprint | LCSC | Role |
 |---|---|---|---|---|
-| E73-2G4M08S1C | U1 | nRF52840_E73-2G4M08S1C | **C356849** | nRF52840 module, antenna-down at the bottom edge. Extended, X-ray, **low stock — reserve early**. |
+| E73-2G4M08S1C | U1 | nRF52840_E73-2G4M08S1C | **C356849** | nRF52840 module, antenna-up off the top edge (centre-top). Extended, X-ray, **low stock — reserve early**. |
 | MCP73831 | U2 | SOT-23-5 | C424093 | LiPo charger (-2ACI, 4.2 V). PROG = R24 → ~196 mA. |
 | USBLC6-2SC6 | U3 | SOT-23-6 | C7519 | USB ESD, **inline** between USB-C and module. |
 | USB-C | J1 | HRO TYPE-C-31-M-12, full SMD 16P | C165948 | Charge + flash. Extended part. |
@@ -51,8 +51,8 @@ assembly is fine.
 | FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥160 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not 150 mm:** the J2 contact rows are 151.2 mm apart and each ZIF drawer needs ~4 mm of insertion — a 150 mm ribbon cannot mate. |
 | LiPo | 1S 400–700 mAh pouch, JST-PH pigtail | 1 | Sits in the spine behind the MagSafe ring. **Meter polarity against the "+"/"−" silk at J3 first** (pin 1 = "+", nearer the bottom board edge). |
 | MagSafe ring | Ø56 N52 ring, 2.0 mm | 1 | Epoxied into the center panel's Ø57 × 1.8 recess (sits 0.2 mm proud). |
-| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. |
-| Keymats | per-grip, **TPU 95A** | 2 | Living-hinge web; coupon-test >10 k cycles first. |
+| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. **Regenerated + fit-checked for v0.17** (2026-07-14, 0 collisions): lids 82.4 × 102.8, backs 163.9/156.2 × 102.8, panel 147.0 × 102.8 mm. |
+| Keymats | per-grip, **TPU 95A** | 2 | Living-hinge web; coupon-test >10 k cycles first. **v0.17 geometry**: rectangular 8.5 × 7 rounded-rect caps (18.5 mm 2u space), round cluster keys; ~63 × 86–89 mm per mat. |
 | M2 hardware | **M2×10 button-head** screws + heat-set inserts (3.2 mm bores) | 16 + 16 | One screw SKU: 5 per grip (unchanged), 4 panel-floor at the x=0 seam, 2 panel-ring anchors in the transverse walls. |
 | Bootloader flash rig | SWD probe (J-Link/CMSIS-DAP/pi) + 5 jumper wires | 1 | One-time Adafruit-bootloader flash on TP1–5. |
 

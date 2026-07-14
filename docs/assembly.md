@@ -4,6 +4,13 @@ Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
 machine-placed) — there is **no hand-soldering** in this build. Your work is
 mechanical + one one-time SWD flash.
 
+> **v0.17 status:** the boards, fab package and firmware in this guide are the
+> re-routed **v0.17** grip (79.5 × 97 mm; the E73 + power front-end — USB-C,
+> charger, ESD, power slide switch, reset, charge LED — moved to the **top**
+> zone, with the JST-PH battery connector in the bottom chin). The **3D shells
+> and keymats have not been regenerated for v0.17** and still reflect the v0.16
+> board — do **not** print them until `deck3d.py` is re-run and reviewed.
+
 ## 0. Order & print
 
 1. **Boards:** two JLCPCB PCBA orders from `hardware/kicad/generated/fab/` —
@@ -51,7 +58,10 @@ panel, panel last** (it overlaps nothing but is the seam splice + service hatch)
 3. Drop each board in, **parts down**, onto its perimeter bosses + the **3
    support posts** under the key field. Check the USB-C sits in its wall
    opening, the slide-switch knob reaches its slot, and the reset tact + LED
-   align with the floor pinhole + light hole.
+   align with the floor pinhole + light hole. *(v0.17: the USB-C opening and
+   slide-switch slot are in the TOP shell wall, the reset pinhole + charge
+   light-hole in the floor near the top zone — the shells were regenerated and
+   fit-checked for this layout on 2026-07-14.)*
 4. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
    clamps the keymat web); drive the **5 M2×10 screws per grip**.
 5. **Join the back halves:** thread the FFC slack through the transverse-wall

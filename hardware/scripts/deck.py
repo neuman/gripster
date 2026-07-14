@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.13"
+VERSION = "v0.17"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -68,10 +68,17 @@ class Config:
     # i.e. ~3-4 perimeters of wall at a 0.4mm nozzle — the minimum for a reliable PETG-FDM
     # keymat + shell. (At 8.5mm the wall was only ~0.5mm = unprintable in PETG; resin/SLA
     # or a 0.25mm nozzle would be needed to go tighter.) 9.5mm also matches the i8+ pitch.
-    pitch_x: float = 9.5
-    pitch_y: float = 9.5
-    key_w: float = 8.0
-    key_h: float = 8.0
+    # v0.17: RECTANGULAR keys (Rii i8+ chiclet feel) to shrink the key-field HEIGHT — the
+    # user thumb-types an i8+ daily and its keys are ~9x7mm, wider than tall. Ours go 8.5w
+    # x 7.0h, so H-pitch 10.0 / V-pitch 9.0 keep a printable gutter both ways (1.5mm X,
+    # 2.0mm Y >= the 1.5mm PETG-FDM minimum). The 7mm domes (contact courtyard r3.9) still
+    # clear at 9.0 V-pitch — 1.2mm courtyard gap, pads/via-keepouts non-overlapping. This
+    # drops the 6-row field 55.5 -> 52.0mm; with the chin cut + module-to-top it takes the
+    # grip 114.5 -> ~99mm (Rii i8+ ~97mm). See docs/design-decisions.md.
+    pitch_x: float = 10.0
+    pitch_y: float = 9.0
+    key_w: float = 8.5
+    key_h: float = 7.0
     col_stagger: float = 0.0      # ortholinear (was 1.3 arc-stagger through v0.4)
     arc_bow: float = 0.0          # ortholinear (was 0.06 through v0.4)
     # v0.15: 6 -> 8 so the 16-pin FFC ZIF bridge connector (6.7mm deep) fits on the
@@ -82,10 +89,16 @@ class Config:
     # v0.10: LiPo moved to the central SPINE (behind the MagSafe ring), so the grip
     # bottom zone only needs USB-C + charger + bridge — shrinks the grip height so it
     # no longer dwarfs the phone (target ~grip = phone_short + ~2x12mm overhang, i8+-like).
-    # v0.15: 14 -> 19: the E73 now sits antenna-down at the bottom EDGE (RF-correct)
-    # which needs the full 18mm module length below the key field, and the passive
-    # lane (SWD pads / row pulldowns / divider) needs its own strip above the module.
-    bottom_strip: float = 19.0
+    # v0.15: 14 -> 19: the E73 sat antenna-down at the bottom EDGE, which needed the full
+    # 18mm module length below the key field plus a passive lane above it.
+    # v0.17: 19 -> 7. The E73 + the WHOLE power front-end moved to the TOP zone (the
+    # vacated trackpad space); antenna now points UP off the top edge — away from the palm
+    # that cradles the bottom, and off the far edge from the centred phone/LiPo.
+    # The bottom strip now only carries the FFC-bridge exit + one mount boss + the JST, so
+    # the "chin" below the space row is ~9mm (was ~23mm) — Rii-like. It can be trimmed
+    # further (~5mm) by moving the JST up to the top cluster, at the cost of a tighter bottom
+    # shell wall; kept at 7 for a comfortable printable wall + bottom keymat screw.
+    bottom_strip: float = 7.0
     # v0.9 (PCBA sourcing): MCU module is the **Ebyte E73-2G4M08S1C** nRF52840
     # (JLC C356849) — the Raytac MDBT50Q was out of stock / not reliably
     # JLC-placeable. The E73 is in the JLC library, is the community-standard
@@ -121,7 +134,7 @@ def _key_centers(c: Config):
     key (the bottom-row 2u space) shifts the rest of its row over. Each key carries a
     'w' (width in units); the dome/switch stays single, only the keycap is 2u."""
     field_x0 = c.inner_margin + c.key_w / 2.0
-    field_y0 = c.bottom_strip + c.key_h / 2.0 + 4.0
+    field_y0 = c.bottom_strip + c.key_h / 2.0 + 2.0   # v0.17: +4 -> +2 (chin trimmed)
     keys = []
     for r in range(c.rows):
         colpos = 0.0
@@ -146,14 +159,18 @@ def _outline(c: Config, keys):
     ys = [k["y"] for k in keys]
     outer_base = max(xs) + c.key_w / 2 + c.grip_margin
     top_keys = max(ys) + c.key_h / 2
-    # upper grip zone sized for the D-pad / mouse / page-key cluster + the SMD module
-    # behind it. The OPTIONAL trackpad is NOT sized in here (it overhangs the top as a
-    # shoulder bump when populated) so the base grip stays short.
-    # upper zone must fully clear the D-pad plus-cluster (2*cluster_pitch + key +
-    # top/bottom margins) so NAV_D doesn't collide with the F-row below it.
+    # v0.17: the upper grip zone now carries ALL the SMD electronics on the BACK (E73 +
+    # power front-end, relocated up from the old bottom strip) with the front-face cluster
+    # stacked over them (LEFT: D-pad + mouse buttons / RIGHT: PgUp-PgDn at the outer corner).
+    # Height is driven by the D-pad plus-cluster (2*cluster_pitch + key + margins), which
+    # also comfortably clears the 18mm E73 body hanging antenna-up from the top edge
+    # (ctrl_h + usb_gap). NAV_D still clears the F-row below it.
     upper_zone = max(2 * c.cluster_pitch + c.feat_key_d + 10.0, c.ctrl_h + c.usb_gap)
     board_h = top_keys + upper_zone + 2.0
-    r_in, r_out = 4.0, 14.0
+    # v0.17: the TOP-outer corner is sharpened (10 vs the 14 palm-round bottom) so the E73
+    # + power cluster clear it at the top edge — and squarer "shoulders" read more like the
+    # i8+. The bottom-outer corner stays generously rounded for the palm.
+    r_in, r_out_top, r_out_bot = 4.0, 10.0, 14.0
 
     def outer_x(y):
         t = (y - board_h / 2) / (board_h / 2)
@@ -162,13 +179,13 @@ def _outline(c: Config, keys):
 
     pts = [[0.0, r_in], [0.0, board_h - r_in]]
     pts += _arc(r_in, board_h - r_in, r_in, 180, 90, 5)
-    pts.append([outer_x(board_h) - r_out, board_h])
-    pts += _arc(outer_base - r_out, board_h - r_out, r_out, 90, 0, 8)
+    pts.append([outer_x(board_h) - r_out_top, board_h])
+    pts += _arc(outer_base - r_out_top, board_h - r_out_top, r_out_top, 90, 0, 8)
     n = 20
     for i in range(1, n):
-        y = (board_h - r_out) - (board_h - 2 * r_out) * i / n
+        y = (board_h - r_out_top) - (board_h - r_out_top - r_out_bot) * i / n
         pts.append([round(outer_x(y), 3), round(y, 3)])
-    pts += _arc(outer_base - r_out, r_out, r_out, 0, -90, 8)
+    pts += _arc(outer_base - r_out_bot, r_out_bot, r_out_bot, 0, -90, 8)
     pts.append([r_in, 0.0])
     pts += _arc(r_in, r_in, r_in, -90, -180, 5)
     board_w = max(p[0] for p in pts)
@@ -203,16 +220,21 @@ def _keepouts_mcu(c, board_w, board_h, outer_base, outline, keys):
         re = min(_right_edge_x(y, outline), _right_edge_x(y + h, outline),
                  _right_edge_x(y + h / 2, outline)) - margin
         return round(re - w, 2)
-    # ALL electronics live in the BOTTOM strip. v0.15 layout (matches gen_board.py):
-    # E73 antenna-DOWN at the bottom edge (inner-ish), USB-C mid-bottom (mouth flush
-    # with the edge), ESD inline, charger + battery-cap + LED + power/reset switches
-    # to the right, FFC bridge + JST-PH battery on the inner edge, passive lane
-    # (SWD / spare-GPIO / row pulldowns / divider) in the strip above the module.
+    # v0.17: ALL electronics live in the TOP zone now (the vacated trackpad space), so the
+    # chin can be trimmed. Layout mirrors the old bottom cluster, flipped to the top edge
+    # (matches gen_board.py place_components): E73 antenna-UP at the top edge (inner-ish),
+    # USB-C mouth flush with the top edge, ESD inline, charger + battery-cap + LED +
+    # power/reset switches beside them, FFC bridge + JST-PH battery on the inner edge,
+    # passive lane (SWD / spare-GPIO / row pulldowns / divider) just below the module.
     # LiPo is in the spine (deck.product), not here.
-    ko["controller"] = [9.5, -0.5, c.ctrl_w, c.ctrl_h]        # Ebyte E73, antenna-down at edge
-    ko["antenna"] = [7.5, -1.5, 17.0, 6.5]                    # module antenna keep-out zone
-    ko["usb_c"] = [32.5, 0.0, 9.5, 9.5]                       # J1 mouth flush with bottom edge
-    ko["charger"] = [43.0, 1.0, 18.0, 8.0]                    # U2/U3 + caps + LED + switches
+    # Advisory boxes track gen_board.place_components' 180-deg + DX cluster rotation:
+    # E73 antenna-UP at the CENTRE-top edge, USB-C mouth beside it, charger/power cluster
+    # toward the inner-top, divider at the outer-top. (JST is placed separately in the chin.)
+    top = board_h
+    ko["controller"] = [50.0, top - 18.0, c.ctrl_w, c.ctrl_h]  # Ebyte E73, antenna-up at the centre-top edge
+    ko["antenna"] = [48.0, top - 1.0, 17.0, 6.5]              # module antenna keep-out, crossing the TOP edge
+    ko["usb_c"] = [30.75, top - 9.5, 9.5, 9.5]                # J1 mouth flush with the top edge
+    ko["charger"] = [15.0, top - 11.0, 16.0, 9.0]           # U2/U3 + caps + LED + switches, inner-top
     ko["bridge"] = _bridge_conn(board_h)
     return ko
 
@@ -231,12 +253,16 @@ def _mount_holes(board_h, outer_base, bottom_strip, outline):
         e = min(_right_edge_x(y, outline), _right_edge_x(y - 3, outline),
                 _right_edge_x(y + 3, outline))
         return round(e - 4.5, 2)                        # 4.5mm = M2 boss + wall
+    # v0.17: the top corners now sit in the packed electronics zone, so the two upper holes
+    # are pulled to the extreme inner/outer edges (clear of the E73 body + power cluster) and
+    # the bottom holes live in the trimmed ~9mm chin. gen_board.assert_clear_of_bosses() is
+    # the gate that no component courtyard enters a boss disc.
     return [
-        {"x": inset, "y": round(bottom_strip * 0.5, 2), "d": d},  # bottom-inner (BELOW the bridge connector)
-        {"x": inset, "y": round(board_h * 0.50, 2), "d": d},   # inner-mid
-        {"x": inset, "y": round(board_h * 0.86, 2), "d": d},   # top-inner
-        {"x": ox(board_h * 0.28), "y": round(board_h * 0.28, 2), "d": d},  # bottom-outer
-        {"x": ox(board_h * 0.72), "y": round(board_h * 0.72, 2), "d": d},  # top-outer
+        {"x": 4.6, "y": 6.0, "d": d},                          # bottom-inner (in the trimmed chin; nudged off the inner edge for wall)
+        {"x": inset, "y": round(board_h * 0.42, 2), "d": d},   # inner-mid
+        {"x": inset, "y": round(board_h * 0.80, 2), "d": d},   # top-inner (inner edge, left of the E73 body)
+        {"x": ox(board_h * 0.20), "y": round(board_h * 0.20, 2), "d": d},  # bottom-outer
+        {"x": ox(board_h * 0.70), "y": round(board_h * 0.70, 2), "d": d},  # top-outer (outer edge, below the PgUp/PgDn cluster)
     ]
 
 
@@ -258,9 +284,13 @@ def _features(geo: dict, c: Config) -> list:
         # inner edge at x=0; grip body toward +x. (The PCB-integrated trackpad was
         # DROPPED for v1 — pointer duty goes to ZMK mouse keys; the I2C pins are
         # broken out to spare pads for a rev-B trackpad. No feature emitted.)
-        ox = ob - 8.5                                 # page keys inboard of the outer edge
-        feats.append({"type": "key", "label": "PGUP", "x": round(ox, 2), "y": round(cy_lo + 5.5, 2), "d": c.feat_key_d})
-        feats.append({"type": "key", "label": "PGDN", "x": round(ox, 2), "y": round(cy_lo - 5.5, 2), "d": c.feat_key_d})
+        # v0.17: the E73 + power cluster now fill the OUTER/centre of this top zone (module
+        # antenna at the outer-top edge, farthest from the phone = best RF), so PgUp/PgDn
+        # move to the INNER-top corner — clear of the module body and its back-side
+        # diodes/vias, still an easy up-and-in flick for the right thumb.
+        ix = c.inner_margin + 3.0
+        feats.append({"type": "key", "label": "PGUP", "x": round(ix, 2), "y": round(geo["board_h"] - 6.5, 2), "d": c.feat_key_d})
+        feats.append({"type": "key", "label": "PGDN", "x": round(ix, 2), "y": round(geo["board_h"] - 17.5, 2), "d": c.feat_key_d})
     else:
         # left grip: inner edge at x=W; grip body toward -x (mirrored)
         cx = W - ob * 0.44                            # D-pad centre (inner-ish)
@@ -314,8 +344,11 @@ def product(c: Config) -> dict:
     cy = right["board_h"] / 2.0
     return {
         "right": right, "left": left,
-        "right_origin": [round(rx, 2), 0.0],
-        "left_origin": [round(lx, 2), 0.0],
+        # origins rounded to 3 decimals to MATCH build()'s board_w precision —
+        # at 2 decimals a 3rd-decimal board_w (v0.17: 79.493) shifts the left
+        # grip's inner edge 0.003mm off the seam and deck3d's frame assert trips
+        "right_origin": [round(rx, 3), 0.0],
+        "left_origin": [round(lx, 3), 0.0],
         "phone": {"w": span_x, "h": span_y,
                   "x": round(-span_x / 2, 2), "y": round(cy - span_y / 2, 2)},
         "magsafe": {"cx": 0.0, "cy": round(cy, 2), "d": c.magsafe_d},

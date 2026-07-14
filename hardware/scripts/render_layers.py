@@ -218,7 +218,7 @@ def pcb_back(ax, P):
 def keymats(ax, P):
     for key in ("left", "right"):
         geo = P[key]; ox, oy = P[f"{key}_origin"]
-        pitch = geo["config"]["pitch_x"]; kw0 = geo["config"]["key_w"]
+        pitch = geo["config"]["pitch_x"]; kw0 = geo["config"]["key_w"]; kh0 = geo["config"]["key_h"]
         grid = {(k["row"], k["col"]): k for k in geo["keys"]}
         feats = [f for f in geo.get("features", []) if f["type"] == "key"]
 
@@ -246,7 +246,7 @@ def keymats(ax, P):
         # keycaps (grid = w-aware incl. 2u space; feature keys = single)
         for k in list(geo["keys"]) + feats:
             w = (k.get("w", 1) - 1) * pitch + kw0
-            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - 3.7), w, 7.4,
+            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - kh0 / 2), w, kh0,
                          boxstyle="round,pad=0,rounding_size=1.6", facecolor="#d7dade",
                          edgecolor="#9aa0a7", lw=0.9, zorder=5))
             ax.text(k["x"] + ox, k["y"] + oy, k.get("label", "").replace("NAV_", "").replace("MB_", "M"),
@@ -283,10 +283,10 @@ def front_shell(ax, P):
     for key in ("left", "right"):
         geo = P[key]; ox, oy = P[f"{key}_origin"]
         sw = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
-        pitch = geo["config"]["pitch_x"]
+        pitch = geo["config"]["pitch_x"]; kw0 = geo["config"]["key_w"]; kh0 = geo["config"]["key_h"]
         for k in sw:
-            w = (k.get("w", 1) - 1) * pitch + 8.0
-            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - 4.0), w, 8.0,
+            w = (k.get("w", 1) - 1) * pitch + kw0
+            ax.add_patch(FancyBboxPatch((k["x"] + ox - w / 2, k["y"] + oy - kh0 / 2), w, kh0,
                          boxstyle="round,pad=0,rounding_size=1.6", facecolor=BG,
                          edgecolor=INK, lw=0.7, zorder=4))
         for f in geo.get("features", []):

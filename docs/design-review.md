@@ -21,7 +21,7 @@ the v0.14 fab-readiness audit) are superseded by this file plus
    the ring. Full mask apertures; F.Cu pour keepout r 3.8; all-layer via keepout
    r 3.6. No vent hole — venting comes from the Snaptron retention-tape channels.
    *Why:* the old "simple" 2-pad footprint gave **dead keys at 45° dome rotation**.
-2. **E73 rotated antenna-DOWN at the bottom board edge.** Its all-layer keep-out
+2. **E73 rotated antenna-UP at the top board edge (centre-top).** Its all-layer keep-out
    covers the antenna area and crosses the board edge (~3 mm on-board strip + the
    off-board extension); the on-board region is verified copper-free on all 4
    layers (plus a 0.6 mm shell-wall relief). *Was:* antenna
@@ -43,7 +43,7 @@ the v0.14 fab-readiness audit) are superseded by this file plus
    first plug-in.
 5. **NEW power switch:** MSK12C02 slide (C431540, SW90) between cell+ and the
    VBAT rail; the charger stays on the **cell side**, so it charges while
-   switched off. Knob through a slot in the bottom shell wall.
+   switched off. Knob through a slot in the top shell wall (regenerated for v0.17).
 6. **NEW reset button:** TS-1187A tact (C318884, SW91, top-actuated), pressed
    through a 1.6 mm pinhole in the shell floor — UF2 double-tap entry without
    opening the shell.
@@ -83,6 +83,9 @@ Board-envelope consequence of 3–7: each grip grew **74.5 × 109.5 → 76.5 ×
 114.5 mm** (inner margin 6 → 8 mm for the FFC bridge; bottom strip 14 → 19 mm for
 the module-at-edge + passive lane), and the back-cavity height 5.7 → 6.3 mm for
 the mated JST-PH.
+**(v0.17: re-proportioned to 79.5 × 97.0 mm — the E73 + power front-end moved up to
+the top zone, so the bottom chin shrank to ~9 mm; 3D shells/keymats regenerated and
+fit-checked 2026-07-14, 0 collisions.)**
 
 ## Firmware findings (5 build-breakers, all fixed)
 

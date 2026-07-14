@@ -66,8 +66,12 @@ python3 gen_fab.py          # refuses to export unless DRC is 0/0
 
 ## Board facts
 
-- **76.5 × 114.5 mm** per grip, **4-layer**: F.Cu (signal) / **In1.Cu (solid GND
-  plane, never routed through)** / In2.Cu (signal) / B.Cu (signal).
+- **79.5 × 97.0 mm** per grip (v0.17: Rii-height, chin cut + electronics moved to
+  the top zone), **4-layer**: F.Cu (signal) / **In1.Cu (solid GND plane, never
+  routed through)** / In2.Cu (signal) / B.Cu (signal). Note the v0.17 route is
+  tighter than rev-A — the module (top) and the FFC bridge (inner-bottom) put the
+  14 bridge nets across the board, so `route.sh`'s route-until-clean loop may need a
+  few passes to hit 0/0.
 - 1.6 mm FR-4, **ENIG** (dome contacts), 0.2 mm clearance/track rules, via 0.6/0.3.
 - All parts on **B.Cu** → single-sided reflow, no hand-soldered parts (the USB-C
   shell's plated stakes and the FFC/slide-switch locating pegs are the only
@@ -81,10 +85,10 @@ python3 gen_fab.py          # refuses to export unless DRC is 0/0
   the column trace can reach the centre pad. Worst-case dome rotation still lands
   3 of 4 legs on the ring. Each dome also carries an F.Cu pour keepout (r 3.8) and
   an all-layer via keepout (r 3.6) that both the router and the stitcher honour.
-- **E73 antenna keep-out.** The module sits antenna-**down** at the bottom board
-  edge; the all-layer keep-out covers the antenna area and crosses the board edge
-  (~3 mm on-board strip + the off-board extension), and the on-board region is
-  verified copper-free on all 4 layers. It's a rule area in the
+- **E73 antenna keep-out.** The module sits antenna-**up** at the centre of the
+  **top** board edge (v0.17); the all-layer keep-out covers the antenna area and
+  crosses the board edge (~3 mm on-board strip + the off-board extension), and the
+  on-board region is verified copper-free on all 4 layers. It's a rule area in the
   footprint, so Freerouting (via the DSN) and stitch.py both avoid it.
 - **COL9 on pad 18 (P0.04/AIN2)**, not pad 11 (P0.00/XL1) — the XTAL pins stay
   free even though firmware runs the LF clock from the internal RC.

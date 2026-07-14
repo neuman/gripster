@@ -18,7 +18,7 @@ Frame: deck.py Y-up, origin bottom-left of the RIGHT grip; z=0..1.6 = PCB, +z = 
 import os, sys, argparse, math, json, subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import numpy as np, trimesh, deck
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box as shp_box
 
 HERE = os.path.dirname(__file__)
 BUILD = os.path.join(HERE, "build")
@@ -56,7 +56,7 @@ def _spec(fp):
     return None
 
 DOME_D, DOME_H = 7.0, 0.5   # Snaptron 7mm snap dome (dia, height above pad)
-KNOB = (3.0, 1.5, 2.0)      # MSK12C02 slide knob (w, protrusion toward the bottom edge, h)
+KNOB = (3.0, 1.5, 2.0)      # MSK12C02 slide knob (w, protrusion toward the nearest edge — derived from rot, h)
 
 
 def _box(dx, dy, dz):
@@ -104,10 +104,13 @@ def pcb_assembly(side):
             # bbox envelope: already axis-aligned in board coords, no rotation
             m = _place(_box(f["w"], f["h"], ddz), x, y, z)
         if spec.get("knob"):
-            # MSK12C02 slide knob protruding from the body face toward the bottom edge
+            # MSK12C02 slide knob protruding from the body face toward the nearest board
+            # edge: rev-A (rot~0) faced the BOTTOM edge; the v0.17 cluster rotation
+            # (rot~180) faces the TOP edge. Derive the face from the placed rotation.
             kw, kp, kh = KNOB
-            by = (H - f["ay"]) - spec["body"][1]/2    # body face nearest the bottom edge
-            m = trimesh.util.concatenate([m, _place(_box(kw, kp, kh), f["ax"], by - kp/2, z)])
+            dirn = 1 if abs((f["rot"] % 360) - 180) < 45 else -1
+            by = (H - f["ay"]) + dirn * spec["body"][1]/2   # knob-side body face
+            m = trimesh.util.concatenate([m, _place(_box(kw, kp, kh), f["ax"], by + dirn*kp/2, z)])
         m.visual.face_colors = [70, 70, 75, 255] if ref[0] in "UJ" else [120, 120, 40, 255]
         # the board reuses SW1/SW2 for the back power/reset switches (domes own SW*):
         # give them deterministic unique names regardless of iteration order.
@@ -173,6 +176,37 @@ def _key_centers_product(only_side=None):
             out.append((k["x"]+ox, k["y"]+oy, k.get("d", 7.0)))
     return out
 
+CAP_R = 1.6            # keycap corner radius (matches the 2D renders)
+CAP_CLR = 0.2          # per-side clearance between cap and its lid opening
+def _rrect(cx, cy, w, h, r=CAP_R):
+    """Rounded-rect shapely polygon centred on (cx, cy)."""
+    return shp_box(cx - w/2 + r, cy - h/2 + r, cx + w/2 - r, cy + h/2 - r).buffer(r)
+
+def _cap_shapes_product(side):
+    """v0.17 keycap geometry per key, product frame: [(plunger_poly, opening_poly,
+    x, y)]. GRID keys carry the rectangular 8.5 x 7.0 caps (2u space 18.5) the user
+    feels — the plunger IS the cap, poking through a matching rounded-rect lid
+    opening (+CAP_CLR/side). CLUSTER feature keys stay round (Ø6.2 plunger through
+    a Ø7.8 opening, the proven v0.16 pair)."""
+    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    c = geo["config"]
+    out = []
+    for k in geo["keys"]:
+        w = (k.get("w", 1) - 1) * c["pitch_x"] + c["key_w"]
+        cap = _rrect(k["x"]+ox, k["y"]+oy, w, c["key_h"])
+        out.append((cap, cap.buffer(CAP_CLR), k["x"]+ox, k["y"]+oy))
+    for f in geo.get("features", []):
+        if f["type"] != "key":
+            continue
+        x, y = f["x"]+ox, f["y"]+oy
+        pl = Polygon([(x+KM_PL_D/2*math.cos(t), y+KM_PL_D/2*math.sin(t))
+                      for t in np.linspace(0, 2*math.pi, 24)])
+        d = f.get("d", 7.0)
+        op = Polygon([(x+(d/2+0.4)*math.cos(t), y+(d/2+0.4)*math.sin(t))
+                      for t in np.linspace(0, 2*math.pi, 24)])
+        out.append((pl, op, x, y))
+    return out
+
 def _seam_frame():
     """x-stations of the split (product frame): grip inner edges at +-gx, back-shell
     halves part at x=0, panel spans |x| <= gx-SEAM_GAP. Derived, never hard-coded."""
@@ -221,7 +255,12 @@ PLATEAU_TOP = PANEL_TOP + POCKET_D           # 16.9 (pocket rim / device front)
 SEAM_GAP = 0.3        # front reveal gap between panel edge and lid edge (deliberate V)
 LAP_CLR = 0.25        # printed-joint in-plane clearance (FDM: elephant foot + warp)
 XWALL_T = 2.5         # transverse spine wall (closes each half's torsion box, seats panel)
-PANEL_SCREWS = [(-10.0, 10.0), (10.0, 10.0), (-10.0, 105.0), (10.0, 105.0)]  # straddle x=0 seam
+# 4 seam-splice screws straddling the x=0 back seam, DERIVED from the phone pocket
+# span (v0.17: hardcoded y=10/105 broke when the board shrank to 97mm — 105 was off
+# the shell and 10 clipped the new pocket rim): 5.5mm outside each pocket edge.
+_PH0 = deck.product(deck.Config())["phone"]
+PANEL_SCREWS = [(sx, sy) for sy in (_PH0["y"] - 5.5, _PH0["y"] + _PH0["h"] + 5.5)
+                for sx in (-10.0, 10.0)]
 
 def _cq_from_poly(geom, z0, h):
     """Extrude a shapely Polygon/MultiPolygon (with holes) to a CadQuery solid."""
@@ -320,35 +359,39 @@ def _back_solid():
             post = (cq.Workplane("XY").workplane(offset=FLOOR).center(px+ox, py+oy)
                     .circle(POST_R).extrude(STANDOFF))
             shell = shell.union(post)
-    # ---- right-grip back-side feature cuts (all positions from the placement export)
+    # ---- right-grip back-side feature cuts (all positions from the placement export).
+    # v0.17: the whole cluster moved to the TOP zone, so every wall cut lands in the
+    # TOP wall (outer face at y = bh_r + WALL_T + PCB_CLR) instead of the old bottom.
     ox, oy = prod["right_origin"]
+    bh_r = prod["right"]["board_h"]
     # USB-C wall opening: 13.5 x 7.0 centred on the receptacle mouth (J1 x, mouth at
-    # the board edge y=0; receptacle vertical centre ~1.6mm below the PCB underside)
+    # the TOP board edge y=bh_r; receptacle vertical centre ~1.6mm below the PCB underside)
     jx, _ = _find_fp("right", "USB_C_Receptacle_HRO")
     zc = PCB_Z - 1.6
     shell = shell.cut(cq.Workplane("XY").workplane(offset=zc - 3.5)
-                      .center(jx, -1.5).box(13.5, 3.4, 7.0, centered=(True, True, False)))
+                      .center(jx, bh_r + 1.5).box(13.5, 3.4, 7.0, centered=(True, True, False)))
     # stepped outer relief (in lieu of a chamfer) so a 12.35 x 6.5 plug overmold seats
     # fully against the receptacle through the 2.9mm wall
     shell = shell.cut(cq.Workplane("XY").workplane(offset=zc - 4.5)
-                      .center(jx, -2.35).box(16.0, 1.3, 9.0, centered=(True, True, False)))
-    # power slide switch slot: knob protrudes toward the bottom edge; 8 x 2.8 gives
+                      .center(jx, bh_r + 2.35).box(16.0, 1.3, 9.0, centered=(True, True, False)))
+    # power slide switch slot: knob protrudes toward the TOP edge; 8 x 2.8 gives
     # the ~3mm travel + finger access, centred at the knob (= body-centre) height
     sx, _ = _find_fp("right", "msk12c02", anchor=True)
     kz = PCB_Z - SOLDER - 3.6/2
     shell = shell.cut(cq.Workplane("XY").workplane(offset=kz - 1.4)
-                      .center(sx, -1.5).box(8.0, 3.4, 2.8, centered=(True, True, False)))
+                      .center(sx, bh_r + 1.5).box(8.0, 3.4, 2.8, centered=(True, True, False)))
     # reset tact pinhole (actuator faces the floor) + charge-LED light pipe hole
     rx, ry = _find_fp("right", "TS-1187A", anchor=True)
     shell = shell.cut(cq.Workplane("XY").workplane(offset=-0.5).center(rx, ry).circle(0.8).extrude(FLOOR+1))
     lx, ly = _find_fp("right", "LED_0603")
     shell = shell.cut(cq.Workplane("XY").workplane(offset=-0.5).center(lx, ly).circle(0.75).extrude(FLOOR+1))
-    # antenna wall relief: the E73 physically overhangs the board edge by 0.5mm and the
-    # cavity wall face is only PCB_CLR=0.4 out — relieve the inner wall face 0.6mm over
-    # the antenna keep-out span so the module tip has >=0.5mm clearance
+    # antenna wall relief: the E73 physically overhangs the TOP board edge by 0.5mm and
+    # the cavity wall face is only PCB_CLR=0.4 out — relieve the inner wall face 0.6mm
+    # over the antenna keep-out span so the module tip has >=0.5mm clearance. The wall
+    # stays CLOSED (1.9mm remains): the antenna radiates through thin PETG, not a hole.
     ax_, ay_, aw, ah = prod["right"]["keepouts"]["antenna"]
     shell = shell.cut(cq.Workplane("XY").workplane(offset=4.0)
-                      .center(ax_ + ox + aw/2, -0.65).box(aw, 0.7, PCB_Z - 3.9, centered=(True, True, False)))
+                      .center(ax_ + ox + aw/2, bh_r + 0.65).box(aw, 0.7, PCB_Z - 3.9, centered=(True, True, False)))
 
     # ---- transverse spine walls at each grip boundary (v0.16 split): close each
     # half's torsion box where the front seam breaks the top plate, seat the panel
@@ -452,16 +495,35 @@ def back_half(side):
     return _to_trimesh(part, f"back_{side}")
 
 def _keymat_field(side):
-    """Keymat web outline (product frame): union of plunger discs buffered 2.0.
-    Shared by keymats() and the grip lids' clamp rims so they line up exactly."""
-    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
-    keys = list(geo["keys"]) + [f for f in geo.get("features", []) if f["type"] == "key"]
+    """Keymat web outline (product frame): union of the v0.17 plunger shapes
+    (rect caps + round cluster plungers) buffered 2.0, PLUS 3mm living-hinge
+    strips tying every cluster feature key into the web — each feature connects
+    to its nearest grid key and its nearest other feature, mirroring the 2D
+    concept (render_layers.keymats). Without the strips the cluster plungers are
+    FLOATING islands (a latent v0.16 bug: PgUp/PgDn and the mouse-button pair sat
+    outside the 2.0mm buffer's reach — the 'one-piece' keymat printed as 3+
+    pieces). Asserts single-piece connectivity. Shared by keymats() and the grip
+    lids' clamp rims so they line up exactly."""
     from shapely.ops import unary_union
-    field = unary_union([Polygon([(k["x"]+ox+KM_PL_D/2*math.cos(t), k["y"]+oy+KM_PL_D/2*math.sin(t))
-                                  for t in np.linspace(0, 2*math.pi, 16)]) for k in keys]).buffer(2.0)
-    return field, keys
+    from shapely.geometry import LineString
+    shapes = _cap_shapes_product(side)
+    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    grid = [(k["x"]+ox, k["y"]+oy) for k in geo["keys"]]
+    feats = [(f["x"]+ox, f["y"]+oy) for f in geo.get("features", []) if f["type"] == "key"]
+    strips = []
+    for f in feats:
+        ng = min(grid, key=lambda g: (g[0]-f[0])**2 + (g[1]-f[1])**2)
+        strips.append(LineString([f, ng]).buffer(1.5))
+        others = [o for o in feats if o != f]
+        if others:
+            no = min(others, key=lambda o: (o[0]-f[0])**2 + (o[1]-f[1])**2)
+            strips.append(LineString([f, no]).buffer(1.5))
+    field = unary_union([pl.buffer(2.0) for (pl, _op, _x, _y) in shapes] + strips)
+    assert field.geom_type == "Polygon", \
+        f"keymat_{side} web is {field.geom_type} — disconnected islands; widen/add hinge strips"
+    return field, shapes
 
-def _edge_wedge(x_edge, z_top, c=0.8, bh=114.5):
+def _edge_wedge(x_edge, z_top, c=0.8, bh=97.0):   # bh: pass the CURRENT board_h (both callers do)
     """45-degree top-edge chamfer prism along a straight x-station: a diamond of
     half-diagonal c centred on the edge line — cuts a c x c chamfer; the outboard
     half of the diamond lies in air."""
@@ -488,15 +550,12 @@ def grip_lid(side):
     field, _ = _keymat_field(side)
     rim = field.buffer(-0.15).difference(field.buffer(-1.65))
     plate = plate.union(_cq_from_poly(rim, web_top - 0.1, z0 - (web_top - 0.1)))
-    # key openings at every dome centre (cut AFTER the rim union, deep enough to keep
-    # the full plunger bore clear through the rim band)
-    holes = None
-    for (x, y, d) in _key_centers_product(side):
-        c = (cq.Workplane("XY").workplane(offset=web_top - 0.2).center(x, y)
-             .circle(d/2 + 0.4).extrude(TOP_T + (z0 - web_top) + 0.4))
-        holes = c if holes is None else holes.union(c)
-    if holes is not None:
-        plate = plate.cut(holes)
+    # key openings at every cap (v0.17: rounded-rect for grid keys, round for the
+    # cluster), cut AFTER the rim union, deep enough to keep the full plunger bore
+    # clear through the rim band. One MultiPolygon cut instead of per-key booleans.
+    from shapely.ops import unary_union
+    openings = unary_union([op for (_p, op, _x, _y) in _cap_shapes_product(side)])
+    plate = plate.cut(_cq_from_poly(openings, web_top - 0.2, TOP_T + (z0 - web_top) + 0.4))
     # screw clearance holes aligned to this grip's bottom bosses (5, unchanged)
     geo = prod[side]; ox, oy = prod[f"{side}_origin"]
     for hh in geo["mount_holes"]:
@@ -549,17 +608,22 @@ def center_panel():
     return _to_trimesh(panel, "center_panel")
 
 def keymats(side):
-    """Per-grip one-piece keymat: plungers over each dome joined by a thin web plate."""
+    """Per-grip one-piece keymat: v0.17 rectangular keycap plungers (round for the
+    cluster keys) over each dome, joined by a thin web plate. The plunger unions are
+    built as ONE shapely MultiPolygon extrusion per z-band (plungers, nubs) — far
+    fewer OCC booleans than per-key unions, and the caps stay perfectly coplanar."""
+    from shapely.ops import unary_union
     z0 = KM_Z0                # web bottom, just above the domes
-    field, keys = _keymat_field(side)
+    field, shapes = _keymat_field(side)
     mat = _cq_from_poly(field, z0, KM_WEB)
-    ox, oy = _product()[f"{side}_origin"]
-    for k in keys:
-        pl = (cq.Workplane("XY").workplane(offset=z0+KM_WEB).center(k["x"]+ox, k["y"]+oy)
-              .circle(KM_PL_D/2).extrude(KM_PL_H))
-        # actuator nub underneath (reaches down to press the dome)
-        nub = (cq.Workplane("XY").workplane(offset=z0).center(k["x"]+ox, k["y"]+oy).circle(1.4).extrude(-1.0))
-        mat = mat.union(pl).union(nub)
+    # keycap plungers (the user-visible caps): one extrusion of the union
+    caps = unary_union([pl for (pl, _o, _x, _y) in shapes])
+    mat = mat.union(_cq_from_poly(caps, z0 + KM_WEB, KM_PL_H))
+    # actuator nubs underneath (reach down to press each dome centre)
+    nubs = unary_union([Polygon([(x+1.4*math.cos(t), y+1.4*math.sin(t))
+                                 for t in np.linspace(0, 2*math.pi, 16)])
+                        for (_p, _o, x, y) in shapes])
+    mat = mat.union(_cq_from_poly(nubs, z0 - 1.0, 1.0))
     return _to_trimesh(mat, f"keymat_{side}")
 
 # ==== non-printed bodies (real dims) ================================================
@@ -744,6 +808,7 @@ def main():
         height_report("right"); height_report("left")
     ok = True
     if args.all:
+        built = []
         for fn, nm in [(lambda: back_half("right"), "back_right"),
                        (lambda: back_half("left"), "back_left"),
                        (lambda: grip_lid("right"), "grip_lid_right"),
@@ -751,11 +816,19 @@ def main():
                        (center_panel, "center_panel")]:
             m = fn(); print(f"  {nm}: watertight={m.is_watertight} vol={m.volume/1000:.1f}cm3 bbox={[round(v,1) for v in m.extents]}")
             ok = bed_fit(m, nm) and ok
+            built.append(m)
         for side in ("right", "left"):
             m = keymats(side); print(f"  keymat_{side}: watertight={m.is_watertight} bbox={[round(v,1) for v in m.extents]}")
             ok = bed_fit(m, f"keymat_{side}") and ok
+            built.append(m)
         if not ok:
             sys.exit("bed-fit FAILED: a part exceeds the Ender 3 V2 printable area")
+        # reference STL of all 7 printed parts in their assembled positions (they
+        # share the product frame, so plain concatenation IS the assembly) — a
+        # multi-body viewing aid for spatial reasoning, not a printable part
+        asm = trimesh.util.concatenate(built)
+        asm.export(os.path.join(BUILD, "assembled_printed.stl"))
+        print(f"  assembled_printed.stl: all 7 printed parts in place, bbox={[round(v,1) for v in asm.extents]}")
     if args.check:
         A = assemble()
         print(f"assembly: {len(A)} bodies")

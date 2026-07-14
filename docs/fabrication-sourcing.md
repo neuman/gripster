@@ -36,9 +36,12 @@ out cheaper.
 ## DFM preview checklist (before paying)
 
 Expect one DFM confirmation hold on the right board: **the E73 module body
-overhangs the bottom board edge by ~0.75 mm by design** (its antenna must clear
+overhangs the top board edge by ~0.75 mm by design** (its antenna must clear
 the PCB). Reply "proceed as designed" — the overhang is intentional and the
-shell has a matching wall relief.
+shell has a matching wall relief. (v0.17 moved the E73 to the top zone with the
+antenna pointing up off the top edge; the shell was regenerated 2026-07-14 — the
+relieved top wall stays **closed** at 1.9 mm over the antenna span, so the module
+tip has ≥0.5 mm clearance and the antenna radiates through thin PETG, not a hole.)
 
 
 `gen_fab.py` exports KiCad-native rotations; JLC's library orientation can differ
@@ -48,7 +51,7 @@ per part. In the DFM/component preview, verify and rotate if needed:
    MCP73831 STAT side.
 2. **SOT-23-5 / SOT-23-6 rotation** (U2 MCP73831, U3 USBLC6-2SC6).
 3. **USB-C (J1)** seated on the pad pattern, shell at the board edge.
-4. **E73 (U1) orientation** — antenna edge pointing off the bottom board edge.
+4. **E73 (U1) orientation** — antenna edge pointing off the top board edge.
 5. Confirm every part is placed in the **single-pass SMT assembly** — nothing is
    hand-soldered. (The USB-C shell's plated stakes and the FFC/slide-switch
    locating pegs are the only through-board features, and they go on in the same

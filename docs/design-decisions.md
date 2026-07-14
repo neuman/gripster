@@ -3,7 +3,81 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.16 (first entry).
+current design is rev-A / v0.17 (first entry).
+
+## v0.17 — Rii-height grips: chin cut + electronics to the top (2026-07-14)
+
+Ergonomic feedback after printing the right grip lid: the grip (114.5 mm) was
+significantly taller than the phone (~80 mm short-side) and than the Rii i8+ the
+user thumb-types daily (~97 mm), the excess concentrated in a tall "chin" below the
+bottom key row, and the 6-row field (55.5 mm) read taller than the i8+'s (~45 mm),
+so the keys sat less within thumb reach. Goal: mimic the i8+'s proportions within
+FDM + our-board limits — and since the **trackpad was dropped for v1**, the top zone
+it would have occupied is free to reclaim.
+
+- **Grip 114.5 → 97.0 mm** (the i8+ is ~97 mm); width 76.5 → 79.5 mm. Three levers:
+  1. **Chin cut, `bottom_strip` 19 → 7 mm.** The 19 mm strip existed only to hold
+     the E73 (18 mm) antenna-down at the bottom edge. With the module relocated
+     (below), the chin under the space row drops ~23 → ~9 mm — the bulk of the excess.
+  2. **Rectangular keys, `key` 8×8 → 8.5×7, `pitch` 9.5 → 10 (X) / 9 (Y).** The i8+
+     keeps a short field with wider-than-tall chiclets; ours follow. The 7 mm domes
+     (contact courtyard r3.9) still clear at 9 mm Y-pitch (1.2 mm courtyard gap);
+     gutters stay ≥1.5 mm (X) / 2.0 mm (Y) for PETG-FDM. Field 55.5 → 52 mm.
+  3. **Electronics to the top zone.** The E73 + the whole power front-end (USB-C,
+     charger, ESD, reset/power switches, JST, passives, SWD/I²C pads) move from the
+     old bottom strip up into the vacated trackpad space, implemented as a rigid
+     180° rotation of the DRC-verified rev-A cluster about the board centre
+     (`gen_board`'s `P()`/`xf()` involution), so the hand-routed USB fan-in copper
+     carries along unchanged rather than being re-derived.
+- **Antenna-up at the top edge.** The rotation lands the E73 antenna at the
+  CENTRE-top edge — farthest from the centred phone/LiPo, and off the edge the palm
+  (which cradles the bottom) doesn't cover. RF is a judgment call vs the old
+  antenna-down: hand-detune should improve, phone/battery proximity is similar —
+  **re-check range on the first article.** A small inward shift (`DX = 7`) keeps the
+  13 mm module off the rounded corner; the JST is placed separately in the chin (its
+  rotated pose hit the inner-top page keys); PgUp/PgDn move to the inner-top corner.
+- **Top-outer corner sharpened, r_out 14 → 10** (bottom stays 14 for the palm) so
+  the top cluster clears the corner — and squarer "shoulders" read more like the i8+.
+- **Both boards re-routed 0/0** (KiCad 9, error-severity DRC + 0 unconnected); the
+  fab package, firmware (byte-identical — the matrix/pin-map is unchanged) and all 2D
+  renders are regenerated. Routing is tighter than rev-A (module-top / bridge-bottom
+  puts the 14 bridge nets across the board); `route.sh` is a route-until-clean loop
+  and hit 0/0 within a few passes.
+- **Switch re-evaluated and KEPT: Snaptron 7 mm 4-leg dome** (2026-07-14 review,
+  triggered by the rectangular-cap change). It verifiably fits the new geometry —
+  courtyard Ø7.8 vs 9.0 mm Y-pitch = 1.2 mm gap (0.7 mm at the 8.5 mm cluster
+  pitch), Ø2.8 nub presses every dome dead-centre (cap centre = dome centre for all
+  79 keys incl. the 2u space), and both boards are routed 0/0 around this exact
+  footprint. Alternatives lose: 8.4 mm domes physically don't fit the pitch; 5–6 mm
+  domes give up travel/centre-hit tolerance under an 8.5 mm cap; LCSC SMD tacts
+  (TS-1088 etc.) add 1.0–2.6 mm of z-stack (dome is 0.5 mm), 79 fab-soldered parts,
+  and a full reroute. The fab's role is unchanged either way: ENIG gold pads only —
+  domes press on at assembly. **Actionable:** sample LIGHT-force (~160–180 gf trip)
+  4-leg domes, not the 400+ gf GX class, to approximate the i8+'s light feel.
+- **3D regenerated for v0.17** (same session, after review): `deck3d.py` updated —
+  keymat plungers/lid openings are now the real **rounded-rect 8.5 × 7 caps** (18.5
+  for the 2u space; cluster keys stay round), the USB-C opening / power-switch slot /
+  antenna wall relief moved to the TOP wall, the slide-switch knob direction is
+  derived from the placed rotation, and the 4 panel seam screws are derived from the
+  phone-pocket span (the old hardcoded y=105 was off the 97 mm shell entirely, and
+  y=10 clipped the new pocket rim). The antenna wall stays CLOSED — 1.9 mm of PETG
+  remains over the relieved span; the antenna radiates through plastic, not a hole.
+  Also fixed a **latent v0.16 keymat bug the regen render exposed**: the cluster
+  plungers (PgUp/PgDn, D-pad, mouse pair) sat outside the web buffer's reach — the
+  "one-piece" keymat was really 3+ floating pieces. The web now grows the **3 mm
+  living-hinge strips** the 2D concept always drew (each feature → nearest grid key
+  + nearest other feature) and asserts single-polygon connectivity at build time.
+  Also fixed: `deck.product()` origin rounding 2 → 3 decimals (a 79.493 mm board_w
+  put the left grip 0.003 mm off the seam and tripped deck3d's frame assert).
+- **Adversarial alignment audit (machine-verified, 2026-07-14):** all 79 domes sit
+  at model key centres with 0.0 µm deviation on both boards; diodes at +3.0 mm; min
+  dome courtyard spacing 9.0/8.5 mm vs the 7.8 floor; every non-dome footprint is
+  back-mounted. Two margins worth knowing: (1) the cap Y-dimension (7.0) exactly
+  equals the dome diameter — zero cover margin, so keymat registration (screw bosses
+  + clamp rim) is what keeps the dome edge hidden; (2) the USB-C shield stakes and
+  the J1/SW90 locating pegs protrude through to the PCB FRONT in the top zone —
+  they clear the keymat web by ~8.4 mm and sit below the lid plate, but any rev-B
+  front-side feature near x 31–40, y 90–95 must account for them.
 
 ## v0.16 — 5-part shell split for a 220 mm bed (2026-07-13)
 

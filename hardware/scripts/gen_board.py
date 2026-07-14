@@ -324,32 +324,60 @@ def place_bridge(bd, right_j2_map):
 
 
 def place_components(bd):
-    """Right grip: E73 (antenna-down at the bottom edge), USB front-end, charger,
-    battery connector + power switch, reset, LED, passives, test pads. All SMT,
-    all on the BACK (single-sided reflow). Left grip: bridge only (passive)."""
+    """Right grip: E73 + USB front-end, charger, battery connector + power switch,
+    reset, LED, passives, test pads. All SMT, all on the BACK (single-sided reflow).
+    Left grip: bridge only (passive).
+
+    v0.17: the whole electronics cluster moved from the old BOTTOM strip up to the TOP
+    zone (the vacated trackpad space) so the chin could be trimmed. It is implemented as
+    a rigid 180-degree rotation of the exact, DRC-verified rev-A cluster about the board
+    centre — P() places every part at the rotated (W-x, H-y) / rot+180, and the
+    involution xf() carries the hand-routed USB fan-in copper along unchanged. The
+    rotation lands the E73 antenna at the OUTER-top edge (farthest from the centred
+    phone/LiPo = best RF) with the mouth of the USB-C on the top edge beside it."""
     if bd.side != "right":
         return
     H = bd.H
+    W = bd.geo["board_w"]
+    # The 180-deg cluster rotation lands the rev-A INNER-hugging parts (module, divider)
+    # at the OUTER-top, where the r_out=14 rounded corner curves in. DX slides the whole
+    # rigid cluster INBOARD so the E73 sits on the flat centre-top edge, clear of that
+    # corner; the involution xf() carries the same DX so the hand copper still tracks.
+    DX = 7.0
 
-    # E73 module, antenna end at/over the bottom edge (rot=0 in the flipped frame
-    # puts the antenna zone at deck y<3 and USB/SWD pads on the +x edge — verified
-    # empirically; asserted below).
-    u1 = bd.place(bd.load("TD", "nRF52840_E73-2G4M08S1C"), "U1", "E73-2G4M08S1C",
-                  16.0, 8.5, E73_PINMAP, rot=0)
+    def P(fp, ref, val, x, y, netmap=None, rot=0):
+        """Place at the 180-deg-rotated, DX-shifted pose of the rev-A coordinate."""
+        return bd.place(fp, ref, val, W - DX - x, H - y, netmap, rot=(rot + 180) % 360)
+
+    def S(txt, x, y, **kw):
+        bd.silk(txt, W - DX - x, H - y, **kw)
+
+    def xf(x, y):
+        """180-deg rotation + DX about the KiCad board centre (nm). Involution: xf(xf(p))==p.
+        Un-rotates a placed pad back to the rev-A frame so the hand copper formulas below
+        are byte-for-byte the verified ones; re-applied on every emitted segment/via."""
+        return pcbnew.VECTOR2I(int(MM(W - DX) - x), int(MM(H) - y))
+
+    # E73 module, antenna end at/over the TOP edge. rot=180 (in the flipped frame) points
+    # the antenna zone off deck y>H and the USB/SWD pads inboard — verified empirically;
+    # asserted below.
+    u1 = P(bd.load("TD", "nRF52840_E73-2G4M08S1C"), "U1", "E73-2G4M08S1C",
+           16.0, 8.5, E73_PINMAP, rot=0)
     zb = list(u1.Zones())[0].GetBoundingBox()
-    assert zb.GetBottom() > MM(H), "E73 antenna keep-out must cross the bottom board edge"
+    assert zb.GetTop() < 0, "E73 antenna keep-out must cross the TOP board edge"
 
-    # USB-C, mouth flush with the bottom edge (metal face at local +3.65 -> y=3.6
-    # puts it ~0.05mm proud). rot=180 in the flipped frame points the mouth at the edge.
-    bd.place(bd.load("USB", "USB_C_Receptacle_HRO_TYPE-C-31-M-12"), "J1", "USB-C",
-             37.0, 3.6, USBC_NETS, rot=180)
+    # USB-C, mouth flush with the TOP edge. The rev-A rot=180 becomes rot=0 under P().
+    P(bd.load("USB", "USB_C_Receptacle_HRO_TYPE-C-31-M-12"), "J1", "USB-C",
+      37.0, 3.6, USBC_NETS, rot=180)
     # Deterministic ties for the interleaved same-net data-pad pairs (B6 A7 A6 B7 at
     # 0.5mm pitch) that no autorouter can join at these clearances. VBUS/GND pairs
     # (A9/B4 etc.) are co-located in this footprint and need no tie. Pattern (all
     # relative to the pad row so it tracks J1 moves): D- joins with a bar just below
     # the row; D+ hops over it on In2 via two vias. All resulting gaps >=0.25mm (DRC-checked).
     j1 = bd.b.FindFootprintByReference("J1")
-    pads = {p.GetNumber(): p.GetPosition() for p in j1.Pads()}
+    # Un-rotate the placed pads back to the rev-A frame so every formula below is the
+    # verified original; seg()/via() re-apply xf on emit so the copper follows the parts.
+    pads = {p.GetNumber(): xf(p.GetPosition().x, p.GetPosition().y) for p in j1.Pads()}
     dm_net, dp_net = bd.net("USB_DM"), bd.net("USB_DP")
     xa7, xb7 = pads["A7"].x, pads["B7"].x
     xa6, xb6 = pads["A6"].x, pads["B6"].x
@@ -357,12 +385,13 @@ def place_components(bd):
     y_dm, y_dp, y_up = py - MM(1.31), py - MM(2.26), py + MM(1.24)
 
     def seg(x1, y1, x2, y2, net, layer=pcbnew.B_Cu):
+        a, b = xf(x1, y1), xf(x2, y2)
         t = pcbnew.PCB_TRACK(bd.b)
-        t.SetStart(V(int(x1), int(y1))); t.SetEnd(V(int(x2), int(y2)))
+        t.SetStart(a); t.SetEnd(b)
         t.SetWidth(MM(0.2)); t.SetLayer(layer); t.SetNet(net); bd.b.Add(t)
 
     def via(x, y, net):
-        v = pcbnew.PCB_VIA(bd.b); v.SetPosition(V(int(x), int(y)))
+        v = pcbnew.PCB_VIA(bd.b); v.SetPosition(xf(x, y))
         v.SetDrill(MM(0.3)); v.SetWidth(MM(0.6))
         v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu); v.SetNet(net); bd.b.Add(v)
 
@@ -378,7 +407,7 @@ def place_components(bd):
     # Deterministic inner-layer runs J1 -> module for the data pair (Freerouting
     # plateaus on this corridor; fixed copper is DRC-verified and it routes around).
     # Lanes on In2 below the module's USB pad rows; resurface next to pads 29/31.
-    up = {p.GetNumber(): p.GetPosition() for p in u1.Pads()}
+    up = {p.GetNumber(): xf(p.GetPosition().x, p.GetPosition().y) for p in u1.Pads()}
     p29, p31 = up["29"], up["31"]                          # USB_DM / USB_DP pads
     assert abs(p29.x - p31.x) < 1000, "module USB pads expected on one column"
     In2 = pcbnew.In2_Cu
@@ -400,62 +429,67 @@ def place_components(bd):
     via(vx, p31.y, dp_net)
     seg(vx, p31.y, p31.x, p31.y, dp_net)
 
+    # NOTE from here down: coords are the rev-A BOTTOM-strip layout; P()/S() rotate each
+    # part 180 deg into the TOP zone, so the arrangement below reads exactly like rev-A.
     # USBLC6-2SC6 inline between the connector and the module's USB pads:
     # 1&6 = D+ pair, 3&4 = D- pair, 2=GND, 5=VBUS (verified vs ST datasheet).
-    bd.place(bd.load("SOT", "SOT-23-6"), "U3", "USBLC6-2SC6", 28.5, 3.5,
-             {"1": "USB_DP", "6": "USB_DP", "3": "USB_DM", "4": "USB_DM",
-              "2": "GND", "5": "VBUS"})
+    P(bd.load("SOT", "SOT-23-6"), "U3", "USBLC6-2SC6", 28.5, 3.5,
+      {"1": "USB_DP", "6": "USB_DP", "3": "USB_DM", "4": "USB_DM",
+       "2": "GND", "5": "VBUS"})
 
     # reset tact (top actuator -> pinhole in the shell floor), between module and USB-C
-    bd.place(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 27.5, 9.0,
-             {"1": "RESET", "2": "GND"})
-    bd.silk("RST", 27.5, 12.5)
+    P(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 27.5, 9.0,
+      {"1": "RESET", "2": "GND"})
+    S("RST", 27.5, 12.5)
 
     # charger MCP73831 (SOT-23-5): 1=STAT 2=VSS 3=VBAT(cell) 4=VDD(VBUS) 5=PROG,
     # with BOTH datasheet stability caps AT the chip (C3 VDD, C5 VBAT_CELL).
-    bd.place(bd.load("SOT", "SOT-23-5"), "U2", "MCP73831", 48.5, 7.5,
-             {"1": "STAT", "2": "GND", "3": "VBAT_CELL", "4": "VBUS", "5": "PROG"})
-    bd.place(bd.load("C", "C_0805_2012Metric"), "C3", "4u7/0805", 44.6, 7.5, {"1": "VBUS", "2": "GND"})
-    bd.place(bd.load("C", "C_0805_2012Metric"), "C5", "4u7/0805", 52.4, 7.5, {"1": "VBAT_CELL", "2": "GND"})
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R24", "5k1", 48.5, 10.5, {"1": "PROG", "2": "GND"})
+    P(bd.load("SOT", "SOT-23-5"), "U2", "MCP73831", 48.5, 7.5,
+      {"1": "STAT", "2": "GND", "3": "VBAT_CELL", "4": "VBUS", "5": "PROG"})
+    P(bd.load("C", "C_0805_2012Metric"), "C3", "4u7/0805", 44.6, 7.5, {"1": "VBUS", "2": "GND"})
+    P(bd.load("C", "C_0805_2012Metric"), "C5", "4u7/0805", 52.4, 7.5, {"1": "VBAT_CELL", "2": "GND"})
+    P(bd.load("R", "R_0402_1005Metric"), "R24", "5k1", 48.5, 10.5, {"1": "PROG", "2": "GND"})
     # charge LED: VBUS -> R25 -> LED -> STAT (STAT sinks while charging)
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R25", "1k", 42.0, 10.5, {"1": "VBUS", "2": "LED_A"})
-    bd.place(bd.load("LED", "LED_0603_1608Metric"), "D80", "LED_RED", 45.0, 10.5,
-             {"1": "STAT", "2": "LED_A"})   # pad1 = cathode
-    bd.silk("CHG", 45.0, 12.3)
+    P(bd.load("R", "R_0402_1005Metric"), "R25", "1k", 42.0, 10.5, {"1": "VBUS", "2": "LED_A"})
+    P(bd.load("LED", "LED_0603_1608Metric"), "D80", "LED_RED", 45.0, 10.5,
+      {"1": "STAT", "2": "LED_A"})   # pad1 = cathode
+    S("CHG", 45.0, 12.3)
 
-    # power slide switch on the bottom edge (knob through the shell wall):
+    # power slide switch at the TOP edge (knob through the shell wall):
     # cell side (VBAT_CELL, always on charger) -> switch -> VBAT rail (module+divider)
-    bd.place(bd.load("TD", "msk12c02_slide"), "SW90", "MSK12C02", 48.5, 2.0,
-             {"1": "VBAT_CELL", "2": "VBAT"})
-    bd.silk("PWR", 48.5, 5.0)
+    P(bd.load("TD", "msk12c02_slide"), "SW90", "MSK12C02", 48.5, 2.0,
+      {"1": "VBAT_CELL", "2": "VBAT"})
+    S("PWR", 48.5, 5.0)
 
-    # battery JST-PH (polarized, SMT side entry), wire exits toward the spine
+    # battery JST-PH (polarized, SMT side entry). Placed directly (NOT via the cluster
+    # rotation): the rotated pose would collide with the inner-top page keys, so it lives
+    # in the trimmed bottom chin instead — flat, out of the key field, LiPo wire reaches it
+    # across the back cavity. VBAT_CELL routes up to the power switch in the top cluster.
     bd.place(bd.load("JST", "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal"),
-             "J3", "JST-PH-2", 60.0, 13.0, {"1": "VBAT_CELL", "2": "GND"}, rot=90)
-    bd.silk("+", 65.0, 12.0); bd.silk("-", 65.0, 14.0); bd.silk("BAT", 65.5, 16.5)
+             "J3", "JST-PH-2", 44.0, 5.5, {"1": "VBAT_CELL", "2": "GND"}, rot=0)
+    bd.silk("+", 49.5, 4.7); bd.silk("-", 49.5, 6.7); bd.silk("BAT", 44.0, 2.4)
 
     # USB CC 5.1k pulldowns — east of the connector, OUT of the D+/D- escape
     # corridor (x 32-38 above the pad row must stay open for the data-pair fan-in)
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R20", "5k1", 39.8, 11.8, {"1": "CC1", "2": "GND"})
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R21", "5k1", 42.3, 11.8, {"1": "CC2", "2": "GND"})
+    P(bd.load("R", "R_0402_1005Metric"), "R20", "5k1", 39.8, 11.8, {"1": "CC1", "2": "GND"})
+    P(bd.load("R", "R_0402_1005Metric"), "R21", "5k1", 42.3, 11.8, {"1": "CC2", "2": "GND"})
 
     # battery divider (1M/1M -> AIN0) + SAADC filter cap, inner strip between the
     # FFC bridge (above) and the mount-hole boss / antenna zone (below+left)
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R22", "1M", 7.9, 11.5, {"1": "VBAT", "2": "VBAT_SENSE"})
-    bd.place(bd.load("R", "R_0402_1005Metric"), "R23", "1M", 7.9, 9.5, {"1": "VBAT_SENSE", "2": "GND"})
-    bd.place(bd.load("C", "C_0402_1005Metric"), "C6", "100nF", 7.9, 7.5, {"1": "VBAT_SENSE", "2": "GND"})
+    P(bd.load("R", "R_0402_1005Metric"), "R22", "1M", 7.9, 11.5, {"1": "VBAT", "2": "VBAT_SENSE"})
+    P(bd.load("R", "R_0402_1005Metric"), "R23", "1M", 7.9, 9.5, {"1": "VBAT_SENSE", "2": "GND"})
+    P(bd.load("C", "C_0402_1005Metric"), "C6", "100nF", 7.9, 7.5, {"1": "VBAT_SENSE", "2": "GND"})
 
     # module decoupling: 1uF at VDD (3V3 out), 100nF + 4u7 bulk at VDDH, 1uF at VBUS
-    bd.place(bd.load("C", "C_0402_1005Metric"), "C1", "1uF", 16.6, 19.0, {"1": "3V3", "2": "GND"})
-    bd.place(bd.load("C", "C_0402_1005Metric"), "C2", "100nF", 19.2, 19.0, {"1": "VBAT", "2": "GND"})
-    bd.place(bd.load("C", "C_0805_2012Metric"), "C4", "4u7/0805", 12.2, 19.0, {"1": "VBAT", "2": "GND"})
-    bd.place(bd.load("C", "C_0402_1005Metric"), "C7", "1uF", 24.3, 13.9, {"1": "VBUS", "2": "GND"})
+    P(bd.load("C", "C_0402_1005Metric"), "C1", "1uF", 16.6, 19.0, {"1": "3V3", "2": "GND"})
+    P(bd.load("C", "C_0402_1005Metric"), "C2", "100nF", 19.2, 19.0, {"1": "VBAT", "2": "GND"})
+    P(bd.load("C", "C_0805_2012Metric"), "C4", "4u7/0805", 12.2, 19.0, {"1": "VBAT", "2": "GND"})
+    P(bd.load("C", "C_0402_1005Metric"), "C7", "1uF", 24.3, 13.9, {"1": "VBUS", "2": "GND"})
 
     # 9 row pull-downs in the passive lane between module and key field
     for i in range(9):
-        bd.place(bd.load("R", "R_0402_1005Metric"), f"R{i+1}", "4k7",
-                 32.0 + i * 3.0, 21.3, {"1": f"ROW{i}", "2": "GND"})
+        P(bd.load("R", "R_0402_1005Metric"), f"R{i+1}", "4k7",
+          32.0 + i * 3.0, 21.3, {"1": f"ROW{i}", "2": "GND"})
 
     # SWD + spare-I2C test pads (back), labeled. x >= 10 keeps them clear of the
     # FFC bridge body on the inner edge; y 21.3 clears the cap row below and the
@@ -464,9 +498,9 @@ def place_components(bd):
            ("TP4", "3V3", 19.0), ("TP5", "GND", 22.0),
            ("TP6", "SDA", 24.8), ("TP7", "SCL", 27.3), ("TP8", "TP_INT", 29.8)]
     for ref, net, x in tps:
-        tp = bd.place(bd.load("TP", "TestPoint_Pad_1.5x1.5mm"), ref, net, x, 21.3, {"1": net})
+        tp = P(bd.load("TP", "TestPoint_Pad_1.5x1.5mm"), ref, net, x, 21.3, {"1": net})
         tp.SetExcludedFromPosFiles(True); tp.SetExcludedFromBOM(True)
-        bd.silk(net if net != "TP_INT" else "INT", x, 23.4, size=0.8)
+        S(net if net != "TP_INT" else "INT", x, 23.4, size=0.8)
 
 
 def gnd_escapes(bd):
