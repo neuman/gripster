@@ -78,12 +78,13 @@ def render(iter_tag="product"):
                  edgecolor="#22333b", lw=1.0, zorder=3))
     ax.text(ph["x"] + ph["w"] / 2, ph["y"] + ph["h"] - 3, "PHONE (screen)",
             ha="center", va="center", fontsize=7, color="#7fd1ff", zorder=4)
-    # LiPo in the central spine (behind the phone / MagSafe ring)
-    sb = P["spine_battery"]
-    ax.add_patch(Rectangle((sb["x"], sb["y"]), sb["w"], sb["h"], facecolor="#c9ada7",
-                 alpha=0.14, edgecolor="#c9ada7", ls="--", lw=1.0, zorder=2))
-    ax.text(sb["x"] + sb["w"] / 2, sb["y"] + 4, "LiPo (in spine, behind phone)",
-            ha="center", va="bottom", fontsize=6, color="#c9ada7", zorder=2)
+    # v0.18: LiPo 403040 under the LEFT grip's PCB (the sunken phone well leaves
+    # no cell-height space in the spine any more)
+    sb = P["battery"]
+    ax.add_patch(Rectangle((sb["x"], sb["y"]), sb["w"], sb["h"], facecolor="none",
+                 edgecolor="#c9ada7", ls="--", lw=1.2, zorder=7))
+    ax.text(sb["x"] + sb["w"] / 2, sb["y"] - 2, f"LiPo {sb['cell']}\n(under LEFT PCB)",
+            ha="center", va="top", fontsize=6, color="#c9ada7", zorder=7)
     # magsafe ring
     ms = P["magsafe"]
     ax.add_patch(Circle((ms["cx"], ms["cy"]), ms["d"] / 2, facecolor="none",

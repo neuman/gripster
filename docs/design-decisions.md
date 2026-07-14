@@ -3,7 +3,57 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.17 (first entry).
+current design is rev-A / v0.18 (first entry).
+
+## v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)
+
+Goal: an **S25 Ultra in a typical thin case** sits with its **screen surface flush
+with the grip lids' keyboard face** — one continuous 14.3 mm-high front plane
+(lids · panel border · screen), thumbs sweeping from glass onto keys with no step.
+No change to the boards (no reroute); grips untouched.
+
+- **The math.** Keyboard face (lid top) = z 14.3. Cased S25U = 8.2 + 1.2 case back
+  = **9.4 mm** back-of-case → screen. So the phone must rest at z 4.9 — a
+  **10.2 mm drop** from v0.17's 15.1. The center panel becomes a **sunken tray**:
+  border flange 12.3..14.3 (flush with the lids), well floor at 4.7 with the same
+  Ø57×1.8 MagSafe recess / 0.8 mm web / 0.2 mm-proud ring construction as before,
+  translated down. Device thickness **22.9 → 15.3 mm** (keycap tops; the flat
+  face is 14.3, the case lip sits ~0.4 proud of flush glass).
+- **Phone dims got real.** The model carried placeholder iPhone dims (71.6 ×
+  147.6); the flush stack forced the real **S25 Ultra (162.8 × 77.6 × 8.2) +
+  case_t 1.2** into `deck.Config`. Consequence: the spine gap is sized to the
+  cased length (165.2 + 0.6 clearance), so the device is **324.8 mm wide
+  (+18.2)** — that is the phone's own size, not packaging growth; y-footprint
+  (102.8) and grips unchanged.
+- **Battery relocation: REQUIRED, not optional.** Under the sunken well's floor
+  slab only **0.5 mm** remains above the back floor — no standard Li-Po exists
+  that thin. Survey of the cavities: right grip has 0.24 mm spare (mated JST-PH),
+  the **left grip (passive board: diodes 1.16 mm + the FFC ZIF) has 5.14 mm
+  free**. The cell is now a **standard 403040 pouch (4.0 × 30 × 40 mm,
+  ~450–500 mAh)** foam-taped (0.3 mm) to the left floor under the key field —
+  0.84 mm below the diodes at nominal, ~0.4 mm at +10 % swell. 450–500 mAh is the
+  capacity the README's own cell-size note preferred, and PROG (196 mA ≈ 0.43 C)
+  needs no change. Support posts auto-route around the cell (it's an obstacle box
+  in `support_post_locations`). Leads run left cavity → bottom-border lane (y≈5,
+  outside the well) across the spine → J3 on the right board. Trade-off logged:
+  battery replacement now means opening the left grip (5 screws + lid + keymat +
+  board) instead of the panel hatch; the FFC stays panel-serviceable.
+- **FFC drops into a floor channel.** The ribbon crossed at z≈5.4 — inside the
+  well now. A **0.5 mm recess in the back floor (19 mm lane at the J2 band)**
+  gives it a 1.1..1.6 duct under the panel slab (0.5 mm headroom), S-bending down
+  from each ZIF inside the grip cavities. The lower seam floor-tab moved
+  30–38 → 36–44 so the channel doesn't thin it.
+- **Transverse walls cut down to sills** (z 1.95) over the well span — the phone
+  and the slab pass over them; full height outside the span still seats the
+  border. The old ring-height Ø8 anchors are gone (their bores sit 8 mm above the
+  new floor): MagSafe detach is held by the **4 border screws** + slab stiffness
+  (~0.25 mm flex at 8 N), down-press by **4 floor nubs** under the slab. Panel
+  screw count 6 → 4; **total M2×10: 16 → 14**.
+- **Removal scallop.** With the phone sunk 9.4 mm, you can't pinch it — an R9
+  thumb scallop in the top border exposes ~18 mm of case edge to tip it out
+  against the ring.
+- Phone x-retention is the grips' PCB/lid inner edges (0.3 mm clearance per
+  side); y-retention the well's 2.0 mm wall band; alignment the MagSafe ring.
 
 ## v0.17 — Rii-height grips: chin cut + electronics to the top (2026-07-14)
 

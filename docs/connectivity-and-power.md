@@ -8,13 +8,13 @@ this file (nice!nano/BQ24075, JST-GH harness, telescoping-cable era).
 ```
    LEFT grip (passive)                      RIGHT grip (MCU)
    42 domes + diodes  ── 16-way FFC ──      E73 nRF52840 + charger + USB-C  ⇄ host (BLE HID)
-   (no chip, no battery)  straight type-A   scans all 79 keys
+   (no chip; hosts cell)  straight type-A   scans all 79 keys
 ```
 
 ## The power tree
 
 ```
-LiPo cell (JST-PH, J3)
+403040 LiPo cell, left grip (leads cross the spine → JST-PH, J3)
    ├── MCP73831 charger (U2) ← USBLC6-2 ← USB-C VBUS      # charger on the CELL side
    └── MSK12C02 slide switch (SW90)
           └── VBAT rail ── E73 VDDH (pad 23)               # high-voltage / REG0 mode
@@ -29,14 +29,24 @@ LiPo cell (JST-PH, J3)
   E73 module has **no DCDC inductors**, so the regulator runs in LDO mode —
   correct, and why `CONFIG_BOARD_ENABLE_DCDC` is absent from the firmware.
 - **Charging:** USB-C VBUS → **USBLC6-2SC6 inline** → MCP73831 (**-2ACI**, 4.2 V).
-  PROG = 5.1 kΩ (R24) → **~196 mA**, ~0.5 C of a 400 mAh cell — safe for any cell
-  in the 400–700 mAh band. 4.7 µF 0805 25 V stability caps sit **at the chip** on
+  PROG = 5.1 kΩ (R24) → **~196 mA**, ~0.43 C of the 403040 cell (~450–500 mAh) —
+  comfortably safe. 4.7 µF 0805 25 V stability caps sit **at the chip** on
   both supply pins (C3) and the cell node (C5), per datasheet; C4 is VBAT bulk.
 - **Charge LED (D80):** VBUS → 1 kΩ (R25) → LED → MCP73831 STAT. Lights while
   charging, off when full; visible through a 1.5 mm hole in the shell floor.
 - **Battery gauge:** 1 MΩ/1 MΩ divider (R22/R23) + **100 nF SAADC filter (C6)** on
   VBAT_SENSE → P0.02/AIN0. The 100 nF is what makes the reading stable — the
   SAADC's sampling cap on a 500 kΩ source impedance needs a reservoir.
+
+> **v0.18:** the cell left the spine — the sunken phone well leaves only 0.5 mm
+> under its floor slab, so no standard pouch fits there any more. The battery is
+> now a **403040** pouch (4.0 × 30 × 40 mm, ~450–500 mAh) foam-taped (0.3 mm) to
+> the **left** grip's floor under the passive PCB (0.84 mm clearance below the
+> diodes at nominal); its leads run along the bottom-border lane outside the
+> well, across the spine through lead windows in both transverse walls, to
+> **J3** on the right board. It installs in the left grip **before** that
+> grip's board goes in; replacing it means opening the **left** grip (5 screws
+> → lid → keymat → board). The FFC stays serviceable via the panel.
 
 ## USB
 
@@ -54,8 +64,8 @@ LiPo cell (JST-PH, J3)
 - BLE HID to the host as **"thumbdeck"** — one device, no inter-half pairing.
 - The E73's ceramic antenna points **up, off the top board edge** (centre-top,
   farthest from the phone and LiPo), with an all-layer copper keep-out crossing
-  the edge and a 0.6 mm relief in the shell wall (shell relief position pending
-  regeneration for v0.17). This replaced an earlier placement that aimed the antenna mid-board at the
+  the edge and a 0.6 mm relief in the shell wall (present in the regenerated
+  v0.18 shells). This replaced an earlier placement that aimed the antenna mid-board at the
   USB shell over ground pour (detuned).
 - **No 32.768 kHz crystal on the module** — firmware runs the LF clock from the
   internal RC (`CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC` + 500 PPM). Without that
@@ -83,5 +93,5 @@ LiPo cell (JST-PH, J3)
 - **Polarity:** the JST-PH connector is polarized, but vendors wire PH pigtails
   **both ways** — meter the pigtail against the **"+"/"−" silk beside J3** (pin 1
   = "+", nearer the bottom board edge) before first plug-in.
-- ~196 mA charge current is ≤0.5 C for every recommended cell size; no PROG change
-  needed within the 400–700 mAh band.
+- ~196 mA charge current is ~0.43 C for the 403040 cell (~450–500 mAh); no PROG
+  change needed.

@@ -236,8 +236,7 @@ WALL_T = 2.5          # shell wall thickness
 TOP_T = 2.0           # grip-lid plate thickness
 STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH (J3) + 0.24 margin
 PHONE_CLR = 0.6       # phone pocket clearance (total, both sides)
-POCKET_D = 2.0        # phone pocket depth (rim height above the pocket floor)
-RING_REC_D = 1.8      # MagSafe ring recess depth inside the phone pocket
+RING_REC_D = 1.8      # MagSafe ring recess depth inside the phone-well floor
 RING_REC_R = 28.5     # recess radius (Ø57 for the Ø56 N52 ring)
 GAP = 0.5
 KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.5, 6.2   # keymat web / plunger height / plunger dia
@@ -249,17 +248,27 @@ WALL = TOP_Z - FLOOR                         # cavity height (derived)
 
 # --- 5-part split (grip lids + center panel + back halves), Ender 3 V2 bed ---
 BED_XY = 204.0        # printable footprint per part: 220mm bed minus 2x8mm brim
-PANEL_T = 2.6         # center-panel plate thickness (ring membrane = PANEL_T-RING_REC_D-... see RECESS_FLOOR)
-PANEL_TOP = TOP_Z + PANEL_T                  # 14.9
-PLATEAU_TOP = PANEL_TOP + POCKET_D           # 16.9 (pocket rim / device front)
+PANEL_T = 2.6         # well-floor slab thickness (0.8 web under the 1.8 ring recess)
+# v0.18 SUNKEN WELL: the phone (S25 Ultra in a typical thin case) sits in a deep
+# well in the center panel so its SCREEN SURFACE lands FLUSH with the grip lids'
+# keyboard face (WELL_TOP). Everything below is derived from the cased thickness:
+#   screen @ WELL_TOP -> cased back rests at WELL_TOP - PHONE_TC (on the 0.2-proud
+#   ring) -> well floor 0.2 lower -> slab hangs PANEL_T below that.
+WELL_TOP = TOP_Z + TOP_T                     # 14.3 — panel border top = lid top = device face
+PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — cased thickness, back-of-case -> screen
+WELL_FLOOR = WELL_TOP - PHONE_TC - 0.2       # 4.7 — well/pocket floor (ring sits 0.2 proud)
+SLAB_BOT = WELL_FLOOR - PANEL_T              # 2.1 — slab bottom (0.5 above the back floor)
+WELL_WALL = 2.0                              # well y-wall band thickness
 SEAM_GAP = 0.3        # front reveal gap between panel edge and lid edge (deliberate V)
 LAP_CLR = 0.25        # printed-joint in-plane clearance (FDM: elephant foot + warp)
 XWALL_T = 2.5         # transverse spine wall (closes each half's torsion box, seats panel)
 # 4 seam-splice screws straddling the x=0 back seam, DERIVED from the phone pocket
 # span (v0.17: hardcoded y=10/105 broke when the board shrank to 97mm — 105 was off
-# the shell and 10 clipped the new pocket rim): 5.5mm outside each pocket edge.
+# the shell and 10 clipped the new pocket rim). v0.18: 6.3mm outside each pocket
+# edge so the Ø7 floor bosses clear the well's 2.0mm wall band by >=0.5mm.
 _PH0 = deck.product(deck.Config())["phone"]
-PANEL_SCREWS = [(sx, sy) for sy in (_PH0["y"] - 5.5, _PH0["y"] + _PH0["h"] + 5.5)
+_PY0, _PY1 = _PH0["y"] - PHONE_CLR / 2, _PH0["y"] + _PH0["h"] + PHONE_CLR / 2
+PANEL_SCREWS = [(sx, sy) for sy in (_PY0 - 6.3, _PY1 + 6.3)
                 for sx in (-10.0, 10.0)]
 
 def _cq_from_poly(geom, z0, h):
@@ -307,6 +316,15 @@ def support_post_locations(side):
         return _POSTS[side]
     geo = deck.build(deck.Config(side=side)); H = geo["board_h"]
     boxes = [(f["x"], H - f["y"], f["w"], f["h"]) for f in _placement(side) if f["back"]]
+    # v0.18: the 403040 cell lives on the LEFT grip's floor under the key field —
+    # posts must not land on it. Treat its grip-local rect (+1.5mm margin) as one
+    # more obstacle box so the candidate filter routes posts around it.
+    prod = _product()
+    bat = prod.get("battery")
+    if bat and bat.get("grip") == side:
+        ox = prod[f"{side}_origin"][0]
+        boxes.append((bat["x"] - ox + bat["w"]/2, bat["y"] + bat["h"]/2,
+                      bat["w"] + 3.0, bat["h"] + 3.0))
     holes = [(h["x"], h["y"]) for h in geo["mount_holes"]]
     def clearance(px, py):
         d = min((math.hypot(max(0.0, abs(px-cx) - w/2), max(0.0, abs(py-cy) - h/2))
@@ -394,9 +412,14 @@ def _back_solid():
                       .center(ax_ + ox + aw/2, bh_r + 0.65).box(aw, 0.7, PCB_Z - 3.9, centered=(True, True, False)))
 
     # ---- transverse spine walls at each grip boundary (v0.16 split): close each
-    # half's torsion box where the front seam breaks the top plate, seat the panel
-    # edge at TOP_Z, and host one Ø8 boss at MagSafe-ring height so phone detach
-    # pull anchors in line with the ring instead of peeling the panel edge.
+    # half's torsion box where the front seam breaks the top plate and seat the
+    # panel border. v0.18: over the phone-well y-span the wall is CUT DOWN to a
+    # sill at SLAB_BOT-0.15 — the sunken phone (bottom at WELL_FLOOR+0.2) and the
+    # panel's well-floor slab both pass over it; outside the well span the wall
+    # keeps full height and seats the border flange. The old ring-height Ø8
+    # anchors are GONE (the panel floor is 8mm below their bores now): MagSafe
+    # detach is resisted by the 4 border screws + the slab's own stiffness
+    # (<0.3mm flex at the ring), down-press by the slab's floor nubs.
     gx = _seam_frame()
     bh = prod["right"]["board_h"]
     ms = prod["magsafe"]
@@ -405,41 +428,40 @@ def _back_solid():
         xw = (cq.Workplane("XY").workplane(offset=FLOOR)
               .center((x0+x1)/2, (-PCB_CLR + bh + PCB_CLR)/2)
               .box(XWALL_T, bh + 2*PCB_CLR, WALL, centered=(True, True, False)))
-        # FFC pass-through: the bridge ribbon (10mm wide, centred on the placed J2
-        # ZIF, z~5.4) crosses here; window keeps 3.3mm of wall above as a printed
-        # bridge so the panel stays supported over the lane
-        _, jy2 = _find_fp("right" if s > 0 else "left", "ffc_afa07")
+        # cut down to the sill over the well span PLUS the panel's 2.0mm wall band
+        # (the band's y-side strips run the full panel width, so the sill must
+        # clear them at the x-ends too — a well-span-only cut left 59mm^3 of
+        # wall/band interference per side)
+        xw = xw.cut(cq.Workplane("XY").workplane(offset=SLAB_BOT - 0.15)
+                    .center((x0+x1)/2, (_PY0 + _PY1)/2)
+                    .box(XWALL_T+2, (_PY1 - _PY0) + 2*(WELL_WALL + LAP_CLR), WALL, centered=(True, True, False)))
+        # battery-lead pass-through at the bottom border lane (y~5, below the
+        # well): the 403040's leads run LEFT cavity -> spine floor -> J3 (right).
+        # The FFC no longer needs a wall window — it crosses in the under-slab
+        # floor channel, BELOW the wall base (see the channel cut below).
         xw = xw.cut(cq.Workplane("XY").workplane(offset=FLOOR)
-                    .center((x0+x1)/2, jy2).box(XWALL_T+2, 16.0, 9.0-FLOOR, centered=(True, True, False)))
-        # battery-lead pass-through on the side that carries J3 (side-entry JST-PH)
-        try:
-            side = "right" if s > 0 else "left"
-            _, jy = _find_fp(side, "JST_PH_S2B")
-            xw = xw.cut(cq.Workplane("XY").workplane(offset=FLOOR)
-                        .center((x0+x1)/2, jy).box(XWALL_T+2, 12.0, 10.5-FLOOR, centered=(True, True, False)))
-        except KeyError:
-            pass
+                    .center((x0+x1)/2, 5.0).box(XWALL_T+2, 8.0, 9.0-FLOOR, centered=(True, True, False)))
         shell = shell.union(xw)
-        # ring-height panel anchor: Ø8 D-boss on the wall's spine face, clipped
-        # flush at the panel-edge plane so it clears the PCB edge at |x|=gx
-        bx = s * (abs(x1) - 2.3)
-        boss = (cq.Workplane("XY").workplane(offset=FLOOR).center(bx, ms["cy"]).circle(4.0).extrude(WALL)
-                .cut(cq.Workplane("XY").workplane(offset=-1)
-                     .center(s*(abs(x1)+6), ms["cy"]).box(12, 20, WALL+4, centered=(True, True, False))))
-        shell = shell.union(boss)
-    # ---- 4 panel bosses straddling the x=0 back seam (2 per half): with the two
-    # ring-height wall bosses these make the screwed-on panel the seam's splice plate
+    # ---- FFC floor channel: the bridge ribbon used to cross at z~5.4, which now
+    # lands INSIDE the phone well — it must run UNDER the panel slab (bottom at
+    # SLAB_BOT). A 0.5mm-deep recess in the back floor (1.6 -> 1.1) over a 19mm
+    # lane centred on the J2 contact band gives the 0.3mm ribbon a 1.1..1.6 duct
+    # with ~0.5mm headroom to the slab; it passes beneath the transverse-wall
+    # bases (the walls sit on the 1.6 floor plane and don't fill the recess).
+    # The ribbon S-bends from each ZIF (z~5.5) down to the duct inside the grip
+    # cavities. Lane y 15..34 clears the relocated floor tabs (36..44).
+    _, jch = _find_fp("right", "ffc_afa07")
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=1.1)
+                      .center(0.0, jch).box(2*gx + 8.0, 19.0, FLOOR, centered=(True, True, False)))
+    # ---- 4 panel bosses straddling the x=0 back seam (2 per half): the screwed-on
+    # panel border is the seam's splice plate
     for (px, py) in PANEL_SCREWS:
         shell = shell.union(cq.Workplane("XY").workplane(offset=FLOOR)
                             .center(px, py).circle(3.5).extrude(WALL))
     # bores are cut from the FINISHED shell, not the boss primitives — a pre-bored
-    # boss unioned into overlapping material (the transverse wall spans the ring
-    # boss axis) gets its bore silently re-filled. Depths leave >=1.2mm before an
-    # M2x10 tip can bottom out (ISO length tolerance ~0.3): ring anchors reach
-    # z 2.3 (tip lands 3.5), panel-floor screws z 3.3 (tip lands 4.9).
-    for s in (1, -1):
-        shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
-                          .center(s*(gx - SEAM_GAP - 2.3), ms["cy"]).circle(1.6).extrude(-10.0))
+    # boss unioned into overlapping material gets its bore silently re-filled.
+    # Depth leaves >=1.0mm before an M2x10 tip (seated on the border top at
+    # WELL_TOP) can bottom out.
     for (px, py) in PANEL_SCREWS:
         shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
                           .center(px, py).circle(1.6).extrude(-9.0))
@@ -462,7 +484,9 @@ def back_half(side):
     prod = _product(); bh = prod["right"]["board_h"]
     s = 1 if side == "right" else -1
     half = cq.Workplane("XY").workplane(offset=-2).center(s*250, bh/2).box(500, 500, 30, centered=(True, True, False))
-    tabs = [(30.0, 38.0), (78.0, 86.0)]
+    # v0.18: lower tab moved 30-38 -> 36-44 so it clears the FFC floor channel
+    # (lane y 15..34) — a channel-thinned tab would be a weak splice
+    tabs = [(36.0, 44.0), (78.0, 86.0)]
     # front/back perimeter walls: outer faces at y=-2.9 / bh+2.9; split each wall's
     # thickness for the shiplap (right keeps the outer layer over x in [-7.75, 0])
     wo0, wi0 = -(WALL_T + PCB_CLR), -PCB_CLR              # front wall y-faces
@@ -566,45 +590,60 @@ def grip_lid(side):
     return _to_trimesh(plate, f"grip_lid_{side}")
 
 def center_panel():
-    """Center front panel (pink, 'the front of the back'): one 4.6mm slab over the
-    spine — phone pocket, MagSafe ring recess and all 6 panel screws live here. It
-    spans the x=0 back seam and is its bolted splice. A deliberate SEAM_GAP reveal
-    separates it from the lids (no overlap: no screw-head clash, no mid-air mating
-    faces — it prints back-face-down, pocket up, support-free). Removable on its
-    own: the spine service hatch for battery + FFC.
-    The pocket rim captures the phone's long edges (pocket open in x as before —
-    lateral retention is the MagSafe ring's job); the Ø57 x 1.8 ring recess leaves
-    a 0.8mm printed web (4 layers) under the glued-in N52 ring, and the ring sits
-    0.2mm proud so the phone rests on ring + pocket floor exactly as in v0.15."""
+    """Center front panel, v0.18: a SUNKEN TRAY (pink, 'the front of the back').
+    The border flange (TOP_Z..WELL_TOP) is flush with the grip lids; inside it a
+    deep well drops to WELL_FLOOR so the cased phone's SCREEN lands flush with the
+    lids' keyboard face. The well floor slab (SLAB_BOT..WELL_FLOOR) carries the
+    Ø57 x 1.8 MagSafe ring recess (0.8mm web below, ring 0.2mm proud — the phone
+    rests on the ring exactly as before, just 10.2mm lower). The well's 2.0mm
+    y-wall band captures the cased phone's long edges; the x-ends stay open (the
+    phone's short ends stop 0.3mm shy of the grips' PCB/lid inner edges, and the
+    slab ends rest over the cut-down transverse-wall sills). Down-press loads pass
+    through 4 floor nubs to the back floor; MagSafe detach flexes the 2.6mm slab
+    <0.3mm against the 4 border screws. A thumb scallop in the top border exposes
+    the case edge for removal. Still the bolted x=0 seam splice; the FFC (in its
+    under-slab floor channel) is serviceable by removing the panel; the battery
+    moved to the LEFT grip cavity (see battery_body)."""
     fp = full_footprint()
     prod = _product()
     gx = _seam_frame(); px_edge = gx - SEAM_GAP
     bh = prod["right"]["board_h"]
+    ph = prod["phone"]; ms = prod["magsafe"]
+    pcx, pcy = ph["x"] + ph["w"]/2, ph["y"] + ph["h"]/2
     region = Polygon([(-px_edge, -60), (px_edge, -60), (px_edge, bh+60), (-px_edge, bh+60)])
     poly = fp.buffer(WALL_T+PCB_CLR).intersection(region).buffer(0)
-    panel = _cq_from_poly(poly, TOP_Z, PLATEAU_TOP - TOP_Z)     # solid 12.3..16.9
-    ph = prod["phone"]
-    pocket = (cq.Workplane("XY").workplane(offset=PANEL_TOP)
-              .center(ph["x"]+ph["w"]/2, ph["y"]+ph["h"]/2)
-              .box(ph["w"] + 2.4, ph["h"] + PHONE_CLR, POCKET_D + 0.2, centered=(True, True, False)))
-    panel = panel.cut(pocket)
-    ms = prod["magsafe"]
+    pocketP = shp_box(pcx - ph["w"]/2 - 1.2, pcy - (ph["h"] + PHONE_CLR)/2,
+                      pcx + ph["w"]/2 + 1.2, pcy + (ph["h"] + PHONE_CLR)/2)
+    wallB = pocketP.buffer(WELL_WALL)
+    # solid block border-top down to slab bottom, then carve:
+    panel = _cq_from_poly(poly, SLAB_BOT, WELL_TOP - SLAB_BOT)
+    # (1) the well void above the floor
+    panel = panel.cut(_cq_from_poly(pocketP, WELL_FLOOR, WELL_TOP - WELL_FLOOR + 0.2))
+    # (2) the underside outside the well-wall band: border flange is only
+    #     TOP_Z..WELL_TOP so it seats on the perimeter/transverse walls + bosses
+    under = poly.difference(wallB)
+    if not under.is_empty:
+        panel = panel.cut(_cq_from_poly(under, SLAB_BOT - 0.1, (TOP_Z - SLAB_BOT) + 0.1))
+    # MagSafe ring recess in the well floor (0.8mm web remains below)
     panel = panel.cut(cq.Workplane("XY").workplane(offset=RECESS_FLOOR)
                       .center(ms["cx"], ms["cy"]).circle(RING_REC_R).extrude(RING_REC_D + 0.05))
-    # 4 seam-splice screws in the plateau strips outside the pocket: Ø2.6 through,
-    # Ø6 x 2.0 counterbore so the M2x10 button head seats on the 2.6mm plate
+    # 4 seam-splice screws through the border strips (button heads proud on the
+    # border face, same look as the grip-lid screws)
     for (sx, sy) in PANEL_SCREWS:
-        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z-0.1).center(sx, sy).circle(1.3).extrude(PLATEAU_TOP+0.2))
-        panel = panel.cut(cq.Workplane("XY").workplane(offset=PANEL_TOP).center(sx, sy).circle(3.0).extrude(POCKET_D+0.2))
-    # 2 ring-height anchors in the pocket floor (into the transverse-wall bosses):
-    # heads sink 1.4 so they finish under the phone (ring sits 0.2 proud above them)
-    for s in (1, -1):
-        sx, sy = s * (abs(px_edge) - 2.3), ms["cy"]
-        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z-0.1).center(sx, sy).circle(1.3).extrude(PANEL_T+0.2))
-        panel = panel.cut(cq.Workplane("XY").workplane(offset=PANEL_TOP-1.4).center(sx, sy).circle(3.0).extrude(1.6))
+        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z - 0.1)
+                          .center(sx, sy).circle(1.3).extrude(WELL_TOP + 0.2))
+    # 4 floor nubs under the slab: solid down-press path to the back floor
+    for (nx, ny) in ((-45.0, 45.0), (45.0, 45.0), (-45.0, 70.0), (45.0, 70.0)):
+        panel = panel.union(cq.Workplane("XY").workplane(offset=SLAB_BOT)
+                            .center(nx, ny).circle(2.5).extrude(-(SLAB_BOT - FLOOR)))
+    # thumb scallop: R9 half-round in the TOP border + well wall, down to z=6 —
+    # exposes ~18mm of the case's top edge so the phone can be tipped out against
+    # the MagSafe pull (border screws at |x|=10 stay 2.8mm outside the cut)
+    panel = panel.cut(cq.Workplane("XY").workplane(offset=6.0)
+                      .center(0.0, _PY1).circle(9.0).extrude(WELL_TOP))
     # 0.8mm 45-degree chamfers on both outer top edges (the pink side of the reveal)
     for s in (1, -1):
-        panel = panel.cut(_edge_wedge(s*px_edge, PLATEAU_TOP, bh=bh))
+        panel = panel.cut(_edge_wedge(s*px_edge, WELL_TOP, bh=bh))
     return _to_trimesh(panel, "center_panel")
 
 def keymats(side):
@@ -628,15 +667,18 @@ def keymats(side):
 
 # ==== non-printed bodies (real dims) ================================================
 def phone_body():
+    # cased envelope (deck.product already includes case_t laterally); thickness =
+    # bare + case back, so this box's top face IS the screen plane
     ph = _product()["phone"]
-    m = _box(ph["w"], ph["h"], 7.8)
+    m = _box(ph["w"], ph["h"], PHONE_TC)
     return _place(m, ph["x"]+ph["w"]/2, ph["y"]+ph["h"]/2, 0)  # z set in assemble
 
 def battery_body():
-    sb = _product()["spine_battery"]
-    # realistic ~500mAh 503450 pouch, ~5mm thick, oriented long-side-x so it fits
-    # the 52x36 reserved rect (v0.16: was 34x50 — rotated 90deg, overflowed the rect)
-    m = _box(50, 34, 5.0)
+    # v0.18: 403040 pouch (4.0 x 30 x 40, ~450-500mAh) in the LEFT grip's back
+    # cavity, foam-taped to the floor under the passive PCB (the spine well left
+    # only ~0.5mm under its floor slab — no standard cell fits there any more).
+    sb = _product()["battery"]
+    m = _box(sb["w"], sb["h"], sb["t"])
     return _place(m, sb["x"]+sb["w"]/2, sb["y"]+sb["h"]/2, 0)
 
 def magsafe_ring():
@@ -647,7 +689,10 @@ def magsafe_ring():
     return _place(ring, ms["cx"], ms["cy"], 0)
 
 def flex_body():
-    """Bridge flex: flat ribbon from the right J2 to the left J2, behind the phone."""
+    """Bridge flex: flat ribbon from the right J2 to the left J2. v0.18: it crosses
+    the spine in the under-slab FLOOR CHANNEL (duct z 1.1..1.6 — the well leaves no
+    room at connector height), S-bending down from each ZIF inside the grip
+    cavities; modeled as the straight duct run."""
     prod = _product()
     def j2(side):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
@@ -676,8 +721,10 @@ def height_report(side="right"):
           f"-> margin {STANDOFF - deepest[0]:.2f}mm to the floor")
     print(f"  stack (product z): floor top {FLOOR} | PCB {PCB_Z}..{PCB_Z+PCB_T} | dome top {DOME_TOP} | "
           f"keymat web {KM_Z0}..{KM_Z0+KM_WEB} | grip lids {TOP_Z}..{TOP_Z+TOP_T} | "
-          f"panel {TOP_Z}..{PANEL_TOP} plateau top {PLATEAU_TOP} | ring {MAGSAFE_Z-RING_H/2:.1f}..{MAGSAFE_Z+RING_H/2:.1f} | "
-          f"phone {PHONE_Z-3.9:.1f}..{PHONE_Z+3.9:.1f}")
+          f"well slab {SLAB_BOT}..{WELL_FLOOR} border top {WELL_TOP} | "
+          f"ring {MAGSAFE_Z-RING_H/2:.1f}..{MAGSAFE_Z+RING_H/2:.1f} | "
+          f"cased phone {PHONE_Z-PHONE_TC/2:.1f}..{PHONE_Z+PHONE_TC/2:.1f} "
+          f"(screen flush with lids @ {WELL_TOP})")
 
 
 def render_iso(meshes, path, title, elev=32, azim=-60):
@@ -700,13 +747,14 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
 
 # ==== assembly + collision ==========================================================
 # z-stack (product frame): back-shell floor at 0; PCB rests on STANDOFF bosses.
-# (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / WALL are all derived up top.)
+# (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / WELL_* are all derived up top.)
 RING_H = 2.0                                    # N52 ring thickness
-RECESS_FLOOR = PANEL_TOP - RING_REC_D           # ring recess floor (in the panel's pocket floor)
+RECESS_FLOOR = WELL_FLOOR - RING_REC_D          # ring recess floor (in the sunken well floor)
 MAGSAFE_Z = RECESS_FLOOR + RING_H/2             # ring body centre (sits IN the recess)
-PHONE_Z = RECESS_FLOOR + RING_H + 7.8/2         # phone rests on the 0.2mm-proud ring
-BATT_Z = FLOOR + 2.5                   # ~5mm cell sitting on the spine floor in the cavity
-FLEX_Z = PCB_Z - 2.5                   # ribbon behind the phone, at the back-connector level
+PHONE_Z = RECESS_FLOOR + RING_H + PHONE_TC/2    # cased phone rests on the 0.2mm-proud ring;
+                                                # screen top = WELL_TOP (flush with the lids)
+BATT_Z = FLOOR + 0.3 + 2.0             # 403040 cell on 0.3 foam on the LEFT grip floor
+FLEX_Z = 1.3                           # ribbon in the under-slab floor channel (duct 1.1..1.6)
 
 SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel")
 
@@ -904,7 +952,7 @@ def _render_parts(A):
               "back_left": "left back half (grip bay + half spine, seam joinery)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
-              "center_panel": "center panel (phone pocket + MagSafe recess + 6 screws)",
+              "center_panel": "center panel (sunken flush-screen well + MagSafe recess + 4 screws + scallop)",
               "keymat_right": "right keymat (plungers + hinge web)"}
     for nm, title in titles.items():
         render_iso([(A[nm], [0.4, 0.45, 0.5, 1])], os.path.join(RENDERS, f"part_{nm}.png"),

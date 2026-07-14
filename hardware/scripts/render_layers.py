@@ -80,10 +80,12 @@ def back_shell(ax, P):
     ax.add_patch(Circle((ms["cx"], ms["cy"]), ms["d"] / 2, facecolor="#2b3239",
                  edgecolor=INK, lw=1.4, zorder=3))
     ax.text(ms["cx"], ms["cy"] + ms["d"] / 2 - 6, "MagSafe pocket", ha="center", fontsize=7, color=INK, zorder=4)
-    sb = P["spine_battery"]
+    # v0.18: LiPo 403040 sits in the LEFT grip's back cavity (foam-taped to the
+    # floor under the passive PCB) — the sunken phone well displaced it from the spine
+    sb = P["battery"]
     ax.add_patch(Rectangle((sb["x"], sb["y"]), sb["w"], sb["h"], facecolor="#2b3239",
-                 edgecolor=INK, ls="--", lw=1.2, zorder=2))
-    ax.text(sb["x"] + sb["w"] / 2, sb["y"] + 5, "LiPo pocket", ha="center", fontsize=7, color=INK, zorder=3)
+                 edgecolor=INK, ls="--", lw=1.2, zorder=4))
+    ax.text(sb["x"] + sb["w"] / 2, sb["y"] + 5, f"LiPo {sb['cell']}", ha="center", fontsize=6, color=INK, zorder=4)
     # screw bosses
     for key in ("left", "right"):
         geo = P[key]; ox, oy = P[f"{key}_origin"]

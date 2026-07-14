@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.17"
+VERSION = "v0.18"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -114,10 +114,18 @@ class Config:
     env_h_max: float = 126.0      # taller: vertical module + antenna overhang
     side: str = "right"
     # --- v0.7: phone target + MagSafe centre-mount + cluster/trackpad features ---
+    # v0.18: placeholder iPhone dims (71.6 x 147.6) replaced with the user's REAL
+    # phone — Samsung Galaxy S25 Ultra, 162.8 x 77.6 x 8.2 mm — worn in a typical
+    # thin case (case_t per side/back). The spine gap is sized to the CASED phone,
+    # and the v0.18 sunken panel puts the cased screen surface FLUSH with the grip
+    # lids' keyboard face. Device width follows the phone's length by construction
+    # (grips flank the phone) — the S25U is 15.2mm longer than the old placeholder.
     target: str = "phone"         # phone MagSafe-mounts to the centre (not a Pi)
     orientation: str = "landscape"  # phone held LANDSCAPE between the grips (Steam-Deck style)
-    phone_w: float = 71.6         # phone SHORT dimension (e.g. iPhone 15 71.6mm)
-    phone_h: float = 147.6        # phone LONG dimension (147.6mm) — spans the grips in landscape
+    phone_w: float = 77.6         # phone SHORT dimension (S25 Ultra 77.6mm, bare)
+    phone_h: float = 162.8        # phone LONG dimension (S25 Ultra 162.8mm, bare) — spans the grips in landscape
+    phone_t: float = 8.2          # phone THICKNESS (S25 Ultra 8.2mm, bare)
+    case_t: float = 1.2           # typical thin case: added per side AND behind the back
     magsafe_d: float = 56.0       # MagSafe magnet ring outer diameter (N52 arc array)
     # v0.11: trackpad = a PCB-INTEGRATED capacitive pad (copper on the front, ~34x26mm
     # so it fits the grip's upper zone with no overhang) driven by an Azoteq IQS7211E
@@ -334,11 +342,16 @@ def product(c: Config) -> dict:
     left = build(Config(**{**c.__dict__, "side": "left"}))
     # LANDSCAPE: the phone's LONG side spans horizontally between the grips; its
     # SHORT side is vertical (centred on the grip midline). Portrait swaps these.
+    # v0.18: all phone geometry is the CASED envelope (bare + 2*case_t per axis) —
+    # the pocket/gap must fit the phone as worn, and the flush-screen z-stack is
+    # computed from the cased thickness (deck3d).
     if c.orientation == "landscape":
         span_x, span_y = max(c.phone_w, c.phone_h), min(c.phone_w, c.phone_h)
     else:
         span_x, span_y = min(c.phone_w, c.phone_h), max(c.phone_w, c.phone_h)
-    gap = span_x                         # centre gap = phone horizontal extent
+    span_x += 2 * c.case_t
+    span_y += 2 * c.case_t
+    gap = span_x + 0.6                   # centre gap = cased phone + 0.3/side insertion clearance
     rx = gap / 2.0
     lx = -gap / 2.0 - left["board_w"]
     cy = right["board_h"] / 2.0
@@ -352,11 +365,18 @@ def product(c: Config) -> dict:
         "phone": {"w": span_x, "h": span_y,
                   "x": round(-span_x / 2, 2), "y": round(cy - span_y / 2, 2)},
         "magsafe": {"cx": 0.0, "cy": round(cy, 2), "d": c.magsafe_d},
-        # LiPo sits INSIDE the spine, directly BEHIND the MagSafe ring (centred on it),
-        # on the back-half floor under the center panel (v0.16 5-part shell). The N52
-        # ring is epoxied into the panel's pocket recess, 0.2mm proud; the phone mates
-        # to it. Short wire to the right-grip charger; does NOT cross the left bridge.
-        "spine_battery": {"w": 52.0, "h": 36.0, "x": -26.0, "y": round(cy - 18.0, 2)},
+        # v0.18: the LiPo moved OUT of the spine — the sunken phone well (screen
+        # flush with the lids) leaves only ~0.5mm under its floor slab, so no
+        # standard cell fits behind the ring any more. The cell is now a 403040
+        # (4.0 x 30 x 40, ~450-500mAh) in the LEFT grip's back cavity, foam-taped
+        # to the floor UNDER the passive PCB (the only parts there are diodes,
+        # 1.16mm deep, and the FFC ZIF at the inner edge — 5.1mm of free depth vs
+        # 0.24mm in the right cavity where the mated JST-PH lives). Leads run
+        # along the spine's bottom border (outside the phone well) to J3 on the
+        # right board. Grip-local rect on the LEFT grip, converted to product mm.
+        "battery": {"cell": "403040", "t": 4.0, "grip": "left",
+                    "w": 30.0, "h": 40.0,
+                    "x": round(lx + 22.0, 2), "y": 13.0},
         "config": asdict(c),
     }
 

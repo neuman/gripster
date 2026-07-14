@@ -1,15 +1,16 @@
-# Assembly, first flash, charge, pair & test — rev-A (v0.16)
+# Assembly, first flash, charge, pair & test — rev-A (v0.18)
 
 Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
 machine-placed) — there is **no hand-soldering** in this build. Your work is
 mechanical + one one-time SWD flash.
 
-> **v0.17 status:** the boards, fab package and firmware in this guide are the
+> **v0.18 status:** the boards, fab package and firmware in this guide are the
 > re-routed **v0.17** grip (79.5 × 97 mm; the E73 + power front-end — USB-C,
 > charger, ESD, power slide switch, reset, charge LED — moved to the **top**
-> zone, with the JST-PH battery connector in the bottom chin). The **3D shells
-> and keymats have not been regenerated for v0.17** and still reflect the v0.16
-> board — do **not** print them until `deck3d.py` is re-run and reviewed.
+> zone, with the JST-PH battery connector in the bottom chin) — **unchanged in
+> v0.18**. The **3D shells and keymats have been regenerated and fit-checked
+> for v0.18** (flush-screen sunken tray sized for a cased Galaxy S25 Ultra;
+> battery relocated into the left grip) — print from the current STLs.
 
 ## 0. Order & print
 
@@ -24,12 +25,15 @@ mechanical + one one-time SWD flash.
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
    fatigue (>10 k presses) before printing the full mats.
 3. **Order alongside:** 79+ Snaptron 7 mm domes with the taped retention array,
-   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥160 mm**
+   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥190 mm**
    — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
-   contact rows sit 151.2 mm apart plus ~4 mm ZIF insertion each end, so a 150 mm
-   ribbon cannot mate — plus a 1S 400–700 mAh JST-PH LiPo, Ø56 N52 MagSafe ring,
-   **16 M2 heat-set inserts + 16 M2×10 button-head screws** (one SKU: 10 grip,
-   4 panel-floor, 2 panel-ring).
+   contact rows sit 169.4 mm apart plus ~4 mm ZIF insertion each end and the
+   S-bends down into the spine floor channel, so a 200 mm ribbon has only
+   ~10 mm slack and anything under 190 mm cannot mate — plus a 1S **403040**
+   pouch LiPo (4.0 × 30 × 40 mm, ~450–500 mAh, JST-PH; the footprint is a hard
+   limit — the cell lives inside the **left grip**, not the spine), 0.3 mm foam
+   tape for the cell, Ø56 N52 MagSafe ring, **14 M2 heat-set inserts + 14 M2×10
+   button-head screws** (one SKU: 10 grip, 4 panel border).
 
 ## 1. Press the domes
 
@@ -44,42 +48,57 @@ Per grip, on the **front** (bare gold) side:
 
 ## 2. Mechanical assembly
 
-Order matters with the split shells: **FFC into the boards first, lids before
-panel, panel last** (it overlaps nothing but is the seam splice + service hatch).
+Order matters with the split shells: **FFC into the boards first, battery into
+the left grip before its board, lids before panel, panel last** (it overlaps
+nothing but is the seam splice + the FFC service hatch — the battery is
+serviced through the left grip, not the panel).
 
-1. Heat-set the **16 M2 inserts**: 5 per grip in each back half's PCB bosses,
-   2 per half in the panel bosses beside the x=0 seam, and 1 per half in the
-   Ø8 boss on the transverse spine wall (all 3.2 mm bores).
+1. Heat-set the **14 M2 inserts**: 5 per grip in each back half's PCB bosses
+   and 2 per half in the panel bosses beside the x=0 seam (all 3.2 mm bores).
+   *(The two ring-height spine anchors are gone in v0.18 — the panel takes 4
+   border screws only.)*
 2. **FFC jumper first:** with the boards loose, open both ZIF latches and seat
-   the ribbon (≥160 mm type-A), **contacts facing the board at both ends** (the
+   the ribbon (≥190 mm type-A), **contacts facing the board at both ends** (the
    ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
    ribbon is correct by construction; do not twist it). Close the latches. The
-   ZIFs are unreachable once the lids are on.
-3. Drop each board in, **parts down**, onto its perimeter bosses + the **3
-   support posts** under the key field. Check the USB-C sits in its wall
+   ZIFs are unreachable once the lids are on. The ribbon will later S-bend down
+   from each ZIF and cross the spine in a 0.5 mm floor channel under the
+   phone-well slab (step 6).
+3. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
+   JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
+   wire lands on the pin marked **"+"** on the back silk beside J3 — that is
+   **pin 1, the pin nearer the bottom board edge** ("−" marks pin 2). Foam-tape
+   (0.3 mm) the 403040 cell to the **left** grip's floor where it will sit
+   under the passive PCB — only the left cavity has the headroom — and route
+   the leads out of the left cavity into the bottom-border lane (y≈5, outside
+   the phone well) toward the transverse-wall lead windows. Leave the cell
+   **unplugged** and the power switch **OFF** — it is connected only *after*
+   the first flash (§3); see the REGOUT0 warning there.
+4. Drop each board in, **parts down**, onto its perimeter bosses + the **3
+   support posts** under the key field. On the **left**, the board goes in
+   over the cell (~0.8 mm clearance under the diodes at nominal) — check the
+   leads exit cleanly and nothing is pinched. Check the USB-C sits in its wall
    opening, the slide-switch knob reaches its slot, and the reset tact + LED
    align with the floor pinhole + light hole. *(v0.17: the USB-C opening and
    slide-switch slot are in the TOP shell wall, the reset pinhole + charge
    light-hole in the floor near the top zone — the shells were regenerated and
    fit-checked for this layout on 2026-07-14.)*
-4. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
+5. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
    clamps the keymat web); drive the **5 M2×10 screws per grip**.
-5. **Join the back halves:** thread the FFC slack through the transverse-wall
-   windows, engage the two floor tabs and the wall shiplaps at x=0, and press
-   the halves flush. No screws here — the center panel is the splice.
-6. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
-   JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
-   wire lands on the pin marked **"+"** on the back silk beside J3 — that is
-   **pin 1, the pin nearer the bottom board edge** ("−" marks pin 2). Seat the
-   cell on the spine floor (adhesive on **one half only**, so a future seam
-   split doesn't pry the pouch), route the leads through the wall window to J3,
-   but leave it **unplugged** and the power switch **OFF** — the cell is
-   connected only *after* the first flash (§3); see the REGOUT0 warning there.
+6. **Join the back halves:** lay the FFC flat across the spine and seat it
+   fully into its 0.5 mm floor channel (the well slab covers it once the panel
+   is on — it must be in the channel *before* then), thread the battery leads
+   through the lead windows in both transverse walls toward J3 (still
+   unplugged), then engage the two floor tabs and the wall shiplaps at x=0 and
+   press the halves flush. No screws here — the center panel is the splice.
 7. Seat the **MagSafe ring** in the panel recess (epoxy the full annulus — the
-   bond, not the 0.8 mm web, takes the detach pull), then fit the **center
-   panel** and drive its **6 M2×10 screws**: 4 in the plateau strips straddling
-   the back seam, 2 in the pocket floor at ring height (they sink 1.4 mm — the
-   phone clears them). To service battery/FFC later, only these 6 come back out.
+   bond takes the detach pull, backed by the border screws and the slab's
+   stiffness), then fit the **center panel** — its sunken tray drops over the
+   spine, the border flange lands flush with the grip lids' keyboard face and
+   the well slab rests on the 4 floor nubs — and drive its **4 M2×10 border
+   screws** straddling the back seam. To service the FFC later, only these 4
+   come back out; swapping the battery instead means opening the **left grip**
+   (5 screws, lid, keymat, board).
 
 ## 3. First flash (one-time SWD, then UF2 forever)
 

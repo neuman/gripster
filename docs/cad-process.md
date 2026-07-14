@@ -1,4 +1,18 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.17
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.18
+
+**v0.18 flush-screen well + battery relocation (2026-07-14).** The center panel is
+now a **sunken tray**: its border flange tops out flush with the grip lids
+(z 14.3) and the phone — a real **S25 Ultra in a 1.2 mm thin case** (dims in
+`deck.Config`) — drops into a well whose floor puts the **screen surface exactly
+in the lids' keyboard-face plane**. Same MagSafe recess construction as before,
+translated 10.2 mm down. Consequences handled in the same pass: the **LiPo moved
+to the left grip cavity** (403040 under the passive PCB — only 0.5 mm remained
+under the well), the **FFC bridge crosses in a 0.5 mm floor channel** under the
+well slab, the transverse walls are cut to sills over the well span, the
+ring-height panel anchors are gone (4 border screws + slab stiffness take the
+MagSafe detach pull; 4 floor nubs take down-press), and an R9 thumb scallop in
+the top border tips the phone out. Device: 15.3 mm max thickness (was 22.9),
+one continuous 14.3 mm front plane.
 
 **v0.17 regeneration (2026-07-14).** All parts regenerated for the re-proportioned
 97 mm Rii-height grips: keymat plungers / lid openings are now the **rectangular
@@ -58,14 +72,16 @@ deck.py geometry ─▶ deck3d.py (CadQuery) ─▶ STEP + STL per part
    └──────────── tweak shells/keymats, re-run ◀────────┘   (change the PCB only if unavoidable)
 ```
 
-## The height stack (rev-A, verified)
+## The height stack (rev-A / v0.18, verified)
 
-Bottom → top per grip: **floor 1.6 | back cavity 6.3 | PCB 1.6 | domes 0.5 |
-keymat | front plate**. The 6.3 mm PCB standoff is sized by the tallest back-side
-part — the **mated JST-PH battery connector** (6.0 mm) + 0.24 mm margin. Grip body
-comes out **14.3 mm** thick, the spine **16.9 mm** (panel plate 2.6 mm — thickened
-in v0.16 so the MagSafe recess leaves a 0.8 mm printed web instead of one 0.2 mm
-layer), **22.9 mm** including the mounted phone.
+Per grip, bottom → top: **floor 1.6 | back cavity 6.3 | PCB 1.6 | domes 0.5 |
+keymat | lid** → keyboard face at **z 14.3**, keycaps 1.0 proud (15.3). The 6.3 mm
+PCB standoff is sized by the tallest back-side part — the **mated JST-PH battery
+connector** (6.0 mm) + 0.24 mm margin. In the spine (v0.18): FFC duct 1.1..1.6 |
+well slab 2.1..4.7 (ring recess floor 2.9, 0.8 mm web) | N52 ring 2.9..4.9
+(0.2 proud) | **cased phone 4.9..14.3 — screen flush with the lids**. The whole
+device is **15.3 mm** thick (keycap tops); there is no plateau above the front
+plane any more.
 
 ## Parts, all from `deck.py` + the placed board
 
@@ -87,8 +103,11 @@ layer), **22.9 mm** including the mounted phone.
   slot** in the top wall, a
   **1.6 mm reset pinhole** and a **1.5 mm charge-LED light hole** in the floor
   (both located from the placed SW91/D80), and a **0.6 mm antenna wall relief**
-  at the E73 edge. The LiPo sits on the spine floor spanning the seam (adhere it
-  to ONE half only). **Seam joinery is printed and screwless**: two
+  at the E73 edge (top wall — closed, 1.9 mm remains), plus the v0.18 **FFC floor
+  channel** (0.5 mm recess, 19 mm lane at the J2 band) and **battery-lead windows**
+  in both transverse walls. The **403040 LiPo sits on the LEFT grip's floor**
+  under the passive PCB (v0.18 — the sunken well displaced it from the spine).
+  **Seam joinery is printed and screwless**: two
   full-floor-thickness tabs (right) into cleared notches (left) register the
   halves in-plane, each perimeter wall gets an **8 mm vertical shiplap**
   (vertical faces — print clean flat; 0.25 mm clearance), and a 0.4 mm 45° V
@@ -102,13 +121,16 @@ layer), **22.9 mm** including the mounted phone.
   mat can't float or rattle; the **5 screw positions per grip are unchanged**
   from rev-A. The inner edge is cut straight at the grip boundary with a 0.8 mm
   top chamfer (its half of the reveal V). Print cosmetic-face-down.
-- **Center panel (`center_panel`)** — the pink "front of the back"
-  (147.0 × 102.8 mm, 2.6 mm plate + 2.0 mm plateau): phone in a **2.0 mm-deep
-  pocket in the raised plateau**, open at the x-ends — the grips abut the
-  phone's short ends, the pocket rim captures its long edges. Inside the pocket
-  floor: a **Ø57 × 1.8 mm recess** for the Ø56 N52 MagSafe ring — the 2.0 mm
-  ring sits 0.2 mm proud, the phone rests on ring + pocket floor, and a
-  **0.8 mm printed web** (4 layers) remains under the recess. A deliberate
+- **Center panel (`center_panel`)** — the pink "front of the back", v0.18 a
+  **sunken tray** (165.2 × 102.8 × 12.7 mm): border flange 12.3..14.3 flush with
+  the lids, then a deep well whose floor slab (2.1..4.7) puts the **cased
+  phone's screen exactly in the keyboard-face plane (14.3)**. Open at the
+  x-ends — the grips' PCB/lid inner edges stop the phone (0.3 mm/side); the
+  2.0 mm well wall band captures its long edges; an R9 thumb scallop in the top
+  border tips it out. In the well floor: the **Ø57 × 1.8 mm recess** for the
+  Ø56 N52 MagSafe ring — the 2.0 mm ring sits 0.2 mm proud, the phone rests on
+  it, and a **0.8 mm printed web** (4 layers) remains under the recess; 4 floor
+  nubs below the slab carry down-press into the back floor. A deliberate
   **0.3 mm reveal gap** separates panel from lids (no overlap → no screw-head
   clash, no mid-air mating faces; prints back-face-down, support-free). It is
   the **bolted splice for the x=0 back seam and the spine service hatch**:
@@ -128,11 +150,28 @@ Two solids may **touch** (mating faces, a plunger resting on a dome) but must no
 mesh-intersection volume exceeds the tolerance, classified as *contact* (OK) vs
 *clash* (fix). Intended stack (bottom→top): back halves (tabs + wall shiplaps at
 x=0) → PCB on standoffs + posts → domes on pads → retention tape → keymat
-plungers → grip lids (rim on the web) → center panel (on the transverse walls +
-bosses, bridging the back seam); phone in the panel pocket on the MagSafe ring;
-LiPo on the spine floor; FFC jumper across the spine (through the transverse-wall
-windows) behind the phone. The back-half pair and the lid↔keymat rims are the
+plungers → grip lids (rim on the web) → center panel (border on the walls +
+bosses, bridging the back seam; slab on its floor nubs); phone sunk in the well
+on the MagSafe ring, screen flush at 14.3; LiPo on the LEFT grip floor under the
+passive PCB; FFC jumper across the spine in the 0.5 mm floor channel under the
+well slab. The back-half pair and the lid↔keymat rims are the
 whitelisted contacts; the back-seam interpenetration is additionally asserted ~0.
+
+## The full nested assembly (`models/thumbdeck_full_asm.glb`)
+
+`export_full_asm.py` (CAD venv) emits the whole build as ONE glTF/GLB with a
+**named node hierarchy** — shells/keymats/pcb_right/pcb_left/battery/flex/ring/
+phone as separate nested objects, openable as an object tree in Blender or any
+glTF viewer. The two boards are **KiCad-generated** (`kicad-cli pcb export glb`
+per routed `.kicad_pcb`: real board body, copper tracks + pads, soldermask,
+silkscreen — consolidated by material into board_body/copper/soldermask/
+silkscreen sub-objects); every placed component + snap dome rides on top as its
+real-dimension fit body under `pcb_<side>/components/<REF>`. Printed parts use
+the concept-sketch colors (pink backs/panel, cyan lids, purple keymats), the
+battery is the sketch-tan 403040, the flex the amber ribbon in its floor
+channel. Frame note: KiCad's GLB is metres, glTF Y-up with z = board-y-DOWN —
+the script maps it with rotX(+90°)·scale(1000) + the grip origin (verified
+against the dome-pad grid).
 
 ## Run
 

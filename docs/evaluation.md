@@ -1,4 +1,4 @@
-# thumbdeck — fab-readiness evaluation (rev-A, v0.16, 2026-07-13)
+# thumbdeck — fab-readiness evaluation (rev-A, v0.18, 2026-07-14)
 
 Authoritative status of the design's readiness to be produced. Supersedes the
 v0.14 evaluation and all older review notes. Where any other doc disagrees with
@@ -34,13 +34,13 @@ first-article run of 5 and run the bring-up checkpoints in
 | **Bridge correctness** | Left-grip FFC nets assigned by ribbon geometry; verified net-at-same-height matches 1:1 → a straight type-A jumper is correct by construction. |
 | **Footprints** | Production `snaptron_7mm_contact` (ring + 67.5° escape gap, pour/via keepouts); E73 43-pad land pattern with embedded antenna keepout; **no hand-soldered parts** — the USB-C shell's plated stakes and the FFC/slide-switch locating pegs are the only through-board features, all placed in the same single-pass JLC assembly. |
 | **Board outline / mounts** | Closed, non-self-intersecting, **79.5 × 97.0 mm**; **5× M2** per grip clear of keep-outs. |
-| **Mechanical fit** | `deck3d.py --check` **re-run on v0.17 geometry (2026-07-14)**: **203 bodies, 0 collisions** across the 5-part shell set (back halves, grip lids, center panel) + PCB (real part heights) + domes + keymat + LiPo + ring + phone; 6.3 mm back cavity clears the mated JST-PH by 0.24 mm; every printed part gated to fit an Ender 3 V2 bed (`--all`: lids 82.4 × 102.8, backs 163.9/156.2 × 102.8, panel 147.0 × 102.8). Keymats/lids now carry the v0.17 rectangular caps/openings; USB-C, power-switch and antenna wall features regenerated at the top edge. |
+| **Mechanical fit** | `deck3d.py --check` **re-run on v0.18 geometry (2026-07-14)**: **203 bodies, 0 collisions** across the 5-part shell set + PCB (real part heights) + domes + keymats + 403040 LiPo (left grip) + ring + cased phone; adversarially re-measured from the built STLs: screen plane = lid top = panel border = **14.3000**, slab/floor 0.5 mm, FFC duct 1.1..1.6 under the 2.1 slab, battery 0.84 mm under the diodes, phone 0.3 mm/side laterally; 6.3 mm back cavity still clears the mated JST-PH by 0.24 mm; every part bed-gated (`--all`: lids 82.4 × 102.8, backs 173.0/165.3 × 102.8, panel 165.2 × 102.8 × 12.7). |
 | **Firmware buildability** | 5 build-breakers fixed (v0.3.0 pin, pointing.h include, DCDC removed, LF-RC clock, exact Adafruit/nice!nano-v2 flash partition layout); board definition at `config/boards/arm/thumbdeck`; CI = a **self-contained ZMK v0.3.0 build** (`west init -l config` inside `firmware/zmk-config`, `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2`) — ZMK's reusable workflow cannot handle a nested config dir. **No green run yet — see below.** |
 
 ## What is NOT yet verified (needs the physical prototype)
 
 1. **RF range** with the phone mounted and hands on the grips (antenna is
-   edge-mounted with keepout + shell relief — the antenna moved to the top edge in v0.17, so the shell relief is pending 3D regeneration; only a range test proves it).
+   edge-mounted with keepout + shell relief — the relieved top wall is in the regenerated v0.18 shells (closed, 1.9 mm over the antenna span); only a range test proves it).
 2. **Dome feel** through the printed keymat, hinge fatigue life, retention-tape
    behaviour over thousands of cycles.
 3. **Real charge curve + idle/sleep current** on the assembled board.

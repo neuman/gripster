@@ -31,6 +31,10 @@ the v0.14 fab-readiness audit) are superseded by this file plus
    type-A (same-side contacts) FFC jumper, length ≥160 mm** — 200 mm is the common
    stock length (e.g. "FFC-1.0-16P-200mm" type A; the J2 contact rows are
    151.2 mm apart + ~4 mm ZIF insertion per end, so a 150 mm ribbon cannot mate).
+   **(v0.18: the jumper now crosses in a 0.5 mm-deep floor channel under the
+   flush-screen panel's well slab, S-bending down from each ZIF inside the grip
+   cavities — the J2 contact rows are 169.4 mm apart and the minimum length is
+   190 mm; the 200 mm stock ribbon still works, ~10 mm slack.)**
    Left-grip connector nets are assigned **by
    ribbon geometry**, so a straight jumper is correct by construction (verified:
    net-at-same-height matches 1:1). *Was:* a 2×08 THT pin header that (a)
@@ -53,7 +57,9 @@ the v0.14 fab-readiness audit) are superseded by this file plus
 8. **Charger caps fixed:** 4.7 µF **0805 25 V** (C1779) at **both** MCP73831
    supply (C3) and VBAT_CELL (C5), per datasheet. *Was:* a single cap 48 mm away,
    and a 0402 4µ7 that derates to ~1 µF at 5 V bias. PROG 5.1 kΩ → ~196 mA
-   (~0.5 C of a 400 mAh cell).
+   (~0.5 C of a 400 mAh cell). **(v0.18: the cell is now a 403040 pouch,
+   ~450–500 mAh, foam-taped into the LEFT grip under the passive board — PROG
+   unchanged, 196 mA = 0.43 C.)**
 9. **Battery divider hardened:** 1 MΩ/1 MΩ (R22/R23) + **new 100 nF SAADC filter
    cap (C6)** on VBAT_SENSE (P0.02/AIN0).
 10. **USB ESD moved INLINE:** the USBLC6-2SC6 now sits between the USB-C and the

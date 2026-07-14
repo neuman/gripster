@@ -1,4 +1,4 @@
-# Bill of materials — rev-A (v0.16)
+# Bill of materials — rev-A (v0.18)
 
 Authoritative electrical BOM is machine-exported per board to
 [`hardware/kicad/generated/fab/right/bom.csv`](../hardware/kicad/generated/fab/right/bom.csv)
@@ -48,12 +48,12 @@ assembly is fine.
 |---|---|---|---|
 | Snap domes | **Snaptron 7 mm 4-leg** (SnapForce) | 79 + spares (37 right / 42 left) | Pressed, not soldered, onto the ENIG contact pads. |
 | Dome retention | Snaptron taped polyimide array (Peel-N-Place) or 0.2–0.3 mm laser-cut polyimide spacer | 2 | **Required** — laterally retains each dome; the tape channels also vent them. |
-| FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥160 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not 150 mm:** the J2 contact rows are 151.2 mm apart and each ZIF drawer needs ~4 mm of insertion — a 150 mm ribbon cannot mate. |
-| LiPo | 1S 400–700 mAh pouch, JST-PH pigtail | 1 | Sits in the spine behind the MagSafe ring. **Meter polarity against the "+"/"−" silk at J3 first** (pin 1 = "+", nearer the bottom board edge). |
+| FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥190 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not shorter:** the J2 contact rows are 169.4 mm apart, each ZIF drawer needs ~4 mm of insertion, and the ribbon S-bends down into the 0.5 mm floor channel under the well — anything under 190 mm cannot mate. A 200 mm ribbon leaves ~10 mm of slack. |
+| LiPo | 1S **403040** pouch (4.0 × 30 × 40 mm, ~450–500 mAh), JST-PH pigtail | 1 | Foam-taped (0.3 mm) to the **left grip's floor** under the passive PCB — the sunken well leaves no room in the spine. Leads run through the bottom-border lane and lead windows to J3 on the right board; replacement means opening the left grip (5 screws, lid, keymat, board). **Meter polarity against the "+"/"−" silk at J3 first** (pin 1 = "+", nearer the bottom board edge). |
 | MagSafe ring | Ø56 N52 ring, 2.0 mm | 1 | Epoxied into the center panel's Ø57 × 1.8 recess (sits 0.2 mm proud). |
-| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. **Regenerated + fit-checked for v0.17** (2026-07-14, 0 collisions): lids 82.4 × 102.8, backs 163.9/156.2 × 102.8, panel 147.0 × 102.8 mm. |
+| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. **Regenerated + fit-checked for v0.18** (2026-07-14, 0 collisions): lids 82.4 × 102.8, backs 173.0/165.3 × 102.8, panel 165.2 × 102.8 mm. |
 | Keymats | per-grip, **TPU 95A** | 2 | Living-hinge web; coupon-test >10 k cycles first. **v0.17 geometry**: rectangular 8.5 × 7 rounded-rect caps (18.5 mm 2u space), round cluster keys; ~63 × 86–89 mm per mat. |
-| M2 hardware | **M2×10 button-head** screws + heat-set inserts (3.2 mm bores) | 16 + 16 | One screw SKU: 5 per grip (unchanged), 4 panel-floor at the x=0 seam, 2 panel-ring anchors in the transverse walls. |
+| M2 hardware | **M2×10 button-head** screws + heat-set inserts (3.2 mm bores) | 14 + 14 | One screw SKU: 5 per grip (unchanged), 4 panel border screws (the two ring-height anchors are gone — their bores would sit 8 mm above the sunken well floor). |
 | Bootloader flash rig | SWD probe (J-Link/CMSIS-DAP/pi) + 5 jumper wires | 1 | One-time Adafruit-bootloader flash on TP1–5. |
 
 ## Deliberately absent (vs earlier drafts)
