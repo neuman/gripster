@@ -5,8 +5,9 @@ images imported.
 
 > **Historical document.** The i8+ observations below are still the reference,
 > but the "How thumbdeck reinterprets it" section describes the **v0.3 50-key**
-> reduction and is **superseded**: the current design is **79 keys** (9×10
-> matrix, 6×6/half + clusters, 2u space bars), a D-pad + OK + mouse buttons on
+> reduction and is **superseded**: the current design is **78 keys** (9×10
+> matrix, 6×6/half + clusters, 2u space bars + a Rii-style 2u Enter ending the
+> right H-row, with `'` on FN+`;`), a D-pad + OK + mouse buttons on
 > the left, PgUp/PgDn on the right, and **no trackpad in v1** (rev-B option via
 > the I²C breakout). See the [README](../README.md) and
 > [evaluation.md](evaluation.md) for the current layout.

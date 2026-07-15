@@ -70,14 +70,14 @@ per part. In the DFM/component preview, verify and rotate if needed:
 | JST-PH S2B-PH-SM4-TB | C295747 | Extended | |
 | MSK12C02 slide switch | C431540 | Extended | |
 | TS-1187A reset tact | C318884 | Extended | |
-| 1N4148WS SOD-323 | C2128 | **Basic** | 79 across both boards. |
+| 1N4148WS SOD-323 | C2128 | **Basic** | 78 across both boards (36 right / 42 left). |
 | Red LED 0603 | C2286 | Basic | |
 | All R/C (0402/0805) | C25900, C25905, C26083, C11702, C52923, C1525, C1779 | **Basic** | The 4.7 µF is deliberately **0805 25 V** (C1779) — a 0402 4µ7 derates to ~1 µF at 5 V bias. |
 
 ## What stays manual (either fab house)
 
 Snap domes are mechanical spring contacts — they oxidise/warp in reflow, so no
-house machine-places them. Your steps after delivery: press the **79 domes** under
+house machine-places them. Your steps after delivery: press the **78 domes** under
 the Snaptron retention array, print shells + keymats, foam-tape the battery into
 the **left grip before its board goes in**, seat the FFC jumper in its floor
 channel before the center panel goes on (4 border screws), close the shell.

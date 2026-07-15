@@ -29,7 +29,11 @@ passive matrix wired across a fixed internal FFC bridge.
 > sunken-tray center panel + FFC floor channel + left-grip battery bay, all wall
 > cutouts (USB-C, power switch, antenna relief) at the top edge, `deck3d.py
 > --check` = **203 bodies, 0 impossible overlaps**, every part still fits an
-> Ender 3 V2 bed. Order rev-A as a **first-article run of 5** and bring it up per
+> Ender 3 V2 bed. Newest change (2026-07-15): a **Rii-style 2u Enter** now ends
+> the right grip's H-row (the `'` key gave up its spot — `'` = FN+`;`; **78 keys**
+> total), with the right board regenerated + rerouted (still 0/0), the fab
+> package re-exported, **debossed keycap legends** on the keymat model and the
+> M2 shell screws in the assembled 3D model. Order rev-A as a **first-article run of 5** and bring it up per
 > [`docs/assembly.md`](docs/assembly.md) before any larger spend. Open ergonomic
 > calls in §[Open questions](#open-questions).
 
@@ -40,9 +44,9 @@ passive matrix wired across a fixed internal FFC bridge.
 | | value |
 |---|---|
 | Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.3 mm front plane, 15.3 mm max thickness); two dome-key grips, **fixed shell in 5 printed parts** (Steam-Deck-style; every part fits an Ender 3 V2 bed) |
-| Keys | **79 Snaptron 7 mm snap domes** (right 37, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side |
+| Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
-| Right grip | YUIOP-half (6×6) + **PgUp/PgDn**, plus the module and the whole power front-end |
+| Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + **PgUp/PgDn**, plus the module and the whole power front-end |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals, UF2-flashable after a one-time SWD bootloader flash |
 | Matrix | single **9 × 10**, `col2row`, one **SOD-323** diode/key on the back, 9× 4.7 kΩ row pull-downs, NKRO best-effort |
 | Bridge | **16-pin 1.0 mm FFC ZIF** (JUSHUO AFA07-S16FCC-00, C13744) on each grip's inner edge + a **16-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥190 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A; v0.18's wider S25U spine + the under-well floor channel raised the minimum from 160) — nets assigned by ribbon geometry so a straight jumper is correct by construction |
@@ -119,7 +123,7 @@ power-switch / pinhole cutouts.
 
 ![Layout, both grips](renders/iter_09.png)
 
-6-col grid of rectangular 8.5 × 7 mm keys at 10 × 9 mm pitch per grip (bottom row = a 2u space bar), plus the cluster features. The E73 + power front-end sit in the top zone with the antenna up off the top edge; PgUp/PgDn move to the inner-top corner.
+6-col grid of rectangular 8.5 × 7 mm keys at 10 × 9 mm pitch per grip (bottom row = a 2u space bar; the right H-row ends in a Rii-style 2u Enter — `H J K L + ENT`, `'` on FN+`;`), plus the cluster features. The E73 + power front-end sit in the top zone with the antenna up off the top edge; PgUp/PgDn move to the inner-top corner.
 
 ### Fabrication view + real KiCad boards
 
@@ -127,16 +131,17 @@ power-switch / pinhole cutouts.
 
 The generated boards are **real, routed, DRC-clean KiCad 9 files** —
 [`hardware/kicad/generated/thumbdeck_right.kicad_pcb`](hardware/kicad/generated/thumbdeck_right.kicad_pcb)
-(37 domes + 37 diodes + module + power front-end) and `thumbdeck_left.kicad_pcb`
+(36 domes + 36 diodes + module + power front-end) and `thumbdeck_left.kicad_pcb`
 (42 + 42, passive) — **0 DRC violations, 0 unconnected items** on both
-(`kicad-cli 9.0.9`, error severity, verified 2026-07-11). The full fab package
+(`kicad-cli 9.0.9`, error severity; right re-verified 2026-07-15 after the
+2u-Enter reroute, left 2026-07-11). The full fab package
 (4-layer gerbers, JLC-format BOM + CPL) is already exported to
 [`hardware/kicad/generated/fab/`](hardware/kicad/generated/fab/); the exporter
 refuses to run unless DRC is clean. Routing is fully autonomous — Freerouting +
 a GND stitcher + a DRC gate; see [`docs/routing-status.md`](docs/routing-status.md).
 
 Like the i8+: the **front** carries only the snap-dome contact pads and front-layer
-traces; the **back** carries everything soldered — the 79 diodes, the Ebyte module,
+traces; the **back** carries everything soldered — the 78 diodes, the Ebyte module,
 charger, USB-C, ESD, power switch, reset tact, charge LED, FFC connectors, passives.
 All parts on one side makes the SMT job **single-sided** (one stencil, one pass) and
 **100 % turnkey** — there are no hand-soldered parts. The USB-C shell's plated
@@ -167,8 +172,10 @@ printer. The two back halves join at mid-spine with printed tabs + wall shiplaps
 (no seam screws); the screwed-on center panel bridges that seam, carries the phone
 pocket + MagSafe ring recess, and doubles as the **battery/FFC service hatch**
 (6 screws, grips untouched). v0.17 keymats carry the **rectangular keycaps**
-(8.5 × 7 rounded-rect plungers, 18.5 mm 2u space, round cluster keys) on the same
-living-hinge web (TPU 95A); the grip lids get matching rounded-rect openings.
+(8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the space bars and the right
+H-row's Rii-style Enter, round cluster keys) on the same living-hinge web
+(TPU 95A), now with **debossed Rii-style legends** (primary, shifted-symbol and
+FN-layer); the grip lids get matching rounded-rect openings.
 Part sizes: back halves 163.9/156.2 × 102.8 mm, grip lids 82.4 × 102.8, center
 panel 147.0 × 102.8, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
 
@@ -186,8 +193,8 @@ Blender or any glTF viewer): concept-colored shells/keymats (pink backs + panel,
 cyan lids, purple keymats), **KiCad-generated boards** (real Edge.Cuts body +
 routed copper + soldermask + silkscreen from the `.kicad_pcb`s), every placed
 component and snap dome as its real-dimension body, plus the 403040 battery,
-FFC jumper (in its floor channel), MagSafe ring and the flush-mounted cased
-phone. All transforms are baked into the vertices, so the tree survives even
+FFC jumper (in its floor channel), the M2 shell screws, MagSafe ring and the
+flush-mounted cased phone. All transforms are baked into the vertices, so the tree survives even
 minimal TRS-only viewers. Regenerate:
 `hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py`.
 
@@ -198,7 +205,7 @@ minimal TRS-only viewers. Regenerate:
 ## Parts list (BOM)
 
 Full BOM in [`docs/bill-of-materials.md`](docs/bill-of-materials.md) — regenerated
-from the machine-exported `fab/*/bom.csv`. **79 keys**, **one** module, **one**
+from the machine-exported `fab/*/bom.csv`. **78 keys**, **one** module, **one**
 battery. Everything soldered is placed by JLC; your hands do domes, shell, battery
 and the FFC jumper.
 
@@ -206,10 +213,10 @@ and the FFC jumper.
 
 | Item | Part | Qty | Notes |
 |---|---|---|---|
-| Snap dome | **Snaptron 7 mm 4-leg dome** (SnapForce series) | 79 (+spares) | Pressed onto ENIG contact pads under retention tape — no solder. Footprint: `snaptron_7mm_contact` (centre pad + leg ring with routing escape gap). |
+| Snap dome | **Snaptron 7 mm 4-leg dome** (SnapForce series) | 78 (+spares) | Pressed onto ENIG contact pads under retention tape — no solder. Footprint: `snaptron_7mm_contact` (centre pad + leg ring with routing escape gap). |
 | Dome retention | Snaptron taped polyimide array (Peel-N-Place) **or** 0.2–0.3 mm laser-cut polyimide spacer | 2 | **Required** — the keymat alone won't stop a dome walking off its contact ring. The tape channels also vent the domes. |
 | Keymat | one-piece 3D print, **TPU 95A** / tough resin | 2 | Living-hinge strips; fatigue-test a coupon >10 k cycles before the full mat. |
-| Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 79 | One/key, `col2row`, cathode band → row net, **on the back**. Basic part = free feeder. |
+| Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 78 | One/key, `col2row`, cathode band → row net, **on the back**. Basic part = free feeder. |
 | **Controller** | **Ebyte E73-2G4M08S1C** (nRF52840, JLC **C356849**) | **1** | Certified radio, on-module antenna/crystals. On the **back** of the right grip, **antenna-up at the top board edge** (v0.17 — farthest from the centred phone/LiPo, off the edge the palm doesn't cradle). Extended + X-ray + **volatile stock** (seen swinging ~1000 → ~20 units in days) — reserve/backorder before anything else. |
 | **LiPo** | **403040 pouch (4.0 × 30 × 40 mm, ~450–500 mAh)**, JST-PH pigtail | 1 | v0.18: foam-taped (0.3 mm) to the **LEFT grip's floor under the passive PCB** — the sunken phone well displaced it from the spine. Leads cross the spine's bottom-border lane to J3 on the right board. **Meter pigtail polarity against the "+"/"−" silk at J3 before first plug-in** — vendors wire PH pigtails both ways. |
 | **Bridge** | **AFA07-S16FCC-00** 16-pin 1.0 mm FFC ZIF (C13744) ×2 + **16-way 1.0 mm type-A FFC jumper, length ≥190 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A) | 1 set | Bottom-contact, 2.5 mm tall. Type-A (same-side contacts) is correct — the left grip's nets are assigned by ribbon geometry so a straight jumper matches 1:1. v0.18: the J2 contact rows are **169.4 mm** apart + ~4 mm ZIF insertion per end + two S-bends down into the under-well floor channel — 200 mm stock has ~10 mm slack; shorter ribbons cannot mate. |
@@ -278,7 +285,7 @@ JLCPCB package is already exported.
 
 ## Step 2 — Domes, retention, keymat
 
-- Press the **79 Snaptron domes** onto the gold pads under the **polyimide retention
+- Press the **78 Snaptron domes** onto the gold pads under the **polyimide retention
   tape/array** (pockets locate each 7 mm dome; the tape channels vent them).
 - Print the **shells** (PETG) and the **keymat** (TPU 95A); validate boss travel +
   hinge fatigue on a 3×3 coupon **before** committing the full mat.
@@ -380,7 +387,7 @@ python3 gen_board.py                  # placement + netlist + deterministic USB 
 ./route.sh right && ./route.sh left   # Freerouting autoroute -> GND stitch + zone fill -> DRC gate
 python3 gen_fab.py                    # gerbers/BOM/CPL per side (refuses to export unless DRC-clean)
 python3 verify_alignment.py           # top-to-bottom 2D stack audit: PCB domes/diodes vs model, cap gutters, boss clearances
-python3 sim_matrix.py                 # ghosting/NKRO proof (79 keys, 0 collisions) — FINAL PASS
+python3 sim_matrix.py                 # ghosting/NKRO proof (78 keys, 0 collisions) — FINAL PASS
 python3 gen_firmware.py               # ZMK transform/keymap/gpio, generated from the model
 python3 render_layers.py              # 5 stackable 2D layers  -> renders/layer_*.png
 # --- 3D (CadQuery; see docs/cad-process.md) ---

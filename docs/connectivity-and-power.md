@@ -8,7 +8,7 @@ this file (nice!nano/BQ24075, JST-GH harness, telescoping-cable era).
 ```
    LEFT grip (passive)                      RIGHT grip (MCU)
    42 domes + diodes  ── 16-way FFC ──      E73 nRF52840 + charger + USB-C  ⇄ host (BLE HID)
-   (no chip; hosts cell)  straight type-A   scans all 79 keys
+   (no chip; hosts cell)  straight type-A   scans all 78 keys
 ```
 
 ## The power tree

@@ -2,7 +2,8 @@
 
 **State: DONE. Both boards are fully routed and DRC-clean.** `kicad-cli 9.0.9`,
 error severity: **0 violations, 0 unconnected items** on `thumbdeck_right` and
-`thumbdeck_left` (verified 2026-07-11; results in
+`thumbdeck_left` (right re-verified 2026-07-15 after the 2u-Enter reroute, left
+2026-07-11; results in
 `hardware/kicad/generated/drc_{right,left}.json`). The fab package (gerbers, JLC
 BOM, CPL) is exported to `hardware/kicad/generated/fab/`. There is **no
 finish-in-the-GUI step left** — the loop below converges headlessly.
@@ -124,4 +125,4 @@ trackpad or expansion.
 | `hardware/kicad/generated/drc_right.json` / `drc_left.json` | 0 violations, 0 unconnected (error severity) |
 | `hardware/kicad/generated/fab/{right,left}/` | gerbers.zip + bom.csv + positions.csv (JLC format) |
 | `renders/routed_{right,left}_2d.svg`, `routed_*_top/bottom.png` | flat copper + 3D renders from the routed boards |
-| `hardware/scripts/sim_matrix.py` | 79 unique (row,col) keys, 0 collisions, 0 ghost/miss failures — final pass |
+| `hardware/scripts/sim_matrix.py` | 78 unique (row,col) keys, 0 collisions, 0 ghost/miss failures — final pass |

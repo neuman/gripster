@@ -11,6 +11,12 @@ mechanical + one one-time SWD flash.
 > v0.18**. The **3D shells and keymats have been regenerated and fit-checked
 > for v0.18** (flush-screen sunken tray sized for a cased Galaxy S25 Ultra;
 > battery relocated into the left grip) — print from the current STLs.
+>
+> **2026-07-15 (Rii-follow Enter):** the right board, keymat and shells were
+> regenerated for the **Rii-style 2u Enter** ending the right H-row (right grip
+> now 36 keys, 78 total; `'` moved to FN+`;`), the right board rerouted
+> (still 0/0) and the fab package re-exported — order from the current `fab/`
+> files. The keymats now carry debossed keycap legends.
 
 ## 0. Order & print
 
@@ -24,7 +30,7 @@ mechanical + one one-time SWD flash.
    (Ender 3 V2) flat; orientations + slicer notes in
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
    fatigue (>10 k presses) before printing the full mats.
-3. **Order alongside:** 79+ Snaptron 7 mm domes with the taped retention array,
+3. **Order alongside:** 78+ Snaptron 7 mm domes with the taped retention array,
    a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥190 mm**
    — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
    contact rows sit 169.4 mm apart plus ~4 mm ZIF insertion each end and the
@@ -143,7 +149,9 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
 - Type across **both** grips. Debug map: a dead left-grip **column** → reseat the
   FFC ribbon; a dead **row** affects **both** grips (rows are shared).
 - **FN layer** (hold FN): MINUS/EQUAL on 0/9, HOME/END on PgUp/PgDn, PSCRN on DEL,
-  `BT_CLR` + `BT_SEL 0–3` for profiles, plus `&bootloader` / `&sys_reset`.
+  **SQT (`'`) on `;`** (the apostrophe has no physical key — the right H-row
+  ends in the 2u Enter), `BT_CLR` + `BT_SEL 0–3` for profiles, plus
+  `&bootloader` / `&sys_reset`.
 - Pointer: D-pad + ZMK mouse keys on the FN layer (no trackpad in v1).
 - Chord several keys at once — the diodes kill ghosting (verified exhaustively in
   `sim_matrix.py`, but enjoy confirming it with fingers).

@@ -3,7 +3,27 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.18 (first entry).
+current design is rev-A / v0.18 plus the Rii-follow Enter (first entry).
+
+## Rii-follow: 2u Enter at the end of the right H-row (2026-07-15)
+
+Following the Rii i8+'s wide Enter: the right grip's H-row (4th from the top) is
+now **H J K L + a double-wide 2u ENT** — 5 caps spanning the 6-unit row width,
+one dome under the wide cap (same construction as the 2u space bars). The
+apostrophe gave up its physical spot: **`'` is now `&kp SQT` on FN+`;`** (the FN
+layer already carried -, =, Home/End, PrtSc and the mouse moves).
+
+- Key count **79 → 78** (right grip 37 → 36: 34 grid keys + PgUp/PgDn; left
+  unchanged at 42); diodes likewise 78 (right board 36, refs D1–D36).
+- **PCB, keymat and shells regenerated**; the right board **rerouted — still
+  0 DRC violations / 0 unconnected** (left board untouched, 0/0); fab package
+  re-exported (right BOM now 67 placements). Board dims unchanged (79.5 × 97.0).
+- Firmware regenerated: 78 `RC()` transform entries, keymap carries `&kp SQT`
+  on FN+`;`.
+- Also in this pass: the keymat model carries **debossed Rii-style keycap
+  legends** (primary legend + small shifted-symbol secondaries + FN-layer
+  legends on 0/9/PgUp/PgDn/Del/;), and the assembled 3D model now includes the
+  **M2 shell screws**.
 
 ## v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)
 

@@ -29,14 +29,20 @@ VERSION = "v0.18"
 # sketch — nav cluster / trackpad / arrows not yet placed). col 0 = INNER edge.
 # v0.13: bottom row = a DOUBLE-WIDE (2u) space bar at the inner edge, then 4 keys.
 # The MENU key is dropped and the row shifts over one (5 keycaps span the 6-unit width).
+# v0.16 (Rii-follow): ENTER is a DOUBLE-WIDE key at the outer end of the H-row,
+# like the i8+. The apostrophe key gives up its physical spot (5 caps span the
+# 6-unit width); SQT moves to FN+; in the keymap.
 RIGHT_LEGENDS = [
     ["F6", "F7", "F8", "F9", "F10", "DEL"],
     ["6",  "7",  "8",  "9",  "0",   "BSP"],
     ["Y",  "U",  "I",  "O",  "P",   ";"],
-    ["H",  "J",  "K",  "L",  "'",   "ENT"],
+    ["H",  "J",  "K",  "L",  "ENT"],          # ENT = 2u (Rii-style wide Enter)
     ["N",  "M",  ",",  ".",  "/",   "SHF"],
     ["SPC", "AGR", "[", "]",  "\\"],          # SPC = 2u; MEN dropped
 ]
+
+# double-wide keycaps (one dome under the cap centre, like the i8+)
+WIDE_KEYS = {"SPC": 2, "ENT": 2}
 # stored inner->outer so the mirrored render reads naturally
 LEFT_LEGENDS = [
     ["F5", "F4", "F3", "F2", "F1", "ESC"],
@@ -137,22 +143,24 @@ class Config:
     feat_key_d: float = 7.0       # cluster switch = same 7mm dome
 
 
-def _key_centers(c: Config):
+def _key_centers(c: Config, legends):
     """Ortholinear grid, laid out inner->outer by cumulative COLUMN UNITS so a wide
-    key (the bottom-row 2u space) shifts the rest of its row over. Each key carries a
-    'w' (width in units); the dome/switch stays single, only the keycap is 2u."""
+    key (2u space, 2u Enter) shifts the rest of its row over. Each key carries a
+    'w' (width in units); the dome/switch stays single, only the keycap is wide.
+    Grids may differ per side (the right H-row has 5 caps: HJKL + 2u ENT)."""
     field_x0 = c.inner_margin + c.key_w / 2.0
     field_y0 = c.bottom_strip + c.key_h / 2.0 + 2.0   # v0.17: +4 -> +2 (chin trimmed)
     keys = []
     for r in range(c.rows):
         colpos = 0.0
-        for slot, lab in enumerate(RIGHT_LEGENDS[r]):
-            w = 2 if (r == c.rows - 1 and slot == 0) else 1
+        for slot, lab in enumerate(legends[r]):
+            w = WIDE_KEYS.get(lab, 1)
             xc = field_x0 + (colpos + (w - 1) / 2.0) * c.pitch_x
             y = field_y0 + (c.rows - 1 - r) * c.pitch_y
             keys.append({"row": r, "col": slot, "w": w,
                          "x": round(xc, 3), "y": round(y, 3), "label": lab})
             colpos += w
+        assert colpos <= c.cols, f"row {r} spans {colpos} units > {c.cols}"
     return keys, field_x0
 
 
@@ -314,7 +322,9 @@ def _features(geo: dict, c: Config) -> list:
 
 
 def build(c: Config) -> dict:
-    keys, field_x0 = _key_centers(c)
+    # each side lays out its OWN legend grid (inner->outer); mirror() then flips
+    # the left grip's frame without relabelling
+    keys, field_x0 = _key_centers(c, RIGHT_LEGENDS if c.side == "right" else LEFT_LEGENDS)
     outline, board_w, board_h, outer_base = _outline(c, keys)
     holes = _mount_holes(board_h, outer_base, c.bottom_strip, outline)
     anchor = [round(outer_base * 0.85, 2), 6.0]
@@ -390,8 +400,7 @@ def mirror(geo: dict) -> dict:
     m["side"] = "left"
     m["role"] = "passive"
     for k in m["keys"]:
-        k["x"] = round(W - k["x"], 3)
-        k["label"] = LEFT_LEGENDS[k["row"]][k["col"]]
+        k["x"] = round(W - k["x"], 3)   # labels already come from LEFT_LEGENDS
     m["outline"] = [[round(W - x, 3), y] for x, y in m["outline"]]
     for hole in m["mount_holes"]:
         hole["x"] = round(W - hole["x"], 3)

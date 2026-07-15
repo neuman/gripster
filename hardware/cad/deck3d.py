@@ -2,7 +2,8 @@
 """deck3d.py — parametric 3D generator for the thumbdeck: PCB fit-model (real
 component dimensions), the 5-part shell set (left/right back halves, left/right
 grip lids, center front panel — every part fits an Ender 3 V2 220x220 bed flat),
-keymats, + the phone / LiPo / flex, assembled in the deck.product() frame and
+keymats (cap tops carry 0.4mm DEBOSSED Rii-style legends), + the phone / LiPo /
+flex / the 10 M2x10 shell screws, assembled in the deck.product() frame and
 collision-checked so nothing physically overlaps. Same source of truth as the
 PCB (hardware/scripts/deck.py).
 
@@ -15,10 +16,10 @@ See docs/cad-process.md. Run:  deck3d.py --all --check --render
 Frame: deck.py Y-up, origin bottom-left of the RIGHT grip; z=0..1.6 = PCB, +z = front
 (dome / lid side), -z = back (module / back-shell side).
 """
-import os, sys, argparse, math, json, subprocess
+import os, sys, argparse, math, json, subprocess, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import numpy as np, trimesh, deck
-from shapely.geometry import Polygon, box as shp_box
+from shapely.geometry import Polygon, Point, box as shp_box
 
 HERE = os.path.dirname(__file__)
 BUILD = os.path.join(HERE, "build")
@@ -77,9 +78,14 @@ def pcb_assembly(side):
     geo = deck.build(deck.Config(side=side))
     H = geo["board_h"]
     parts = {}
-    # board solid: extrude the outline polygon
+    # board solid: extrude the outline polygon, with the 5 M2 mount holes DRILLED
+    # (Ø2.2, from deck.build) so the shell screws pass through real clearance
+    # instead of being modeled through solid FR-4
     pts = _dedupe(geo["outline"])
-    board = trimesh.creation.extrude_polygon(Polygon(pts), PCB_T)
+    bpoly = Polygon(pts)
+    for hh in geo["mount_holes"]:
+        bpoly = bpoly.difference(Point(hh["x"], hh["y"]).buffer(hh["d"]/2, 24))
+    board = trimesh.creation.extrude_polygon(bpoly, PCB_T)
     board.visual.face_colors = [40, 90, 60, 255]
     parts[f"pcb_{side}"] = board
 
@@ -475,7 +481,20 @@ def _back_full():
         _BACK = _back_solid()
     return _BACK
 
+_BUILT = {}
+def _memo(name, builder):
+    """In-process part cache: a single `--all --check --render` run calls
+    assemble() up to twice on top of --all, which would rebuild every shell and
+    re-deboss all 78 caps of keymat legends 2-3x. Parts are deterministic within
+    a run; callers get copies."""
+    if name not in _BUILT:
+        _BUILT[name] = builder()
+    return _BUILT[name].copy()
+
 def back_half(side):
+    return _memo(f"back_{side}", lambda: _back_half_build(side))
+
+def _back_half_build(side):
     """One printable back-shell half (splits the tray at x=0 so each half fits an
     Ender 3 V2 bed). Joinery is printed + screwless: two full-thickness floor tabs
     (right) into cleared notches (left) register the halves in-plane, and each
@@ -556,6 +575,9 @@ def _edge_wedge(x_edge, z_top, c=0.8, bh=97.0):   # bh: pass the CURRENT board_h
             .translate((x_edge, bh/2, z_top)))
 
 def grip_lid(side):
+    return _memo(f"grip_lid_{side}", lambda: _grip_lid_build(side))
+
+def _grip_lid_build(side):
     """Per-grip front lid (cyan in the concept sketches): the legacy top plate
     restricted to its grip — same keymat clamp rim, key openings and 5 screw
     positions — cut straight at the grip's inner edge with a 0.8mm top chamfer
@@ -590,6 +612,9 @@ def grip_lid(side):
     return _to_trimesh(plate, f"grip_lid_{side}")
 
 def center_panel():
+    return _memo("center_panel", _center_panel_build)
+
+def _center_panel_build():
     """Center front panel, v0.18: a SUNKEN TRAY (pink, 'the front of the back').
     The border flange (TOP_Z..WELL_TOP) is flush with the grip lids; inside it a
     deep well drops to WELL_FLOOR so the cased phone's SCREEN lands flush with the
@@ -646,11 +671,126 @@ def center_panel():
         panel = panel.cut(_edge_wedge(s*px_edge, WELL_TOP, bh=bh))
     return _to_trimesh(panel, "center_panel")
 
+# ==== keycap legends (Rii i8+ print style; ANSI US per the ZMK keymap) =============
+LEGEND_DEPTH = 0.4        # deboss into the cap top face
+LEGEND_FONT = "DejaVu Sans"
+CAP_TOP = KM_Z0 + KM_WEB + KM_PL_H   # 15.3 — keycap top face (legends live here)
+PRIM_FS = 4.3             # single-glyph primaries: caps/digits ~3.1mm tall
+WORD_FS = 3.0             # word primaries (Enter/Shift/...), width-clamped to the cap
+SEC_FS = 2.5              # shifted secondaries (~1.8mm glyphs), top-left corner
+FN_FS = 2.5               # FN-layer single glyphs (~1.8mm), bottom-right corner
+FN_WORD_FS = 1.9          # FN-layer words (Home/End/PrtSc)
+
+# label -> printed word primary (Rii-style human forms). SPC prints BLANK like the
+# i8+ space; BSP and the NAV arrows render as glyph polygons (see _bsp_arrow/_tri);
+# labels not listed print themselves (letters, digits, punctuation).
+PRIM_WORDS = {"ENT": "Enter", "SHF": "Shift", "CAP": "Caps", "CTL": "Ctrl",
+              "ALT": "Alt", "AGR": "AltGr", "WIN": "Win", "FN": "Fn",
+              "DEL": "Del", "ESC": "Esc", "TAB": "Tab",
+              "PGUP": "PgUp", "PGDN": "PgDn", "NAV_OK": "OK",
+              "MB_L": "L", "MB_R": "R"}
+# shifted secondaries, ANSI US (matches the ZMK keymap output), small at top-left
+SHIFTED = {"1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&",
+           "8": "*", "9": "(", "0": ")", ";": ":", ",": "<", ".": ">", "/": "?",
+           "`": "~", "[": "{", "]": "}", "\\": "|"}
+# FN-layer legends (Rii's blue print), small at bottom-right — ONLY where the
+# keymap binds them: FN+0/9 = minus/equal, FN+; = SQT, FN+PGUP/PGDN = Home/End,
+# FN+DEL = PrintScreen (thumbdeck.keymap fn_layer).
+FN_LEGENDS = {"0": "-", "9": "=", ";": "'", "PGUP": "Home", "PGDN": "End",
+              "DEL": "PrtSc"}
+
+def _text_cutter(txt, fs, cx, cy, max_w=None, anchor="c"):
+    """One legend as a deboss cutter: 3D text extruded LEGEND_DEPTH below the cap
+    top (+0.2 above it for a clean boolean). anchor 'c' centres the glyph bbox on
+    (cx, cy); 'tl'/'br' put its top-left / bottom-right corner there. max_w
+    shrinks the text uniformly if the rendered string is wider (word legends on
+    an 8.5mm cap)."""
+    s = (cq.Workplane("XY").text(txt, fs, -(LEGEND_DEPTH + 0.2), font=LEGEND_FONT,
+                                 kind="bold", halign="center", valign="center").val())
+    bb = s.BoundingBox()
+    if max_w and bb.xlen > max_w:
+        s = s.scale(max_w / bb.xlen)
+        bb = s.BoundingBox()
+    if anchor == "c":
+        dx, dy = cx - bb.center.x, cy - bb.center.y
+    elif anchor == "tl":
+        dx, dy = cx - bb.xmin, cy - bb.ymax
+    else:  # "br"
+        dx, dy = cx - bb.xmax, cy - bb.ymin
+    return s.translate(cq.Vector(dx, dy, (CAP_TOP + 0.2) - bb.zmax))
+
+def _poly_cutter(poly):
+    """Glyph polygon (arrows/triangles) as a deboss cutter at the cap top."""
+    return _cq_from_poly(poly, CAP_TOP - LEGEND_DEPTH, LEGEND_DEPTH + 0.2).val()
+
+def _tri(cx, cy, d, s=3.2):
+    """Solid triangle glyph for the NAV arrows, pointing d in U/D/L/R (product
+    frame: L = -x = toward screen-left, matching the key's semantic)."""
+    h = s * 0.85
+    pts = {"U": [(cx - s/2, cy - h/2), (cx + s/2, cy - h/2), (cx, cy + h/2)],
+           "D": [(cx - s/2, cy + h/2), (cx + s/2, cy + h/2), (cx, cy - h/2)],
+           "L": [(cx + h/2, cy - s/2), (cx + h/2, cy + s/2), (cx - h/2, cy)],
+           "R": [(cx - h/2, cy - s/2), (cx - h/2, cy + s/2), (cx + h/2, cy)]}[d]
+    return Polygon(pts)
+
+def _bsp_arrow(cx, cy):
+    """Left-arrow glyph for backspace (the Rii prints an arrow, not 'Bksp'):
+    triangle head + stem, 4.6 x 2.6 overall."""
+    head = Polygon([(cx - 2.3, cy), (cx - 0.4, cy + 1.3), (cx - 0.4, cy - 1.3)])
+    stem = shp_box(cx - 0.6, cy - 0.45, cx + 2.3, cy + 0.45)
+    return head.union(stem)
+
+def _legend_cutters(side):
+    """Every legend on one grip's caps as cq deboss-cutter solids (product frame).
+    Grid caps: primary centred (dropped 0.9 low when a shifted secondary shares
+    the cap, like real ANSI caps), SHIFTED secondary top-left, FN legend
+    bottom-right. Round Ø6.2 cluster caps get compact centred legends; PgUp/PgDn
+    stack their FN word (Home/End) under the primary."""
+    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    c = geo["config"]
+    cuts = []
+    for k in geo["keys"]:
+        lab = k["label"]; x, y = k["x"]+ox, k["y"]+oy
+        w = (k.get("w", 1) - 1) * c["pitch_x"] + c["key_w"]     # 2u-aware cap width
+        py = y - 0.9 if lab in SHIFTED else y
+        if lab == "SPC":
+            pass                                    # Rii space prints blank
+        elif lab == "BSP":
+            cuts.append(_poly_cutter(_bsp_arrow(x, y)))
+        elif lab in PRIM_WORDS:
+            cuts.append(_text_cutter(PRIM_WORDS[lab], WORD_FS, x, py, max_w=w-1.4))
+        else:
+            cuts.append(_text_cutter(lab, PRIM_FS, x, py, max_w=w-1.4))
+        if lab in SHIFTED:
+            cuts.append(_text_cutter(SHIFTED[lab], SEC_FS,
+                                     x - w/2 + 0.8, y + c["key_h"]/2 - 0.7, anchor="tl"))
+        if lab in FN_LEGENDS:
+            fs = FN_FS if len(FN_LEGENDS[lab]) == 1 else FN_WORD_FS
+            cuts.append(_text_cutter(FN_LEGENDS[lab], fs,
+                                     x + w/2 - 0.8, y - c["key_h"]/2 + 0.7, anchor="br"))
+    for f in geo.get("features", []):
+        if f["type"] != "key":
+            continue
+        lab = f["label"]; x, y = f["x"]+ox, f["y"]+oy
+        if lab.startswith("NAV_") and lab != "NAV_OK":
+            cuts.append(_poly_cutter(_tri(x, y, lab[-1])))
+        elif lab in FN_LEGENDS:      # PgUp/PgDn: primary high + FN word low
+            cuts.append(_text_cutter(PRIM_WORDS[lab], 2.4, x, y + 1.2, max_w=4.6))
+            cuts.append(_text_cutter(FN_LEGENDS[lab], FN_WORD_FS, x, y - 1.6, max_w=4.2))
+        else:                        # OK / L / R
+            cuts.append(_text_cutter(PRIM_WORDS.get(lab, lab), WORD_FS, x, y, max_w=4.6))
+    return cuts
+
 def keymats(side):
+    return _memo(f"keymat_{side}", lambda: _keymats_build(side))
+
+def _keymats_build(side):
     """Per-grip one-piece keymat: v0.17 rectangular keycap plungers (round for the
     cluster keys) over each dome, joined by a thin web plate. The plunger unions are
     built as ONE shapely MultiPolygon extrusion per z-band (plungers, nubs) — far
-    fewer OCC booleans than per-key unions, and the caps stay perfectly coplanar."""
+    fewer OCC booleans than per-key unions, and the caps stay perfectly coplanar.
+    Cap tops carry the DEBOSSED legends (0.4mm, Rii i8+ print style), cut as one
+    compound boolean."""
     from shapely.ops import unary_union
     z0 = KM_Z0                # web bottom, just above the domes
     field, shapes = _keymat_field(side)
@@ -663,6 +803,11 @@ def keymats(side):
                                  for t in np.linspace(0, 2*math.pi, 16)])
                         for (_p, _o, x, y) in shapes])
     mat = mat.union(_cq_from_poly(nubs, z0 - 1.0, 1.0))
+    # debossed keycap legends: one compound cut of every glyph on this grip
+    t0 = time.time()
+    cutters = _legend_cutters(side)
+    mat = mat.cut(cq.Compound.makeCompound(cutters))
+    print(f"  keymat_{side}: {len(cutters)} legend cutters debossed in {time.time()-t0:.1f}s")
     return _to_trimesh(mat, f"keymat_{side}")
 
 # ==== non-printed bodies (real dims) ================================================
@@ -702,6 +847,38 @@ def flex_body():
     length = abs(rx-lx); midx = (rx+lx)/2; midy = (ry+ly)/2
     m = _box(length, 10.0, 0.3)
     return _place(m, midx, midy, 0)
+
+# ---- the 10 shell screws (5 per grip, at deck.build's mount holes) -----------------
+# M2 x 10 pan head, dropped in from the TOP: head seats on the grip-lid top face
+# (WELL_TOP = 14.3), shank passes the lid's Ø2.4 clearance hole, the ~2.8mm free
+# span above the PCB, and the PCB's Ø2.2 mount hole (drilled in pcb_assembly), then
+# threads into the M2 heat-set insert in the back-half standoff boss (Ø3.2 bore
+# from the boss top at PCB_Z down). Tip at 14.3-10 = 4.3 — 1.7mm above the 2.6
+# bore floor; insert engagement below the PCB ~3.6mm.
+SCREW_HEAD_D, SCREW_HEAD_H = 3.8, 1.3
+SCREW_D, SCREW_L = 2.0, 10.0
+
+def screw_bodies():
+    """The 10 shell screws as watertight solids (product frame), keyed
+    screw_<side>_<i> in mount-hole order."""
+    out = {}
+    prod = _product()
+    tip = WELL_TOP - SCREW_L
+    bore_floor = PCB_Z - (STANDOFF - 1)
+    assert tip - bore_floor >= 1.0, \
+        f"M2x{SCREW_L:.0f} tip @ {tip} would bottom out (bore floor {bore_floor})"
+    for side in ("right", "left"):
+        geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+        for i, hh in enumerate(geo["mount_holes"]):
+            head = trimesh.creation.cylinder(radius=SCREW_HEAD_D/2, height=SCREW_HEAD_H, sections=32)
+            head.apply_translation((0, 0, WELL_TOP + SCREW_HEAD_H/2))
+            shank = trimesh.creation.cylinder(radius=SCREW_D/2, height=SCREW_L, sections=24)
+            shank.apply_translation((0, 0, WELL_TOP - SCREW_L/2))
+            m = trimesh.boolean.union([head, shank], engine="manifold")
+            m.apply_translation((hh["x"]+ox, hh["y"]+oy, 0))
+            m.visual.face_colors = [185, 188, 194, 255]
+            out[f"screw_{side}_{i}"] = m
+    return out
 
 
 # ---- reporting / rendering ---------------------------------------------------------
@@ -778,6 +955,7 @@ def assemble():
     bt = battery_body(); bt.apply_translation((0, 0, BATT_Z)); A["battery"] = bt
     ms = magsafe_ring(); ms.apply_translation((0, 0, MAGSAFE_Z)); A["magsafe"] = ms
     fx = flex_body(); fx.apply_translation((0, 0, FLEX_Z)); A["flex"] = fx
+    A.update(screw_bodies())              # the 10 shell screws, top-in at the bosses
     return A
 
 # pairs allowed to touch (mating faces / actuation), and self-groups to skip
@@ -790,6 +968,11 @@ def _allowed(a, b):
     if km and any(x.startswith("grip_lid") for x in s): return True  # clamp rim presses the web 0.1mm (intended preload)
     if s == {"phone", "magsafe"} or s == {"magsafe", "center_panel"}: return True           # rests on/in
     if s == {"back_right", "back_left"}: return True   # seam tabs/shiplap mate face-to-face
+    # screw heads SEAT on the lid top face / shank in the Ø2.4 lid clearance hole;
+    # everything else a screw could hit (PCB hole wall, boss bore) is modeled with
+    # real clearance and stays a hard clash if violated
+    if any(x.startswith("screw_") for x in s) and any(x.startswith("grip_lid") for x in s):
+        return True
     return False
 
 def collide(A, tol_gross=3.0, tol_shell=0.2):
@@ -917,6 +1100,7 @@ def _explode_offset(k):
     if ":" in k:            return 0        # PCB stack (board + components)
     if k.startswith("keymat"): return 22
     if k.startswith("grip_lid"): return 40
+    if k.startswith("screw_"): return 56   # above the lids they drop through
     if k == "center_panel": return 52
     if k == "magsafe":      return 68
     if k == "phone":        return 84
@@ -941,6 +1125,7 @@ def _asm_col(k):
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
     if k == "magsafe":      return [0.72,0.72,0.74,1]
+    if k.startswith("screw_"): return [0.73,0.74,0.77,1]
     if k == "flex":         return [0.75,0.55,0.2,1]
     if ":pcb" in k:         return [0.16,0.35,0.24,1]
     if ":SW" in k:          return [0.9,0.72,0.2,1]

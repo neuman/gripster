@@ -16,6 +16,8 @@ object tree in Blender / any glTF viewer):
     │                      diodes, passives) as its real-dimension fit body,
     │                      plus the 37 snap domes
     ├── pcb_left/          same (42 domes + FFC)
+    ├── screws/            the 10 M2x10 pan-head shell screws (top-in, at the
+    │                      deck.build mount bosses — 5 per grip)
     ├── battery            403040 pouch in the left grip (sketch tan)
     ├── flex               FFC jumper in the floor channel (ribbon amber)
     ├── magsafe_ring       N52 ring in the well recess
@@ -71,6 +73,7 @@ COL = {
     "dome":   [212, 175, 55, 255],   # gold snap domes on ENIG
     "comp":   [56, 56, 62, 255],     # component bodies
     "conn":   [88, 88, 96, 255],     # connectors (J1/J2/J3)
+    "screw":  [186, 189, 195, 255],  # M2 pan-head shell screws (steel)
 }
 
 def _kicad_glb(side):
@@ -193,6 +196,11 @@ def main():
                 col = COL["comp"]
             _add(scene, m, f"{grp}/components/{ref}", f"{grp}/components", col,
                  transform=gripT)
+
+    # the 10 shell screws (already in product frame, z-placed by screw_bodies)
+    scene.graph.update(frame_to="screws", frame_from=root, matrix=np.eye(4))
+    for n, m in deck3d.screw_bodies().items():
+        _add(scene, m, f"screws/{n}", "screws", COL["screw"])
 
     # loose bodies
     bt = deck3d.battery_body(); bt.apply_translation((0, 0, deck3d.BATT_Z))

@@ -24,11 +24,11 @@ first-article run of 5 and run the bring-up checkpoints in
 
 | Item | Evidence |
 |---|---|
-| **Routing + DRC** | Both boards **0 violations, 0 unconnected** (kicad-cli 9.0.9, error severity, 2026-07-11) — `hardware/kicad/generated/drc_{right,left}.json`. |
+| **Routing + DRC** | Both boards **0 violations, 0 unconnected** (kicad-cli 9.0.9, error severity; right re-verified 2026-07-15 after the 2u-Enter reroute, left 2026-07-11) — `hardware/kicad/generated/drc_{right,left}.json`. |
 | **Fab package** | `gen_fab.py` (hard-gated on clean DRC) exported 4-layer gerbers + JLC BOM/CPL for both boards to `hardware/kicad/generated/fab/`. |
 | **E73 module pinout** (the silent killer) | `E73_PINMAP` matches the official Ebyte pin table 1:1; footprint pad N = datasheet pin N. VDDH=cell, VDD=REG0 output, USB D±=29/31, SWD=37/39, RESET=26, VBUS=27, VBAT_SENSE=AIN0, **COL9 on P0.04 (XTAL pins free)**. |
 | **Power architecture** | High-voltage mode: cell → charger(cell side) → SW90 → VBAT → VDDH(23); VDD(19) = internal REG0 3.3 V output, never driven; module has no DCDC inductors → LDO mode, matching the firmware config. |
-| **Matrix / NKRO** | `sim_matrix.py` (final pass): **79 unique (row,col) keys, 0 cross-grip collisions, 0 ghost/miss failures** over ~68,500 scenarios; the no-diode control ghosts ~35 k× (sim detects ghosting). |
+| **Matrix / NKRO** | `sim_matrix.py` (final pass): **78 unique (row,col) keys, 0 cross-grip collisions, 0 ghost/miss failures** over ~68,500 scenarios; the no-diode control ghosts ~35 k× (sim detects ghosting). |
 | **USB** | CC1/CC2 5.1 k pulldowns; USBLC6-2SC6 **inline**, D+=pins 1&6 / D−=pins 3&4 per ST datasheet; interleaved data pads joined by deterministic generated copper. |
 | **Charger** | MCP73831-2ACI, PROG 5.1 k → ~196 mA (~0.5 C @ 400 mAh); 4.7 µF 0805 25 V at both supply and cell nodes, at the chip. |
 | **Bridge correctness** | Left-grip FFC nets assigned by ribbon geometry; verified net-at-same-height matches 1:1 → a straight type-A jumper is correct by construction. |
@@ -68,7 +68,7 @@ cd hardware/scripts
 python3 gen_board.py                  # placement + netlist + fixed USB copper + GND escape vias
 ./route.sh right && ./route.sh left   # Freerouting -> stitch -> DRC gate -> renders
 python3 gen_fab.py                    # fab package (refuses unless DRC 0/0)
-python3 sim_matrix.py                 # 79-key ghosting/NKRO proof
+python3 sim_matrix.py                 # 78-key ghosting/NKRO proof
 python3 gen_firmware.py               # regenerate the ZMK board files from the model
 cd ../.. && hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check
 ```

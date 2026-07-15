@@ -23,7 +23,7 @@ screws are derived from the phone-pocket span, and every cluster key now gets a
 **3 mm living-hinge strip** tying it into the keymat web (nearest grid key +
 nearest other feature, as the 2D concept always drew — previously the cluster
 plungers were silently disconnected islands; the web now asserts single-piece
-connectivity). `--all --check`: all 7 parts watertight + bed-fit, 203 bodies,
+connectivity). `--all --check`: all 7 parts watertight + bed-fit, 211 bodies (incl. the 10 M2 screws),
 **0 collisions**.
 
 **v0.16 shell split.** The shells are now **five printed parts** instead of two,

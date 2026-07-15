@@ -1,9 +1,16 @@
 # Matrix, diodes & the single-controller scan — rev-A (v0.15)
 
-thumbdeck is **one 9-row × 10-column matrix, 79 keys**, scanned by the single
+thumbdeck is **one 9-row × 10-column matrix, 78 keys** (78 of the 90 positions
+used), scanned by the single
 E73 (nRF52840) module on the right grip — a ZMK **unibody** board, *not* a split.
 Do **not** set `CONFIG_ZMK_SPLIT` or `col-offset`; there is no BLE bond between
 halves — the left grip's switches are simply columns 5–9 of the one matrix.
+
+Like the Rii i8+, the right grip's H-row (4th from the top) ends in a
+**double-wide 2u Enter**: the row is `H J K L + 2u ENT` — 5 caps spanning the
+6-unit row width, one dome under the wide cap (same construction as the 2u
+space bars). The apostrophe has no physical key: **`'` is `&kp SQT` on FN+`;`**
+in the ZMK keymap.
 
 ## Scanning & ghosting
 
@@ -18,7 +25,7 @@ is 6KRO regardless).
 - **Rows 0–8** are shared across both grips (they cross the ribbon too).
 
 **Proof, not vibes:** `hardware/scripts/sim_matrix.py` is the final pass — all
-**79 keys are unique (row,col) intersections, 0 cross-grip collisions, 0
+**78 keys are unique (row,col) intersections, 0 cross-grip collisions, 0
 ghost/miss failures** over ~68,500 exhaustive + random multi-finger scenarios (the
 no-diode control ghosts ~35 k×, which proves the simulator detects ghosting).
 

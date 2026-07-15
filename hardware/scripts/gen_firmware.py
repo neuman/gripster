@@ -151,6 +151,8 @@ def main():
         "PGUP": "&kp HOME",
         "PGDN": "&kp END",
         "DEL": "&kp PSCRN",
+        # v0.16 Rii-follow: the 2u ENTER took the apostrophe key's physical spot
+        ";": "&kp SQT",
         # pointer: FN + D-pad moves the mouse cursor (the v1 trackpad-drop
         # mitigation — clicks are MB_L/MB_R on the default layer)
         "NAV_U": "&mmv MOVE_UP",
