@@ -21,7 +21,9 @@ object tree in Blender / any glTF viewer):
     ├── battery            403040 pouch in the left grip (sketch tan)
     ├── flex               FFC jumper in the floor channel (ribbon amber)
     ├── magsafe_ring       N52 ring in the well recess
-    └── phone              cased S25 Ultra, screen flush with the face (WELL_TOP)
+    └── phone/             real Samsung S25 Ultra model (assets/s25_ultra.glb,
+                           own materials incl. screen texture) — screen faces OUT
+                           (+z), camera bump flush with the panel's well floor
 
 Run under the CAD venv (needs trimesh); the two board GLBs must exist first:
 
@@ -169,6 +171,43 @@ def _add(scene, mesh, name, parent, color=None, transform=None, material=None):
     scene.add_geometry(m, node_name=name, geom_name=name,
                        parent_node_name=parent)
 
+PHONE_GLB = os.path.join(HERE, "assets", "s25_ultra.glb")
+
+def _add_phone(scene, root, prod):
+    """Insert the real Samsung S25 Ultra model (assets/s25_ultra.glb) in place of
+    the old black slab, KEEPING its own materials (screen texture, glass, cameras).
+    The source model's axes: X = thickness (+X = screen face, -X = camera bump),
+    Y = length, Z = width. Placement: screen faces OUT (+z, out the keyboard face)
+    and the camera bump (deepest back point) sits FLUSH with the panel's well floor
+    (WELL_FLOOR) so the cameras rest on the panel instead of clipping through it.
+    All transforms baked into the vertices (viewer-proof; see module docstring)."""
+    psc = trimesh.load(PHONE_GLB)
+    nodes = list(psc.graph.nodes_geometry)
+    full = trimesh.util.concatenate(
+        [psc.geometry[psc.graph[n][1]].copy().apply_transform(psc.graph[n][0]) for n in nodes])
+    ext = full.extents
+    s = deck.Config().phone_h / ext[1]              # scale model Y (length) -> 162.8mm
+    # rotate: model X(thick,+screen) -> product +Z(up/out); Y(len) -> +X; Z(width) -> +Y
+    R = np.array([[0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 0], [0, 0, 0, 1]], float)
+    S = np.diag([s, s, s, 1.0])
+    M = R @ S
+    probe = full.copy(); probe.apply_transform(M); bb = probe.bounds
+    ctr = (bb[0] + bb[1]) / 2
+    tx, ty = -ctr[0], prod["magsafe"]["cy"] - ctr[1]  # centre x=0, y = ring centre
+    tz = deck3d.WELL_FLOOR - bb[0][2]                  # camera tip (min z) -> well floor
+    T = np.eye(4); T[:3, 3] = [tx, ty, tz]
+    Mfull = T @ M
+    scene.graph.update(frame_to="phone", frame_from=root, matrix=np.eye(4))
+    for n in nodes:
+        Tn, gn = psc.graph[n]
+        g = psc.geometry[gn].copy()
+        g.apply_transform(Mfull @ Tn)                 # bake full transform into vertices
+        scene.add_geometry(g, node_name=f"phone/{gn}", geom_name=f"phone_{gn}",
+                           parent_node_name="phone")
+    fb = full.copy(); fb.apply_transform(Mfull)
+    print(f"  phone: S25U {fb.extents[0]:.1f}x{fb.extents[1]:.1f}x{fb.extents[2]:.1f}mm, "
+          f"screen z={fb.bounds[1][2]:.2f} (face {deck3d.WELL_TOP}), cameras z={fb.bounds[0][2]:.2f} (well floor {deck3d.WELL_FLOOR:.2f})")
+
 def main():
     prod = deck._last_prod = deck.product(deck.Config())
     scene = trimesh.Scene()
@@ -218,8 +257,7 @@ def main():
     _add(scene, fx, "flex", root, COL["flex"])
     ms = deck3d.magsafe_ring(); ms.apply_translation((0, 0, deck3d.MAGSAFE_Z))
     _add(scene, ms, "magsafe_ring", root, COL["ring"])
-    ph = deck3d.phone_body(); ph.apply_translation((0, 0, deck3d.PHONE_Z))
-    _add(scene, ph, "phone", root, COL["phone"])
+    _add_phone(scene, root, prod)
 
     os.makedirs(MODELS, exist_ok=True)
     scene.export(OUT)
