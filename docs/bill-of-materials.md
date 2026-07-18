@@ -1,4 +1,4 @@
-# Bill of materials — rev-A (v0.18)
+# Bill of materials — rev-A (v0.19)
 
 Authoritative electrical BOM is machine-exported per board to
 [`hardware/kicad/generated/fab/right/bom.csv`](../hardware/kicad/generated/fab/right/bom.csv)
@@ -48,12 +48,12 @@ assembly is fine.
 |---|---|---|---|
 | Snap domes | **Snaptron 7 mm 4-leg** (SnapForce) | 78 + spares (36 right / 42 left) | Pressed, not soldered, onto the ENIG contact pads. |
 | Dome retention | Snaptron taped polyimide array (Peel-N-Place) or 0.2–0.3 mm laser-cut polyimide spacer | 2 | **Required** — laterally retains each dome; the tape channels also vent them. |
-| FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥190 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not shorter:** the J2 contact rows are 169.4 mm apart, each ZIF drawer needs ~4 mm of insertion, and the ribbon S-bends down into the 0.5 mm floor channel under the well — anything under 190 mm cannot mate. A 200 mm ribbon leaves ~10 mm of slack. |
+| FFC jumper | **16-way, 1.0 mm pitch, type-A** (same-side contacts), **length ≥194 mm** — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A) | 1 | Straight ribbon; contacts face the boards at both ends. Type-A is load-bearing — the left connector's nets are assigned by ribbon geometry. **Not shorter:** the J2 contact rows are 173.3 mm apart (v0.19's well end-walls widened the spine), each ZIF drawer needs ~4 mm of insertion, and the ribbon S-bends down into the 0.5 mm floor channel under the well — anything under 194 mm cannot mate. A 200 mm ribbon leaves ~6 mm of slack. |
 | LiPo | 1S **403040** pouch (4.0 × 30 × 40 mm, ~450–500 mAh), JST-PH pigtail | 1 | Foam-taped (0.3 mm) to the **left grip's floor** under the passive PCB — the sunken well leaves no room in the spine. Leads run through the bottom-border lane and lead windows to J3 on the right board; replacement means opening the left grip (5 screws, lid, keymat, board). **Meter polarity against the "+"/"−" silk at J3 first** (pin 1 = "+", nearer the bottom board edge). |
 | MagSafe ring | Ø56 N52 ring, 2.0 mm | 1 | Epoxied into the center panel's Ø57 × 1.8 recess (sits 0.2 mm proud). |
-| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. **Regenerated + fit-checked for v0.18** (2026-07-14, 0 collisions): lids 82.4 × 102.8, backs 173.0/165.3 × 102.8, panel 165.2 × 102.8 mm. |
+| Shells | 5 parts, 3D-printed (PETG): `back_left`, `back_right`, `grip_lid_left`, `grip_lid_right`, `center_panel` | 1 set | STLs tracked in `hardware/cad/models/` (regenerate: `deck3d.py --all --sync-models`). Every part fits an Ender 3 V2 (220 × 220) flat. **Regenerated + fit-checked for v0.19** (2026-07-17, 0 collisions): lids 77.9 × 103.8, backs 170.5/162.8 × 103.8, panel 169.1 × 102.8 mm. |
 | Keymats | per-grip, **TPU 95A** | 2 | Living-hinge web; coupon-test >10 k cycles first. **v0.17 geometry**: rectangular 8.5 × 7 rounded-rect caps (2u caps for the space bars + the right H-row's Rii-style Enter), round cluster keys, debossed keycap legends; ~63 × 86–89 mm per mat. |
-| M2 hardware | **M2×10 button-head** screws + heat-set inserts (3.2 mm bores) | 14 + 14 | One screw SKU: 5 per grip (unchanged), 4 panel border screws (the two ring-height anchors are gone — their bores would sit 8 mm above the sunken well floor). |
+| M3 hardware | **M3×10 countersunk (DIN 965)** screws + M3 heat-set inserts (Ø4.0 bores, OD ≤4.6, ~4 mm long) | 14 + 14 | One screw SKU, heads FLUSH with the face (v0.19 — the proud M2 pan heads were uncomfortable): 5 per grip + 4 panel border screws. |
 | Bootloader flash rig | SWD probe (J-Link/CMSIS-DAP/pi) + 5 jumper wires | 1 | One-time Adafruit-bootloader flash on TP1–5. |
 
 ## Deliberately absent (vs earlier drafts)

@@ -1,4 +1,4 @@
-# Assembly, first flash, charge, pair & test — rev-A (v0.18)
+# Assembly, first flash, charge, pair & test — rev-A (v0.19)
 
 Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
 machine-placed) — there is **no hand-soldering** in this build. Your work is
@@ -17,6 +17,12 @@ mechanical + one one-time SWD flash.
 > now 36 keys, 78 total; `'` moved to FN+`;`), the right board rerouted
 > (still 0/0) and the fab package re-exported — order from the current `fab/`
 > files. The keymats now carry debossed keycap legends.
+>
+> **2026-07-17 (v0.19 GBC rework):** BOTH boards regenerated + re-routed for the
+> boxy Game-Boy-Color outline (75.0 × 97 mm, straight outer edge) and the
+> **M3 flush-countersunk** face screws; the phone well is closed (end walls +
+> finger dish) and the spine is 3.9 mm wider — order boards and print shells
+> from the CURRENT fab package + STLs only.
 
 ## 0. Order & print
 
@@ -31,15 +37,16 @@ mechanical + one one-time SWD flash.
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
    fatigue (>10 k presses) before printing the full mats.
 3. **Order alongside:** 78+ Snaptron 7 mm domes with the taped retention array,
-   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥190 mm**
+   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥194 mm**
    — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
-   contact rows sit 169.4 mm apart plus ~4 mm ZIF insertion each end and the
+   contact rows sit 173.3 mm apart plus ~4 mm ZIF insertion each end and the
    S-bends down into the spine floor channel, so a 200 mm ribbon has only
-   ~10 mm slack and anything under 190 mm cannot mate — plus a 1S **403040**
+   ~6 mm slack and anything under 194 mm cannot mate — plus a 1S **403040**
    pouch LiPo (4.0 × 30 × 40 mm, ~450–500 mAh, JST-PH; the footprint is a hard
    limit — the cell lives inside the **left grip**, not the spine), 0.3 mm foam
-   tape for the cell, Ø56 N52 MagSafe ring, **14 M2 heat-set inserts + 14 M2×10
-   button-head screws** (one SKU: 10 grip, 4 panel border).
+   tape for the cell, Ø56 N52 MagSafe ring, **14 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 14 M3×10 DIN 965 countersunk
+   screws** (one SKU: 10 grip, 4 panel border).
+   (DIN 965 = 90° countersunk flat head, flush with the face.)
 
 ## 1. Press the domes
 
@@ -59,12 +66,12 @@ the left grip before its board, lids before panel, panel last** (it overlaps
 nothing but is the seam splice + the FFC service hatch — the battery is
 serviced through the left grip, not the panel).
 
-1. Heat-set the **14 M2 inserts**: 5 per grip in each back half's PCB bosses
-   and 2 per half in the panel bosses beside the x=0 seam (all 3.2 mm bores).
+1. Heat-set the **14 M3 inserts** (Ø4.0 bores): 5 per grip in each back half's PCB bosses
+   and 2 per half in the panel bosses beside the x=0 seam (all Ø4.0 bores).
    *(The two ring-height spine anchors are gone in v0.18 — the panel takes 4
    border screws only.)*
 2. **FFC jumper first:** with the boards loose, open both ZIF latches and seat
-   the ribbon (≥190 mm type-A), **contacts facing the board at both ends** (the
+   the ribbon (≥194 mm type-A), **contacts facing the board at both ends** (the
    ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
    ribbon is correct by construction; do not twist it). Close the latches. The
    ZIFs are unreachable once the lids are on. The ribbon will later S-bend down
@@ -90,7 +97,7 @@ serviced through the left grip, not the panel).
    light-hole in the floor near the top zone — the shells were regenerated and
    fit-checked for this layout on 2026-07-14.)*
 5. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
-   clamps the keymat web); drive the **5 M2×10 screws per grip**.
+   clamps the keymat web); drive the **5 M3×10 countersunk screws per grip** — heads finish flush with the face.
 6. **Join the back halves:** lay the FFC flat across the spine and seat it
    fully into its 0.5 mm floor channel (the well slab covers it once the panel
    is on — it must be in the channel *before* then), thread the battery leads
@@ -101,7 +108,7 @@ serviced through the left grip, not the panel).
    bond takes the detach pull, backed by the border screws and the slab's
    stiffness), then fit the **center panel** — its sunken tray drops over the
    spine, the border flange lands flush with the grip lids' keyboard face and
-   the well slab rests on the 4 floor nubs — and drive its **4 M2×10 border
+   the well slab rests on the 4 floor nubs — and drive its **4 M3×10 countersunk border
    screws** straddling the back seam. To service the FFC later, only these 4
    come back out; swapping the battery instead means opening the **left grip**
    (5 screws, lid, keymat, board).

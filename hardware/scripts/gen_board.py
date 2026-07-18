@@ -218,9 +218,11 @@ class Board:
         return fp
 
     def assert_clear_of_bosses(self):
-        """No component courtyard may enter the shell standoff-boss disc (r=3.0)
-        around any mount hole — the PCB must seat flat on the bosses."""
+        """No component courtyard may enter the shell standoff-boss disc (r=4.0,
+        v0.19: Ø7.5 M3 boss + 0.25 margin) around any mount hole — the PCB must
+        seat flat on the bosses."""
         import math
+        BOSS_R = 4.0
         for h in self.geo["mount_holes"]:
             hx, hy = h["x"], _fy(h["y"], self.H)
             for fp in self.b.GetFootprints():
@@ -228,8 +230,8 @@ class Board:
                 cx = min(max(MM(hx), bb.GetLeft()), bb.GetRight())
                 cy = min(max(MM(hy), bb.GetTop()), bb.GetBottom())
                 d = math.hypot(cx - MM(hx), cy - MM(hy)) / 1e6
-                assert d >= 3.0, (f"{self.side}: {fp.GetReference()} is {d:.2f}mm from "
-                                  f"mount hole ({h['x']},{h['y']}) — inside the 3.0mm boss")
+                assert d >= BOSS_R, (f"{self.side}: {fp.GetReference()} is {d:.2f}mm from "
+                                     f"mount hole ({h['x']},{h['y']}) — inside the {BOSS_R}mm boss")
 
     def save(self):
         p = os.path.join(OUT, f"thumbdeck_{self.side}.kicad_pcb")
@@ -340,23 +342,26 @@ def place_components(bd):
     H = bd.H
     W = bd.geo["board_w"]
     # The 180-deg cluster rotation lands the rev-A INNER-hugging parts (module, divider)
-    # at the OUTER-top, where the r_out=14 rounded corner curves in. DX slides the whole
-    # rigid cluster INBOARD so the E73 sits on the flat centre-top edge, clear of that
-    # corner; the involution xf() carries the same DX so the hand copper still tracks.
-    DX = 7.0
+    # at the OUTER-top, clear of the rounded top corner. v0.19: the anchor is a FROZEN
+    # absolute constant, not W-derived — the GBC outline narrowed board_w 79.493 -> 75.0
+    # and a W-anchored cluster slid 5mm inboard, planting the charger caps on the
+    # PGUP/PGDN dome courtyards (C5's GND escape had no legal via spot). AX reproduces
+    # the v0.17-proven poses exactly (old W 79.493 - old DX 7.0); the top-edge outline
+    # is nearly unchanged there (old bowed edge ~75 vs new straight 75.0).
+    AX = 72.493
 
     def P(fp, ref, val, x, y, netmap=None, rot=0):
-        """Place at the 180-deg-rotated, DX-shifted pose of the rev-A coordinate."""
-        return bd.place(fp, ref, val, W - DX - x, H - y, netmap, rot=(rot + 180) % 360)
+        """Place at the 180-deg-rotated, AX-anchored pose of the rev-A coordinate."""
+        return bd.place(fp, ref, val, AX - x, H - y, netmap, rot=(rot + 180) % 360)
 
     def S(txt, x, y, **kw):
-        bd.silk(txt, W - DX - x, H - y, **kw)
+        bd.silk(txt, AX - x, H - y, **kw)
 
     def xf(x, y):
-        """180-deg rotation + DX about the KiCad board centre (nm). Involution: xf(xf(p))==p.
+        """180-deg rotation about the frozen AX anchor (nm). Involution: xf(xf(p))==p.
         Un-rotates a placed pad back to the rev-A frame so the hand copper formulas below
         are byte-for-byte the verified ones; re-applied on every emitted segment/via."""
-        return pcbnew.VECTOR2I(int(MM(W - DX) - x), int(MM(H) - y))
+        return pcbnew.VECTOR2I(int(MM(AX) - x), int(MM(H) - y))
 
     # E73 module, antenna end at/over the TOP edge. rot=180 (in the flipped frame) points
     # the antenna zone off deck y>H and the USB/SWD pads inboard — verified empirically;

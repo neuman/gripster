@@ -9,13 +9,22 @@ passive matrix wired across a fixed internal FFC bridge.
 
 ![thumbdeck product view](renders/product.png)
 
-> **Status: rev-A (v0.18) — flush-screen phone well, Rii-sized grips, routed,
-> DRC-clean; not yet built.** v0.17 gave the grips the Rii i8+'s proportions
-> (**97 mm** tall, chin cut, electronics to the top zone **antenna-up**,
-> **rectangular 8.5 × 7 mm keys**); v0.18 sinks the phone — a real **S25 Ultra in
-> a thin case** (dims now in the model) — into a **well in the center panel** so
-> its **screen surface is flush with the lids' keyboard face** (one 14.3 mm-high
-> front plane; device 15.3 mm thick overall vs 22.9 before). That left no room
+> **Status: rev-A (v0.19) — Game-Boy-Color rework: boxy outline, flush M3
+> screws, closed phone well; routed, DRC-clean; not yet built.** v0.19 (user
+> print-testing feedback): the grip outline goes **GBC-boxy** — the parabolic
+> outer cheek bow is deleted (it blocked thumb reach to the edge-adjacent keys),
+> boards narrow **79.5 → 75.0 mm**, corners tuck to r8 (top, antenna-pinned) /
+> r11 + a 1.0 mm **crown** (bottom); all 14 face screws become **M3×10
+> countersunk, flush with the face**; the phone well gets **closing end walls**
+> (no more open slots into the grips) and the thumb scallop becomes a
+> **watertight curved finger dish**; shells render/export in **translucent
+> Atomic Purple** with dark-gray keymats. v0.17 gave the grips the Rii i8+'s
+> proportions (**97 mm** tall, chin cut, electronics to the top zone
+> **antenna-up**, **rectangular 8.5 × 7 mm keys**); v0.18 sank the phone — a
+> real **S25 Ultra in a thin case** (dims in the model) — into a **well in the
+> center panel** so its **screen surface is flush with the lids' keyboard face**
+> (one 14.7 mm-high front plane; device 15.7 mm thick overall vs 22.9 before
+> v0.18). That left no room
 > under the well, so the **battery moved to the left grip's cavity: a standard
 > 403040 (~450–500 mAh) under the passive PCB** — no board change, no reroute.
 > Both boards remain **fully routed and DRC-clean** (0 violations, 0 unconnected,
@@ -24,16 +33,16 @@ passive matrix wired across a fixed internal FFC bridge.
 > [`hardware/kicad/generated/fab/`](hardware/kicad/generated/fab/) is current.
 > The CI workflow is a self-contained ZMK v0.3.0 build (**require one green Actions
 > run producing `thumbdeck-zmk.uf2` before ordering boards** — no green run exists
-> yet). The 3D shells/keymats are **regenerated for v0.18 and fit-checked**: real
+> yet). The 3D shells/keymats are **regenerated for v0.19 and fit-checked**: real
 > **rectangular keycaps** (8.5 × 7, 18.5 mm 2u space; round cluster keys), the
 > sunken-tray center panel + FFC floor channel + left-grip battery bay, all wall
 > cutouts (USB-C, power switch, antenna relief) at the top edge, `deck3d.py
-> --check` = **203 bodies, 0 impossible overlaps**, every part still fits an
+> --check` = **215 bodies, 0 impossible overlaps**, every part still fits an
 > Ender 3 V2 bed. Newest change (2026-07-15): a **Rii-style 2u Enter** now ends
 > the right grip's H-row (the `'` key gave up its spot — `'` = FN+`;`; **78 keys**
 > total), with the right board regenerated + rerouted (still 0/0), the fab
 > package re-exported, **debossed keycap legends** on the keymat model and the
-> M2 shell screws in the assembled 3D model. Order rev-A as a **first-article run of 5** and bring it up per
+> M3 flush-countersunk shell screws in the assembled 3D model. Order rev-A as a **first-article run of 5** and bring it up per
 > [`docs/assembly.md`](docs/assembly.md) before any larger spend. Open ergonomic
 > calls in §[Open questions](#open-questions).
 
@@ -43,14 +52,14 @@ passive matrix wired across a fixed internal FFC bridge.
 
 | | value |
 |---|---|
-| Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.3 mm front plane, 15.3 mm max thickness); two dome-key grips, **fixed shell in 5 printed parts** (Steam-Deck-style; every part fits an Ender 3 V2 bed) |
+| Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.7 mm front plane, 15.7 mm max thickness); two dome-key grips, **fixed shell in 5 printed parts** in **Game-Boy-Color design language** (v0.19: boxy rounded-corner outline, translucent Atomic-Purple shells, dark-gray keymats; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + **PgUp/PgDn**, plus the module and the whole power front-end |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals, UF2-flashable after a one-time SWD bootloader flash |
 | Matrix | single **9 × 10**, `col2row`, one **SOD-323** diode/key on the back, 9× 4.7 kΩ row pull-downs, NKRO best-effort |
-| Bridge | **16-pin 1.0 mm FFC ZIF** (JUSHUO AFA07-S16FCC-00, C13744) on each grip's inner edge + a **16-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥190 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A; v0.18's wider S25U spine + the under-well floor channel raised the minimum from 160) — nets assigned by ribbon geometry so a straight jumper is correct by construction |
-| Grip boards | **79.5 × 97.0 mm** each (v0.17: Rii-height, wider for the 10 mm X-pitch), **4-layer** (sig / GND plane / sig / sig), 1.6 mm FR-4, **ENIG** (mandatory — dome contacts) |
+| Bridge | **16-pin 1.0 mm FFC ZIF** (JUSHUO AFA07-S16FCC-00, C13744) on each grip's inner edge + a **16-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥194 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A; the S25U spine, v0.19's well end-walls and the under-well floor channel raised the minimum from 160) — nets assigned by ribbon geometry so a straight jumper is correct by construction |
+| Grip boards | **75.0 × 97.0 mm** each (v0.19: GBC-boxy straight outer edge — the parabolic cheek bow is gone for thumb reach), **4-layer** (sig / GND plane / sig / sig), 1.6 mm FR-4, **ENIG** (mandatory — dome contacts) |
 | Power | **LiPo 403040 (4.0 × 30 × 40, ~450–500 mAh) in the LEFT grip cavity** under the passive PCB (v0.18 — the sunken phone well leaves no cell height in the spine); **MCP73831** charger + **USB-C** + inline **USBLC6-2** ESD + **MSK12C02 power switch** + **reset tact** (pinhole) + **charge LED** in the right grip |
 | Pointer | **no trackpad in v1** — D-pad + ZMK mouse keys on the FN layer; a labelled I²C breakout (TP6–8) keeps a rev-B trackpad possible |
 | Wireless | BLE HID; USB-C for charging + UF2 flashing |
@@ -176,8 +185,8 @@ pocket + MagSafe ring recess, and doubles as the **battery/FFC service hatch**
 H-row's Rii-style Enter, round cluster keys) on the same living-hinge web
 (TPU 95A), now with **debossed Rii-style legends** (primary, shifted-symbol and
 FN-layer); the grip lids get matching rounded-rect openings.
-Part sizes: back halves 163.9/156.2 × 102.8 mm, grip lids 82.4 × 102.8, center
-panel 147.0 × 102.8, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
+Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, center
+panel 169.1 × 102.8, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
 
 Back half | Grip lid | Center panel | Keymat
 :---:|:---:|:---:|:---:
@@ -189,11 +198,11 @@ the tracked STLs in `hardware/cad/models/`).
 
 **Full nested assembly** — [`hardware/cad/models/thumbdeck_full_asm.glb`](hardware/cad/models/thumbdeck_full_asm.glb)
 is the whole build as one glTF file with a **named object tree** (open it in
-Blender or any glTF viewer): concept-colored shells/keymats (pink backs + panel,
-cyan lids, purple keymats), **KiCad-generated boards** (real Edge.Cuts body +
+Blender or any glTF viewer): translucent **Atomic-Purple** shells + dark-gray
+keymats (real glTF PBR materials), **KiCad-generated boards** (real Edge.Cuts body +
 routed copper + soldermask + silkscreen from the `.kicad_pcb`s), every placed
 component and snap dome as its real-dimension body, plus the 403040 battery,
-FFC jumper (in its floor channel), the M2 shell screws, MagSafe ring and the
+FFC jumper (in its floor channel), the M3 shell screws, MagSafe ring and the
 flush-mounted cased phone. All transforms are baked into the vertices, so the tree survives even
 minimal TRS-only viewers. Regenerate:
 `hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py`.
@@ -219,7 +228,7 @@ and the FFC jumper.
 | Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 78 | One/key, `col2row`, cathode band → row net, **on the back**. Basic part = free feeder. |
 | **Controller** | **Ebyte E73-2G4M08S1C** (nRF52840, JLC **C356849**) | **1** | Certified radio, on-module antenna/crystals. On the **back** of the right grip, **antenna-up at the top board edge** (v0.17 — farthest from the centred phone/LiPo, off the edge the palm doesn't cradle). Extended + X-ray + **volatile stock** (seen swinging ~1000 → ~20 units in days) — reserve/backorder before anything else. |
 | **LiPo** | **403040 pouch (4.0 × 30 × 40 mm, ~450–500 mAh)**, JST-PH pigtail | 1 | v0.18: foam-taped (0.3 mm) to the **LEFT grip's floor under the passive PCB** — the sunken phone well displaced it from the spine. Leads cross the spine's bottom-border lane to J3 on the right board. **Meter pigtail polarity against the "+"/"−" silk at J3 before first plug-in** — vendors wire PH pigtails both ways. |
-| **Bridge** | **AFA07-S16FCC-00** 16-pin 1.0 mm FFC ZIF (C13744) ×2 + **16-way 1.0 mm type-A FFC jumper, length ≥190 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A) | 1 set | Bottom-contact, 2.5 mm tall. Type-A (same-side contacts) is correct — the left grip's nets are assigned by ribbon geometry so a straight jumper matches 1:1. v0.18: the J2 contact rows are **169.4 mm** apart + ~4 mm ZIF insertion per end + two S-bends down into the under-well floor channel — 200 mm stock has ~10 mm slack; shorter ribbons cannot mate. |
+| **Bridge** | **AFA07-S16FCC-00** 16-pin 1.0 mm FFC ZIF (C13744) ×2 + **16-way 1.0 mm type-A FFC jumper, length ≥194 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A) | 1 set | Bottom-contact, 2.5 mm tall. Type-A (same-side contacts) is correct — the left grip's nets are assigned by ribbon geometry so a straight jumper matches 1:1. v0.19: the J2 contact rows are **173.3 mm** apart + ~4 mm ZIF insertion per end + two S-bends down into the under-well floor channel — 200 mm stock has ~6 mm slack; shorter ribbons cannot mate. |
 
 ### Power / USB front-end (right grip — required even with a module)
 
@@ -251,7 +260,7 @@ rev-B option if field ESD issues appear.
 |---|---|---|---|
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package pre-exported in `hardware/kicad/generated/fab/`. |
 | Shell | 5 prints (2 back halves, 2 grip lids, center panel), **MagSafe N52 ring** in the panel recess | 1 | MagSafe = alignment; the phone pocket takes the load. All parts fit a 220 × 220 bed. |
-| M2 hardware | **M2×10** screws + heat-set inserts (3.2 mm bores) | 14 | 5/grip + 4 on the center panel border (v0.18: the 2 ring-height anchors are gone — the sunken well floor sits below their bores; detach load goes to the border screws + slab stiffness). |
+| M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 14 | Heads flush with the face (v0.19). 5/grip + 4 on the center panel border; detach load goes to the border screws + slab stiffness. |
 
 ---
 
@@ -293,16 +302,16 @@ JLCPCB package is already exported.
 ## Step 3 — Assemble
 
 - Everything soldered arrives soldered — there is **no hand-soldering step**.
-- **FFC jumper first** (the ZIFs hide under the lids): **≥190 mm** type-A ribbon
+- **FFC jumper first** (the ZIFs hide under the lids): **≥194 mm** type-A ribbon
   (200 mm stock length) between the two ZIF connectors, **contacts facing the
   board at both ends** (bottom-contact ZIFs); flip the latches closed. Before
   the panel goes on, seat the ribbon into its 0.5 mm spine floor channel.
 - **Battery first (v0.18):** foam-tape the 403040 to the LEFT grip's floor and
   route its leads through the bottom-border lane before the left board goes in —
   the cell lives UNDER the passive PCB. Then seat each board on its 3 support
-  posts + perimeter bosses; screw on each grip lid (5 × M2×10), join the back
+  posts + perimeter bosses; screw on each grip lid (5 × M3×10 CSK), join the back
   halves (printed tabs + shiplaps, screwless), then the center panel last
-  (4 × M2×10) — it splices the seam and is the **FFC service hatch** (the
+  (4 × M3×10 CSK) — it splices the seam and is the **FFC service hatch** (the
   battery now needs the left grip opened instead). Full order:
   [`docs/assembly.md`](docs/assembly.md).
 - **Battery:** meter the pigtail against the **"+"/"−" silk at J3** first (vendors

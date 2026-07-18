@@ -12,7 +12,7 @@ impossible overlaps in the parametric model:
       minimum spacing found. (Grid neighbours are 9.0mm in Y / 10.0mm in X, so
       this only ever trips on a TRUE overlap, e.g. a feature key dropped on a
       grid key.)
-  (3) every mount hole (geo["mount_holes"]) is >= 3.0 mm from every key/feature
+  (3) every mount hole (geo["mount_holes"]) is >= 7.9 mm c-c from every key/feature
       centre (M2 boss clearance). Reports the minimum.
   (4) the "chin" = min(key y) - key_h/2 is ~9 mm (accepted band 6..12).
 
@@ -30,10 +30,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import deck  # noqa: E402
 
 # --- thresholds -------------------------------------------------------------
-DIM_W, DIM_H = 79.5, 97.0      # expected board dims (mm)
+DIM_W, DIM_H = 75.0, 97.0      # expected board dims (mm; v0.19 GBC-boxy, crown excluded)
 DIM_TOL = 0.1                  # rounding tolerance on dims
 MIN_KEY_SPACING = 7.8          # < this => Snaptron r3.9 courtyards overlap
-MIN_HOLE_KEY = 3.0             # mount-hole centre -> key/feature centre (boss)
+MIN_HOLE_KEY = 7.9             # hole centre -> key centre: M3 boss r4.0 + dome courtyard r3.9 (v0.19)
 CHIN_LO, CHIN_HI = 6.0, 12.0   # accepted chin band (target ~9 mm)
 
 

@@ -3,7 +3,59 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.18 plus the Rii-follow Enter (first entry).
+current design is rev-A / v0.19 (first entry).
+
+## v0.19 — Game-Boy-Color rework: boxy outline, flush M3 screws, closed well (2026-07-17)
+
+Driven by the user's print-test feedback (5 items) with a Game Boy Color as the
+design-language reference (boxy rounded silhouette, Atomic-Purple translucent
+shell, dark button-gray keys).
+
+- **Outline (item 4):** the outer **parabolic cheek bow is deleted** — printed
+  testing showed the widest part of the cheek blocks thumb reach to the
+  edge-adjacent keys and top corners. The outer edge is now **straight** at a
+  constant `grip_margin` (7.0 → 8.5: +1 for the fatter M3 boss column, +0.5 routing
+  relief — at 8.0 Freerouting left 1-3 nets open every attempt), so
+  boards go **79.493 → 75.0 mm** wide; corners: r_in 4.0 / **r_out_top 8.0**
+  (antenna-pinned — the E73 keep-out forbids anything rounder) / **r_out_bot
+  11.0**, plus a **1.0 mm parabolic bottom crown** (the GBC's convex bottom).
+  Face cheek is now a constant ~11.4 mm (was 9.9–15.9 bowed). Device face
+  width 330.6 → **325.5 mm** despite the wider spine (below).
+- **Mount holes → M3 (item 1):** all 14 face screws are **M3×10 DIN 965
+  countersunk, heads flush** with the face (proud M2 pan heads were
+  uncomfortable). PCB holes Ø2.2 → **3.4** (boards unordered — free change),
+  bosses Ø6/7 → **Ø7.5/8.0** with **Ø4.0 bores** for M3 heat-set inserts;
+  lid plate **TOP_T 2.0 → 2.4** so the Ø6.2 countersink cone keeps ≥1.0 mm of
+  land (face plane 14.3 → **14.7**; keymat plungers +0.4 to keep caps 1.0
+  proud). Hole positions re-tuned for the fatter bosses (inner column x 3.2 →
+  4.2, H3 y 77.6 → 72.0, outer column at edge−4.2, H5 y 67.9 → 68.0) against a
+  **raised boss gate (r 3.0 → 4.0)** in gen_board/verify_alignment — at the old
+  r 3.0 a real dome-courtyard clash would have shipped. The top electronics
+  cluster's placement anchor is now a **frozen absolute** (AX 72.493), not
+  board_w-derived — the narrower board slid a W-anchored cluster 5 mm inboard
+  onto the PGUP/PGDN dome courtyards (caught by the C5 GND-escape assert).
+- **Closed phone well (item 2):** the well's x-ends were open slots into the
+  grip cavities (the v0.18 gap put the phone ends exactly AT the panel edges).
+  The spine gap grows `2 × (0.35 well clearance + 1.6 end wall + 0.3 reveal)`
+  = span_x + 4.5 (gap 165.8 → **169.7**), and the panel's well is a full
+  **picture-frame** (explicit frame rect replaces the y-only buffer band).
+  FFC jumper spec ≥190 → **≥194 mm** (J2 rows now 173.3 mm apart).
+- **Thumb scallop → finger dish (item 3):** the R9 scallop cut used to punch
+  through into the interior. Now a **curved backer** (R10.6 half-annulus wall +
+  solid floor to z 6.0, clipped to the spine cavity −0.25) is unioned before
+  the R9 re-cut: watertight, support-free in the panel's slab-down print, case
+  edge still exposed ~17 mm for tip-out. Scallop centre moved 2.3 mm into the
+  well; the top border screws moved to |x|=13 to clear the dish + Ø8 bosses.
+- **Colors (item 5):** GLB shells switch from per-face concept colors to a real
+  **glTF PBR material** — "atomic_purple", baseColorFactor linear [0.198,
+  0.102, 0.381, 0.55], alphaMode BLEND, doubleSided (translucent purple with
+  the guts visible); keymats **dark button gray**. The matplotlib renders
+  mirror both (render_iso no longer forces alpha=1).
+- **Boards re-routed from scratch** (outline + all 10 hole centers moved =
+  Edge.Cuts change): gen_board → route.sh both sides → DRC 0/0 gate → fab
+  re-export; sim_matrix / verify_alignment / verify_geometry re-run
+  (verify_geometry's hole-to-key gate raised 3.0 → 7.9 c-c to encode the M3
+  boss + dome-courtyard rule).
 
 ## Rii-follow: 2u Enter at the end of the right H-row (2026-07-15)
 

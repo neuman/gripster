@@ -197,6 +197,13 @@ def main():
     notrack_zones = [z for z in list(b.Zones()) + [z for fp in b.GetFootprints() for z in fp.Zones()]
                      if z.GetIsRuleArea() and z.GetDoNotAllowTracks()]
 
+    # via COPPER obstacles for tie tracks: a via's annulus (width/2) needs full
+    # copper clearance from the track edge — the `holes` check only guards the
+    # DRILL (r+0.25 hole-to-hole), which let ties land 0.5mm from via centres
+    # where DRC demands 0.6 (observed as 0.13-0.19mm clearance violations)
+    via_cu = [(t.GetPosition().x, t.GetPosition().y, t.GetWidth() // 2)
+              for t in b.Tracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() != gnd]
+
     def corridor_ok(x1, y1, x2, y2, layer, hw):
         import math as _m
         L = _m.hypot(x2 - x1, y2 - y1)
@@ -206,6 +213,10 @@ def main():
             for t in inner:
                 if t.GetLayer() == layer and _seg_dist(x, y, t) < hw + CLR + t.GetWidth() // 2:
                     return False
+            for vx, vy, vr in via_cu:
+                if abs(vx - x) < FM(2) and abs(vy - y) < FM(2):
+                    if _m.hypot(vx - x, vy - y) < hw + CLR + vr:
+                        return False
             for hx, hy, orad in holes:
                 if abs(hx - x) < FM(2) and abs(hy - y) < FM(2):
                     if _m.hypot(hx - x, hy - y) < hw + orad + H2H:

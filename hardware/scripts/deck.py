@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.18"
+VERSION = "v0.19"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -89,9 +89,18 @@ class Config:
     arc_bow: float = 0.0          # ortholinear (was 0.06 through v0.4)
     # v0.15: 6 -> 8 so the 16-pin FFC ZIF bridge connector (6.7mm deep) fits on the
     # inner edge without touching the key field (dome courtyards start at margin+0.1).
+    # v0.19: grip_margin 7.0 -> 8.5 — with the outer bow deleted (GBC straight edge)
+    # the outer M3 boss column (Ø7.5 @ edge-4.2) needs ~1mm the bow used to provide,
+    # and +0.5 more is the routing-congestion relief (at 8.0 Freerouting left 1-3
+    # nets open on every attempt; the bow's 0-6mm lane is gone). FACE cheek is a
+    # constant ~11.4mm — still ~4.5mm tighter than the old bow apex.
     inner_margin: float = 8.0
-    grip_margin: float = 7.0
-    outer_bow: float = 6.0
+    grip_margin: float = 8.5
+    outer_bow: float = 0.0        # DEAD since v0.19 (GBC straight outer edge); kept for history
+    # v0.19 (feedback item 2): the phone well gets closing END WALLS extending up from
+    # the center panel — the spine gap grows by (well_end_wall + 0.35 well x-clearance)
+    # per side so there is material between the phone's ends and the panel edges.
+    well_end_wall: float = 1.6
     # v0.10: LiPo moved to the central SPINE (behind the MagSafe ring), so the grip
     # bottom zone only needs USB-C + charger + bridge — shrinks the grip height so it
     # no longer dwarfs the phone (target ~grip = phone_short + ~2x12mm overhang, i8+-like).
@@ -183,25 +192,31 @@ def _outline(c: Config, keys):
     # (ctrl_h + usb_gap). NAV_D still clears the F-row below it.
     upper_zone = max(2 * c.cluster_pitch + c.feat_key_d + 10.0, c.ctrl_h + c.usb_gap)
     board_h = top_keys + upper_zone + 2.0
-    # v0.17: the TOP-outer corner is sharpened (10 vs the 14 palm-round bottom) so the E73
-    # + power cluster clear it at the top edge — and squarer "shoulders" read more like the
-    # i8+. The bottom-outer corner stays generously rounded for the palm.
-    r_in, r_out_top, r_out_bot = 4.0, 10.0, 14.0
-
-    def outer_x(y):
-        t = (y - board_h / 2) / (board_h / 2)
-        ease = max(0.0, 1.0 - t * t)
-        return outer_base + c.outer_bow * ease
+    # v0.19: Game-Boy-Color silhouette — the outer parabolic bow is GONE (it was the
+    # widest part of the cheek; the user found it blocks thumb reach to the edge-adjacent
+    # keys). The outer edge is now STRAIGHT at outer_base, so the cheek is a constant
+    # grip_margin, and the outline is a rectangle with GBC-style corners: tucked top
+    # (r 8.0 — antenna/E73-pinned, cannot go rounder) and a soft r 11.0 bottom corner,
+    # plus a 1.0mm parabolic bottom CROWN (the GBC's gently convex bottom edge).
+    r_in, r_out_top, r_out_bot = 4.0, 8.0, 11.0
+    crown = 1.0
 
     pts = [[0.0, r_in], [0.0, board_h - r_in]]
     pts += _arc(r_in, board_h - r_in, r_in, 180, 90, 5)
-    pts.append([outer_x(board_h) - r_out_top, board_h])
+    pts.append([outer_base - r_out_top, board_h])
     pts += _arc(outer_base - r_out_top, board_h - r_out_top, r_out_top, 90, 0, 8)
-    n = 20
-    for i in range(1, n):
-        y = (board_h - r_out_top) - (board_h - r_out_top - r_out_bot) * i / n
-        pts.append([round(outer_x(y), 3), round(y, 3)])
+    pts.append([outer_base, board_h - r_out_top])
+    pts.append([outer_base, r_out_bot])
     pts += _arc(outer_base - r_out_bot, r_out_bot, r_out_bot, 0, -90, 8)
+    # bottom crown: shallow parabola sagging `crown` below y=0 between the corner-arc
+    # tangent points (chord spacing ~3mm >= the 0.3mm DSN floor; endpoints snapped
+    # exactly to the arc ends so no micro-segments are emitted)
+    x1, x0 = outer_base - r_out_bot, r_in
+    n = 16
+    for i in range(1, n):
+        x = x1 - (x1 - x0) * i / n
+        t = (x - (x0 + x1) / 2) / ((x1 - x0) / 2)
+        pts.append([round(x, 3), round(-crown * (1.0 - t * t), 3)])
     pts.append([r_in, 0.0])
     pts += _arc(r_in, r_in, r_in, -90, -180, 5)
     board_w = max(p[0] for p in pts)
@@ -259,26 +274,29 @@ def _keepouts_passive(board_h):
     return {"bridge": _bridge_conn(board_h)}
 
 
+_BOSS_R = 4.0        # shell standoff-boss radius the holes must assume (Ø7.5 M3 + margin)
+_DOME_COURT_R = 3.9  # snap-dome contact courtyard radius
+
 def _mount_holes(board_h, outer_base, bottom_strip, outline):
-    """5x M2, clamping the keymat perimeter evenly (i8+ uses screws all round the
-    membrane for consistent dome feel). Inner column on the straight inner edge; the
-    two outer holes are clamped inside the bowed/rounded outer edge (with M2-boss
-    clearance) so they never fall off a corner."""
-    inset, d = 3.2, 2.2
-    def ox(y):
-        e = min(_right_edge_x(y, outline), _right_edge_x(y - 3, outline),
-                _right_edge_x(y + 3, outline))
-        return round(e - 4.5, 2)                        # 4.5mm = M2 boss + wall
-    # v0.17: the top corners now sit in the packed electronics zone, so the two upper holes
-    # are pulled to the extreme inner/outer edges (clear of the E73 body + power cluster) and
-    # the bottom holes live in the trimmed ~9mm chin. gen_board.assert_clear_of_bosses() is
-    # the gate that no component courtyard enters a boss disc.
+    """5x M3 (v0.19: countersunk face screws), clamping the keymat perimeter evenly
+    (i8+ uses screws all round the membrane for consistent dome feel). Inner column
+    on the straight inner edge; outer column on the now-STRAIGHT outer edge at a
+    fixed pull-in. Every hole keeps >=2.5mm hole-edge to the board edge and
+    >=_BOSS_R+_DOME_COURT_R c-c to any dome (asserted in build())."""
+    inset, d = 4.2, 3.4
+    ocol = round(outer_base - 4.2, 2)     # hole-edge to board edge = 4.2 - d/2 = 2.5
+    # v0.19 placements (M3 bosses are fatter than the old M2's — centers re-tuned):
+    # H3 y 72.0 clears the PGDN dome FOOTPRINT BBOX by >=4.0 (the gen_board gate
+    # measures bbox corners, stricter than disc c-c — y 74.5 failed it at 3.07);
+    # H4 y 19.4 sits above the bottom-corner tangent (r11 + crown); H5 y 68.0
+    # clears the E73/charger zone above it AND the mirrored left grip's
+    # mouse-button column (c-c 8.55 after the v0.19 cluster re-anchor).
     return [
         {"x": 4.6, "y": 6.0, "d": d},                          # bottom-inner (in the trimmed chin; nudged off the inner edge for wall)
         {"x": inset, "y": round(board_h * 0.42, 2), "d": d},   # inner-mid
-        {"x": inset, "y": round(board_h * 0.80, 2), "d": d},   # top-inner (inner edge, left of the E73 body)
-        {"x": ox(board_h * 0.20), "y": round(board_h * 0.20, 2), "d": d},  # bottom-outer
-        {"x": ox(board_h * 0.70), "y": round(board_h * 0.70, 2), "d": d},  # top-outer (outer edge, below the PgUp/PgDn cluster)
+        {"x": inset, "y": 72.0, "d": d},                       # top-inner (inner edge, left of the E73 body)
+        {"x": ocol, "y": 19.4, "d": d},                        # bottom-outer
+        {"x": ocol, "y": 68.0, "d": d},                        # top-outer (below the PgUp/PgDn cluster)
     ]
 
 
@@ -309,13 +327,28 @@ def _features(geo: dict, c: Config) -> list:
         feats.append({"type": "key", "label": "PGDN", "x": round(ix, 2), "y": round(geo["board_h"] - 17.5, 2), "d": c.feat_key_d})
     else:
         # left grip: inner edge at x=W; grip body toward -x (mirrored)
-        cx = W - ob * 0.44                            # D-pad centre (inner-ish)
+        # v0.19: the cluster is anchored to the INNER edge (where the key field lives)
+        # instead of outer_base — the old ob-relative formulas silently dragged the
+        # cluster 5mm when the outer edge came in for the GBC outline, planting the
+        # mouse-button dome courtyard inside the mirrored top-outer M3 boss (c-c 6.96
+        # < 7.9). Offsets 32.3 / 62.5 reproduce the proven v0.17 positions exactly.
+        cx = W - 32.3                                 # D-pad centre (inner-ish)
         feats.append({"type": "key", "label": "NAV_OK", "x": round(cx, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "NAV_U", "x": round(cx, 2), "y": round(cy_lo + p, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "NAV_D", "x": round(cx, 2), "y": round(cy_lo - p, 2), "d": c.feat_key_d})
-        feats.append({"type": "key", "label": "NAV_L", "x": round(cx + p, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})  # +x = toward inner/screen
-        feats.append({"type": "key", "label": "NAV_R", "x": round(cx - p, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})
-        ox = W - ob + 11.0                            # mouse buttons inboard of the outer edge
+        # v0.19c: LEFT arrow on the physical LEFT. On the left grip +x = toward the
+        # inner/screen edge = physical RIGHT, so NAV_L must sit at cx-p (toward the
+        # outer edge) and NAV_R at cx+p. Through v0.19b these were swapped, printing
+        # the left/right arrow glyphs (and routing the keycodes) reversed.
+        feats.append({"type": "key", "label": "NAV_L", "x": round(cx - p, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})  # -x = toward outer = physical left
+        feats.append({"type": "key", "label": "NAV_R", "x": round(cx + p, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})  # +x = toward inner/screen = physical right
+        # v0.19b: 62.5 -> 57.25 from the inner edge (17.75 from the outer). At 12.5
+        # from the outer edge the buttons sat ON the grid column-6 line: COL6 had to
+        # thread the top dome's ring-escape gap and then squeeze past the mirrored
+        # H5 boss keepout — Freerouting left SW42 (MB_R) open on EVERY attempt. In
+        # the between-column gutter the approach is free (and 17.75 is within 0.8mm
+        # of the proven v0.17 position).
+        ox = W - 57.25                                # mouse buttons inboard of the outer edge
         feats.append({"type": "key", "label": "MB_L", "x": round(ox, 2), "y": round(cy_lo + 5.5, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "MB_R", "x": round(ox, 2), "y": round(cy_lo - 5.5, 2), "d": c.feat_key_d})
     return feats
@@ -341,6 +374,14 @@ def build(c: Config) -> dict:
     if c.side == "left":
         geo = mirror(geo)
     geo["features"] = _features(geo, c)
+    # v0.19 envelope asserts — the margins are deliberately tight (2.5mm hole-edge,
+    # boss-vs-dome-courtyard exact) so they must fail LOUDLY, not by re-derivation:
+    allk = list(geo["keys"]) + [f for f in geo["features"] if f["type"] == "key"]
+    for h in geo["mount_holes"]:
+        for k in allk:
+            cc = math.hypot(k["x"] - h["x"], k["y"] - h["y"])
+            assert cc >= _BOSS_R + _DOME_COURT_R - 1e-6, \
+                f"{geo['side']}: hole ({h['x']},{h['y']}) c-c {cc:.2f} to key {k['label']} < {_BOSS_R + _DOME_COURT_R}"
     return geo
 
 
@@ -361,7 +402,11 @@ def product(c: Config) -> dict:
         span_x, span_y = min(c.phone_w, c.phone_h), max(c.phone_w, c.phone_h)
     span_x += 2 * c.case_t
     span_y += 2 * c.case_t
-    gap = span_x + 0.6                   # centre gap = cased phone + 0.3/side insertion clearance
+    # v0.19: gap = cased phone + 0.35/side well x-clearance + well_end_wall/side +
+    # 0.3/side panel-lid reveal — the extra material closes the well's x-ends
+    # (feedback item 2: the old span_x+0.6 put the phone ends exactly AT the panel
+    # edges, leaving open slots into the grip cavities)
+    gap = span_x + 2 * (0.35 + c.well_end_wall + 0.3)
     rx = gap / 2.0
     lx = -gap / 2.0 - left["board_w"]
     cy = right["board_h"] / 2.0

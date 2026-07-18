@@ -1,4 +1,4 @@
-# thumbdeck — fab-readiness evaluation (rev-A, v0.18, 2026-07-14)
+# thumbdeck — fab-readiness evaluation (rev-A, v0.19, 2026-07-17)
 
 Authoritative status of the design's readiness to be produced. Supersedes the
 v0.14 evaluation and all older review notes. Where any other doc disagrees with
@@ -33,8 +33,8 @@ first-article run of 5 and run the bring-up checkpoints in
 | **Charger** | MCP73831-2ACI, PROG 5.1 k → ~196 mA (~0.5 C @ 400 mAh); 4.7 µF 0805 25 V at both supply and cell nodes, at the chip. |
 | **Bridge correctness** | Left-grip FFC nets assigned by ribbon geometry; verified net-at-same-height matches 1:1 → a straight type-A jumper is correct by construction. |
 | **Footprints** | Production `snaptron_7mm_contact` (ring + 67.5° escape gap, pour/via keepouts); E73 43-pad land pattern with embedded antenna keepout; **no hand-soldered parts** — the USB-C shell's plated stakes and the FFC/slide-switch locating pegs are the only through-board features, all placed in the same single-pass JLC assembly. |
-| **Board outline / mounts** | Closed, non-self-intersecting, **79.5 × 97.0 mm**; **5× M2** per grip clear of keep-outs. |
-| **Mechanical fit** | `deck3d.py --check` **re-run on v0.18 geometry (2026-07-14)**: **203 bodies, 0 collisions** across the 5-part shell set + PCB (real part heights) + domes + keymats + 403040 LiPo (left grip) + ring + cased phone; adversarially re-measured from the built STLs: screen plane = lid top = panel border = **14.3000**, slab/floor 0.5 mm, FFC duct 1.1..1.6 under the 2.1 slab, battery 0.84 mm under the diodes, phone 0.3 mm/side laterally; 6.3 mm back cavity still clears the mated JST-PH by 0.24 mm; every part bed-gated (`--all`: lids 82.4 × 102.8, backs 173.0/165.3 × 102.8, panel 165.2 × 102.8 × 12.7). |
+| **Board outline / mounts** | Closed, non-self-intersecting, **75.0 × 97.0 mm** (v0.19 GBC-boxy: straight outer edge, r8/r11 corners, 1.0 mm bottom crown); **5× M3** per grip clear of keep-outs (bbox-gate ≥4.0). |
+| **Mechanical fit** | `deck3d.py --check` **re-run on v0.19 geometry (2026-07-17)**: **215 bodies, 0 collisions** across the 5-part shell set + 14 M3 flush screws + PCB (real part heights) + domes + keymats + 403040 LiPo (left grip) + ring + cased phone; adversarially re-measured from the built STLs: screen plane = lid top = panel border = **14.7000**, well floor 5.1 / slab 2.5 mm, FFC duct 1.1..1.6 under the slab, battery 0.84 mm under the diodes, phone 0.3 mm/side laterally; 6.3 mm back cavity still clears the mated JST-PH by 0.24 mm; every part bed-gated (`--all`: lids 77.9 × 103.8, backs 170.5/162.8 × 103.8, panel 169.1 × 102.8 × 13.1). |
 | **Firmware buildability** | 5 build-breakers fixed (v0.3.0 pin, pointing.h include, DCDC removed, LF-RC clock, exact Adafruit/nice!nano-v2 flash partition layout); board definition at `config/boards/arm/thumbdeck`; CI = a **self-contained ZMK v0.3.0 build** (`west init -l config` inside `firmware/zmk-config`, `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2`) — ZMK's reusable workflow cannot handle a nested config dir. **No green run yet — see below.** |
 
 ## What is NOT yet verified (needs the physical prototype)

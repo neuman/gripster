@@ -3,7 +3,7 @@
 component dimensions), the 5-part shell set (left/right back halves, left/right
 grip lids, center front panel — every part fits an Ender 3 V2 220x220 bed flat),
 keymats (cap tops carry 0.4mm DEBOSSED Rii-style legends), + the phone / LiPo /
-flex / the 10 M2x10 shell screws, assembled in the deck.product() frame and
+flex / the 14 M3x10 flush-countersunk shell screws, assembled in the deck.product() frame and
 collision-checked so nothing physically overlaps. Same source of truth as the
 PCB (hardware/scripts/deck.py).
 
@@ -239,13 +239,16 @@ import cadquery as cq
 # --- vertical stack (all derived so the parts always line up) ---
 FLOOR = 1.6            # back-half floor thickness
 WALL_T = 2.5          # shell wall thickness
-TOP_T = 2.0           # grip-lid plate thickness
+TOP_T = 2.4           # grip-lid plate thickness (v0.19: 2.0 -> 2.4 so the M3 flush
+                      #   countersink cone leaves >=1.0mm of land under it)
 STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH (J3) + 0.24 margin
 PHONE_CLR = 0.6       # phone pocket clearance (total, both sides)
 RING_REC_D = 1.8      # MagSafe ring recess depth inside the phone-well floor
 RING_REC_R = 28.5     # recess radius (Ø57 for the Ø56 N52 ring)
 GAP = 0.5
-KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.5, 6.2   # keymat web / plunger height / plunger dia
+KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.9, 6.2   # keymat web / plunger height / plunger dia
+                                           # (v0.19: 3.5 -> 3.9 keeps caps 1.0 proud of
+                                           #  the face after TOP_T grew 0.4)
 PCB_Z = FLOOR + STANDOFF                     # grip-local PCB z=0 maps here
 DOME_TOP = PCB_Z + PCB_T + DOME_H            # top of a seated snap dome
 KM_Z0 = DOME_TOP + 1.0                       # keymat web bottom (nub reaches the dome)
@@ -260,10 +263,10 @@ PANEL_T = 2.6         # well-floor slab thickness (0.8 web under the 1.8 ring re
 # keyboard face (WELL_TOP). Everything below is derived from the cased thickness:
 #   screen @ WELL_TOP -> cased back rests at WELL_TOP - PHONE_TC (on the 0.2-proud
 #   ring) -> well floor 0.2 lower -> slab hangs PANEL_T below that.
-WELL_TOP = TOP_Z + TOP_T                     # 14.3 — panel border top = lid top = device face
+WELL_TOP = TOP_Z + TOP_T                     # 14.7 (v0.19 TOP_T 2.4) — panel border top = lid top = device face
 PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — cased thickness, back-of-case -> screen
-WELL_FLOOR = WELL_TOP - PHONE_TC - 0.2       # 4.7 — well/pocket floor (ring sits 0.2 proud)
-SLAB_BOT = WELL_FLOOR - PANEL_T              # 2.1 — slab bottom (0.5 above the back floor)
+WELL_FLOOR = WELL_TOP - PHONE_TC - 0.2       # 5.1 — well/pocket floor (ring sits 0.2 proud)
+SLAB_BOT = WELL_FLOOR - PANEL_T              # 2.5 — slab bottom (0.9 above the back floor)
 WELL_WALL = 2.0                              # well y-wall band thickness
 SEAM_GAP = 0.3        # front reveal gap between panel edge and lid edge (deliberate V)
 LAP_CLR = 0.25        # printed-joint in-plane clearance (FDM: elephant foot + warp)
@@ -274,8 +277,17 @@ XWALL_T = 2.5         # transverse spine wall (closes each half's torsion box, s
 # edge so the Ø7 floor bosses clear the well's 2.0mm wall band by >=0.5mm.
 _PH0 = deck.product(deck.Config())["phone"]
 _PY0, _PY1 = _PH0["y"] - PHONE_CLR / 2, _PH0["y"] + _PH0["h"] + PHONE_CLR / 2
-PANEL_SCREWS = [(sx, sy) for sy in (_PY0 - 6.3, _PY1 + 6.3)
-                for sx in (-10.0, 10.0)]
+# v0.19: offsets grew 6.3 -> 6.8 (Ø8 M3 bosses vs the well band) and the TOP row
+# moved to |x|=13 to clear the thumb-scallop dish wall (R10.6 half-annulus at
+# (0, _PY1-2.3)) plus its Ø8 boss by >=0.8mm
+PANEL_SCREWS = [(-10.0, _PY0 - 6.8), (10.0, _PY0 - 6.8),
+                (-13.0, _PY1 + 6.8), (13.0, _PY1 + 6.8)]
+# M3 flush-countersunk face hardware (v0.19, feedback: proud pan heads were
+# uncomfortable). DIN 965 90-degree head, dk<=6.0: cone face Ø6.2 with the head
+# nominally 0.1-0.3 sub-flush (FDM droop/elephant-foot budget); panel cones cut
+# 0.15 deeper still (they print opening-upward; lid cones print face-down, clean).
+CSK_R_FACE = 3.1      # countersink cone radius at the device face
+SCREW_HOLE_R = 1.7    # Ø3.4 through-holes (M3 clearance)
 
 def _cq_from_poly(geom, z0, h):
     """Extrude a shapely Polygon/MultiPolygon (with holes) to a CadQuery solid."""
@@ -370,13 +382,14 @@ def _back_solid():
     shell = outer.cut(inner)
     # (v0.14: the old MagSafe "ring pocket" cut here extruded BELOW z=0 — outside the
     #  solid, a no-op — the ring seats in the center panel's phone pocket since v0.16.)
-    # PCB standoff bosses + M2 heat-set bores at each grip's mount holes
+    # PCB standoff bosses + M3 heat-set bores at each grip's mount holes (v0.19:
+    # Ø7.5 boss, Ø4.0 x 5.3 bore for an M3x4 insert, OD ~4.6, seated flush at PCB_Z)
     for side in ("right", "left"):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
         for hh in geo["mount_holes"]:
             cx, cy = hh["x"]+ox, hh["y"]+oy
-            boss = (cq.Workplane("XY").workplane(offset=FLOOR).center(cx, cy).circle(3.0).extrude(STANDOFF)
-                    .faces(">Z").workplane().circle(1.6).cutBlind(-(STANDOFF-1)))  # Ø3.2 bore: M2 heat-set insert (OD ~3.5)
+            boss = (cq.Workplane("XY").workplane(offset=FLOOR).center(cx, cy).circle(3.75).extrude(STANDOFF)
+                    .faces(">Z").workplane().circle(2.0).cutBlind(-(STANDOFF-1)))
             shell = shell.union(boss)
         # mid-field PCB support posts (verified clear of back-side components)
         for (px, py) in support_post_locations(side):
@@ -460,17 +473,17 @@ def _back_solid():
     shell = shell.cut(cq.Workplane("XY").workplane(offset=1.1)
                       .center(0.0, jch).box(2*gx + 8.0, 19.0, FLOOR, centered=(True, True, False)))
     # ---- 4 panel bosses straddling the x=0 back seam (2 per half): the screwed-on
-    # panel border is the seam's splice plate
+    # panel border is the seam's splice plate (v0.19: Ø8 for the M3 insert)
     for (px, py) in PANEL_SCREWS:
         shell = shell.union(cq.Workplane("XY").workplane(offset=FLOOR)
-                            .center(px, py).circle(3.5).extrude(WALL))
+                            .center(px, py).circle(4.0).extrude(WALL))
     # bores are cut from the FINISHED shell, not the boss primitives — a pre-bored
     # boss unioned into overlapping material gets its bore silently re-filled.
-    # Depth leaves >=1.0mm before an M2x10 tip (seated on the border top at
-    # WELL_TOP) can bottom out.
+    # Ø4.0 x 9.0 (M3 insert at the top): floor at 3.3, >=1.0mm below the M3x10
+    # tip (head flush at WELL_TOP -> tip at WELL_TOP-10 = 4.7).
     for (px, py) in PANEL_SCREWS:
         shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
-                          .center(px, py).circle(1.6).extrude(-9.0))
+                          .center(px, py).circle(2.0).extrude(-9.0))
     return shell
 
 
@@ -562,17 +575,39 @@ def _keymat_field(side):
             no = min(others, key=lambda o: (o[0]-f[0])**2 + (o[1]-f[1])**2)
             strips.append(LineString([f, no]).buffer(1.5))
     field = unary_union([pl.buffer(2.0) for (pl, _op, _x, _y) in shapes] + strips)
+    # v0.19: Ø5.4 clearance discs at the mount-hole shanks — with the GBC outline
+    # the outer screw column moved to 0.3mm from the web's buffered edge, too tight
+    # for a flexible TPU mat riding over Ø3 shanks
+    from shapely.geometry import Point
+    for hh in geo["mount_holes"]:
+        field = field.difference(Point(hh["x"]+ox, hh["y"]+oy).buffer(2.7))
+    if field.geom_type == "MultiPolygon":
+        # a clearance disc may shave a sub-5mm^2 crumb off the web edge (harmless);
+        # anything larger detached is a real disconnected island -> still assert
+        parts = sorted(field.geoms, key=lambda g: -g.area)
+        assert all(g.area < 5.0 for g in parts[1:]), \
+            f"keymat_{side} web split by shank clearance discs — move the disc or add a hinge strip"
+        field = parts[0]
     assert field.geom_type == "Polygon", \
         f"keymat_{side} web is {field.geom_type} — disconnected islands; widen/add hinge strips"
     return field, shapes
 
-def _edge_wedge(x_edge, z_top, c=0.8, bh=97.0):   # bh: pass the CURRENT board_h (both callers do)
+def _edge_wedge(x_edge, z_top, c=0.5, bh=97.0):   # bh: pass the CURRENT board_h (both callers do)
     """45-degree top-edge chamfer prism along a straight x-station: a diamond of
     half-diagonal c centred on the edge line — cuts a c x c chamfer; the outboard
-    half of the diamond lies in air."""
+    half of the diamond lies in air. v0.19: 0.8 -> 0.5 so the inner-column M3
+    countersink cones (Ø6.2, cone edge 1.1mm from the seam) leave a >=0.6mm rib
+    to the reveal chamfer instead of 0.3mm (a fragile fin at the hidden seam)."""
     return (cq.Workplane("XY").box(c*2**0.5*0.9999, 500, c*2**0.5*0.9999)
             .rotate((0, 0, 0), (0, 1, 0), 45)
             .translate((x_edge, bh/2, z_top)))
+
+def _csk_cone(x, y, z_face, extra=0.0):
+    """90-degree countersink cut solid: cone radius = CSK_R_FACE at (z_face - extra),
+    45-degree flanks continuing 0.4 past the face so the mouth is fully open."""
+    zb = z_face - extra - (CSK_R_FACE - SCREW_HOLE_R)
+    h = (CSK_R_FACE - SCREW_HOLE_R) + extra + 0.4
+    return cq.Solid.makeCone(SCREW_HOLE_R, SCREW_HOLE_R + h, h, cq.Vector(x, y, zb))
 
 def grip_lid(side):
     return _memo(f"grip_lid_{side}", lambda: _grip_lid_build(side))
@@ -602,11 +637,14 @@ def _grip_lid_build(side):
     from shapely.ops import unary_union
     openings = unary_union([op for (_p, op, _x, _y) in _cap_shapes_product(side)])
     plate = plate.cut(_cq_from_poly(openings, web_top - 0.2, TOP_T + (z0 - web_top) + 0.4))
-    # screw clearance holes aligned to this grip's bottom bosses (5, unchanged)
+    # M3 clearance holes + flush countersinks at this grip's 5 bosses (v0.19: the
+    # proud pan heads were uncomfortable under the thumbs — heads now sit in
+    # 90-degree cones, flush with the face). Lid prints face-down: cones print clean.
     geo = prod[side]; ox, oy = prod[f"{side}_origin"]
     for hh in geo["mount_holes"]:
-        h = cq.Workplane("XY").workplane(offset=z0-0.1).center(hh["x"]+ox, hh["y"]+oy).circle(1.2).extrude(TOP_T+0.2)
+        h = cq.Workplane("XY").workplane(offset=z0-0.1).center(hh["x"]+ox, hh["y"]+oy).circle(SCREW_HOLE_R).extrude(TOP_T+0.2)
         plate = plate.cut(h)
+        plate = plate.cut(_csk_cone(hh["x"]+ox, hh["y"]+oy, z0+TOP_T))
     # 0.8mm 45-degree chamfer on the inner top edge (the cyan side of the reveal)
     plate = plate.cut(_edge_wedge(s*gx, z0+TOP_T, bh=bh))
     return _to_trimesh(plate, f"grip_lid_{side}")
@@ -620,15 +658,16 @@ def _center_panel_build():
     deep well drops to WELL_FLOOR so the cased phone's SCREEN lands flush with the
     lids' keyboard face. The well floor slab (SLAB_BOT..WELL_FLOOR) carries the
     Ø57 x 1.8 MagSafe ring recess (0.8mm web below, ring 0.2mm proud — the phone
-    rests on the ring exactly as before, just 10.2mm lower). The well's 2.0mm
-    y-wall band captures the cased phone's long edges; the x-ends stay open (the
-    phone's short ends stop 0.3mm shy of the grips' PCB/lid inner edges, and the
-    slab ends rest over the cut-down transverse-wall sills). Down-press loads pass
-    through 4 floor nubs to the back floor; MagSafe detach flexes the 2.6mm slab
-    <0.3mm against the 4 border screws. A thumb scallop in the top border exposes
-    the case edge for removal. Still the bolted x=0 seam splice; the FFC (in its
-    under-slab floor channel) is serviceable by removing the panel; the battery
-    moved to the LEFT grip cavity (see battery_body)."""
+    rests on the ring exactly as before, just sunken). v0.19: the well is a CLOSED
+    picture-frame — the 2.0mm y-wall band captures the cased phone's long edges
+    and 1.6mm END WALLS (fed by the wider deck.product gap) close the x-ends that
+    used to be open slots into the grip cavities (feedback item 2). Down-press
+    loads pass through 4 floor nubs to the back floor; MagSafe detach flexes the
+    2.6mm slab <0.3mm against the 4 border screws (M3 flush-countersunk, item 1).
+    The thumb scallop in the top border is now a WATERTIGHT curved finger dish
+    (item 3) that still exposes the case edge for tip-out. Still the bolted x=0
+    seam splice; the FFC (in its under-slab floor channel) is serviceable by
+    removing the panel; the battery lives in the LEFT grip cavity (battery_body)."""
     fp = full_footprint()
     prod = _product()
     gx = _seam_frame(); px_edge = gx - SEAM_GAP
@@ -637,9 +676,18 @@ def _center_panel_build():
     pcx, pcy = ph["x"] + ph["w"]/2, ph["y"] + ph["h"]/2
     region = Polygon([(-px_edge, -60), (px_edge, -60), (px_edge, bh+60), (-px_edge, bh+60)])
     poly = fp.buffer(WALL_T+PCB_CLR).intersection(region).buffer(0)
-    pocketP = shp_box(pcx - ph["w"]/2 - 1.2, pcy - (ph["h"] + PHONE_CLR)/2,
-                      pcx + ph["w"]/2 + 1.2, pcy + (ph["h"] + PHONE_CLR)/2)
-    wallB = pocketP.buffer(WELL_WALL)
+    # v0.19 (item 2): the well is a CLOSED picture-frame. The old 1.2mm x-overcut ran
+    # the cut off the panel ends, leaving open slots into the grip cavities; now the
+    # cavity stops at phone + 0.35/side and END WALLS (well_end_wall = px_edge -
+    # cavity end = 1.6mm) rise from the slab to the face. wallB is an explicit frame
+    # rect (x-band 1.6 / y-band WELL_WALL) instead of a uniform buffer.
+    pocketP = shp_box(pcx - ph["w"]/2 - 0.35, pcy - (ph["h"] + PHONE_CLR)/2,
+                      pcx + ph["w"]/2 + 0.35, pcy + (ph["h"] + PHONE_CLR)/2)
+    px0, py0, px1, py1 = pocketP.bounds
+    # x-band nominally 1.6 (= px_edge - px1) but extended 5mm past the panel edge so
+    # the (poly - wallB) underside difference never leaves a zero-width sliver at
+    # the exactly-coincident panel boundary (it broke watertightness)
+    wallB = shp_box(px0 - 1.6 - 5.0, py0 - WELL_WALL, px1 + 1.6 + 5.0, py1 + WELL_WALL)
     # solid block border-top down to slab bottom, then carve:
     panel = _cq_from_poly(poly, SLAB_BOT, WELL_TOP - SLAB_BOT)
     # (1) the well void above the floor
@@ -652,20 +700,37 @@ def _center_panel_build():
     # MagSafe ring recess in the well floor (0.8mm web remains below)
     panel = panel.cut(cq.Workplane("XY").workplane(offset=RECESS_FLOOR)
                       .center(ms["cx"], ms["cy"]).circle(RING_REC_R).extrude(RING_REC_D + 0.05))
-    # 4 seam-splice screws through the border strips (button heads proud on the
-    # border face, same look as the grip-lid screws)
+    # 4 seam-splice screws through the border strips — M3 flush countersunk like
+    # the lids (v0.19). The panel's cones print opening-upward (slab-down), so they
+    # get 0.15 extra sink against rim droop.
     for (sx, sy) in PANEL_SCREWS:
         panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z - 0.1)
-                          .center(sx, sy).circle(1.3).extrude(WELL_TOP + 0.2))
+                          .center(sx, sy).circle(SCREW_HOLE_R).extrude(WELL_TOP + 0.2))
+        panel = panel.cut(_csk_cone(sx, sy, WELL_TOP, extra=0.15))
     # 4 floor nubs under the slab: solid down-press path to the back floor
     for (nx, ny) in ((-45.0, 45.0), (45.0, 45.0), (-45.0, 70.0), (45.0, 70.0)):
         panel = panel.union(cq.Workplane("XY").workplane(offset=SLAB_BOT)
                             .center(nx, ny).circle(2.5).extrude(-(SLAB_BOT - FLOOR)))
-    # thumb scallop: R9 half-round in the TOP border + well wall, down to z=6 —
-    # exposes ~18mm of the case's top edge so the phone can be tipped out against
-    # the MagSafe pull (border screws at |x|=10 stay 2.8mm outside the cut)
+    # thumb scallop, v0.19 (item 3): the v0.18 plain R9 cylinder cut punched through
+    # the border into the open spine cavity. Now it is a CLOSED finger dish: first
+    # union a solid backer — cylinder R10.6 centred 2.3mm INSIDE the well edge,
+    # clipped to y >= _PY1 (outside the well) and to the spine cavity polygon
+    # shrunk 0.25 (never touches the back wall) — then re-cut the R9 void from
+    # z=6.0 up. What remains is a 1.6mm curved half-annulus wall with a solid
+    # bed-supported floor (slab..6.0): watertight, support-free printed slab-down,
+    # and the phone's case edge is still exposed over a ~17mm chord for tip-out.
+    scx, scy = 0.0, _PY1 - 2.3
+    cavity_clip = fp.buffer(PCB_CLR).buffer(-0.25).intersection(
+        shp_box(-px_edge + 0.25, -60, px_edge - 0.25, bh + 60))
+    dish = (cq.Workplane("XY").workplane(offset=SLAB_BOT)
+            .center(scx, scy).circle(10.6).extrude(WELL_TOP - SLAB_BOT))
+    dish = dish.intersect(cq.Workplane("XY").workplane(offset=SLAB_BOT - 1)
+                          .center(scx, _PY1 + 30).box(60, 60, WELL_TOP - SLAB_BOT + 2,
+                                                      centered=(True, True, False)))
+    dish = dish.intersect(_cq_from_poly(cavity_clip, SLAB_BOT - 1, WELL_TOP - SLAB_BOT + 2))
+    panel = panel.union(dish)
     panel = panel.cut(cq.Workplane("XY").workplane(offset=6.0)
-                      .center(0.0, _PY1).circle(9.0).extrude(WELL_TOP))
+                      .center(scx, scy).circle(9.0).extrude(WELL_TOP))
     # 0.8mm 45-degree chamfers on both outer top edges (the pink side of the reveal)
     for s in (1, -1):
         panel = panel.cut(_edge_wedge(s*px_edge, WELL_TOP, bh=bh))
@@ -848,36 +913,45 @@ def flex_body():
     m = _box(length, 10.0, 0.3)
     return _place(m, midx, midy, 0)
 
-# ---- the 10 shell screws (5 per grip, at deck.build's mount holes) -----------------
-# M2 x 10 pan head, dropped in from the TOP: head seats on the grip-lid top face
-# (WELL_TOP = 14.3), shank passes the lid's Ø2.4 clearance hole, the ~2.8mm free
-# span above the PCB, and the PCB's Ø2.2 mount hole (drilled in pcb_assembly), then
-# threads into the M2 heat-set insert in the back-half standoff boss (Ø3.2 bore
-# from the boss top at PCB_Z down). Tip at 14.3-10 = 4.3 — 1.7mm above the 2.6
-# bore floor; insert engagement below the PCB ~3.6mm.
-SCREW_HEAD_D, SCREW_HEAD_H = 3.8, 1.3
-SCREW_D, SCREW_L = 2.0, 10.0
+# ---- the 14 shell screws (5 per grip + 4 panel, v0.19) -----------------------------
+# M3 x 10 COUNTERSUNK (DIN 965, 90-degree, dk<=6.0), dropped in from the TOP: the
+# head sits in the lid/panel countersink with its top face FLUSH at WELL_TOP
+# (feedback item 1 — the old proud M2 pan heads were uncomfortable). Shank passes
+# the Ø3.4 clearance hole and (grip screws) the PCB's Ø3.4 mount hole, then threads
+# into the M3 heat-set insert (OD ~4.6) in the Ø4.0 bore. Tip at WELL_TOP-10 = 4.7:
+# 2.1mm above the 2.6 grip bore floor, 1.4mm above the 3.3 panel bore floor.
+SCREW_HEAD_D, SCREW_HEAD_H = 5.6, 1.3   # DIN 965 M3: dk nominal 5.6, cone depth ~1.3
+SCREW_D, SCREW_L = 3.0, 10.0
+
+def _screw_solid(x, y):
+    """One flush M3x10 CSK screw: 90-degree cone head (top face AT WELL_TOP) + shank."""
+    hr, sr = SCREW_HEAD_D/2, SCREW_D/2
+    cone_h = hr - sr
+    head = trimesh.creation.cone(radius=hr, height=cone_h, sections=32)
+    head.apply_transform(trimesh.transformations.rotation_matrix(np.pi, (1, 0, 0)))
+    head.apply_translation((0, 0, WELL_TOP))          # cone: r=hr at WELL_TOP, tapers down
+    shank = trimesh.creation.cylinder(radius=sr, height=SCREW_L, sections=24)
+    shank.apply_translation((0, 0, WELL_TOP - SCREW_L/2))
+    m = trimesh.boolean.union([head, shank], engine="manifold")
+    m.apply_translation((x, y, 0))
+    m.visual.face_colors = [185, 188, 194, 255]
+    return m
 
 def screw_bodies():
-    """The 10 shell screws as watertight solids (product frame), keyed
-    screw_<side>_<i> in mount-hole order."""
+    """All 14 shell screws as watertight solids (product frame): screw_<side>_<i>
+    at the grip mount holes + screw_panel_<i> at the panel's border screws."""
     out = {}
     prod = _product()
     tip = WELL_TOP - SCREW_L
-    bore_floor = PCB_Z - (STANDOFF - 1)
-    assert tip - bore_floor >= 1.0, \
-        f"M2x{SCREW_L:.0f} tip @ {tip} would bottom out (bore floor {bore_floor})"
+    for name, floor in (("grip", PCB_Z - (STANDOFF - 1)), ("panel", FLOOR + WALL - 9.0)):
+        assert tip - floor >= 1.0, \
+            f"M3x{SCREW_L:.0f} tip @ {tip} would bottom out in the {name} bore (floor {floor})"
     for side in ("right", "left"):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
         for i, hh in enumerate(geo["mount_holes"]):
-            head = trimesh.creation.cylinder(radius=SCREW_HEAD_D/2, height=SCREW_HEAD_H, sections=32)
-            head.apply_translation((0, 0, WELL_TOP + SCREW_HEAD_H/2))
-            shank = trimesh.creation.cylinder(radius=SCREW_D/2, height=SCREW_L, sections=24)
-            shank.apply_translation((0, 0, WELL_TOP - SCREW_L/2))
-            m = trimesh.boolean.union([head, shank], engine="manifold")
-            m.apply_translation((hh["x"]+ox, hh["y"]+oy, 0))
-            m.visual.face_colors = [185, 188, 194, 255]
-            out[f"screw_{side}_{i}"] = m
+            out[f"screw_{side}_{i}"] = _screw_solid(hh["x"]+ox, hh["y"]+oy)
+    for i, (sx, sy) in enumerate(PANEL_SCREWS):
+        out[f"screw_panel_{i}"] = _screw_solid(sx, sy)
     return out
 
 
@@ -911,7 +985,7 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
     allv = []
     for m, color in meshes:
         tri = m.vertices[m.faces]
-        pc = Poly3DCollection(tri, alpha=1.0, facecolor=color, edgecolor=(0, 0, 0, 0.06), linewidths=0.15)
+        pc = Poly3DCollection(tri, facecolor=color, edgecolor=(0, 0, 0, 0.06), linewidths=0.15)
         ax.add_collection3d(pc); allv.append(m.bounds)
     allv = np.array(allv); lo = allv[:, 0].min(0); hi = allv[:, 1].max(0)
     ctr = (lo+hi)/2; span = (hi-lo).max()/2
@@ -930,7 +1004,10 @@ RECESS_FLOOR = WELL_FLOOR - RING_REC_D          # ring recess floor (in the sunk
 MAGSAFE_Z = RECESS_FLOOR + RING_H/2             # ring body centre (sits IN the recess)
 PHONE_Z = RECESS_FLOOR + RING_H + PHONE_TC/2    # cased phone rests on the 0.2mm-proud ring;
                                                 # screen top = WELL_TOP (flush with the lids)
-BATT_Z = FLOOR + 0.3 + 2.0             # 403040 cell on 0.3 foam on the LEFT grip floor
+BATT_Z = FLOOR + 2.0                   # 403040 cell (4mm) seated flush on the LEFT grip
+                                       # floor — the 0.3 foam compresses under the taped
+                                       # cell; flush gives the full 1.14mm diode clearance
+                                       # (was +0.3, which left 0.84mm and read as a clash)
 FLEX_Z = 1.3                           # ribbon in the under-slab floor channel (duct 1.1..1.6)
 
 SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel")
@@ -955,7 +1032,7 @@ def assemble():
     bt = battery_body(); bt.apply_translation((0, 0, BATT_Z)); A["battery"] = bt
     ms = magsafe_ring(); ms.apply_translation((0, 0, MAGSAFE_Z)); A["magsafe"] = ms
     fx = flex_body(); fx.apply_translation((0, 0, FLEX_Z)); A["flex"] = fx
-    A.update(screw_bodies())              # the 10 shell screws, top-in at the bosses
+    A.update(screw_bodies())              # the 14 shell screws, top-in at the bosses
     return A
 
 # pairs allowed to touch (mating faces / actuation), and self-groups to skip
@@ -968,10 +1045,12 @@ def _allowed(a, b):
     if km and any(x.startswith("grip_lid") for x in s): return True  # clamp rim presses the web 0.1mm (intended preload)
     if s == {"phone", "magsafe"} or s == {"magsafe", "center_panel"}: return True           # rests on/in
     if s == {"back_right", "back_left"}: return True   # seam tabs/shiplap mate face-to-face
-    # screw heads SEAT on the lid top face / shank in the Ø2.4 lid clearance hole;
+    # screw heads SEAT in the lid/panel countersinks (45-degree cone-on-cone);
     # everything else a screw could hit (PCB hole wall, boss bore) is modeled with
     # real clearance and stays a hard clash if violated
     if any(x.startswith("screw_") for x in s) and any(x.startswith("grip_lid") for x in s):
+        return True
+    if any(x.startswith("screw_panel") for x in s) and "center_panel" in s:
         return True
     return False
 
@@ -1117,11 +1196,11 @@ def _render_exploded(A):
                elev=14, azim=-72)
 
 def _asm_col(k):
-    # concept colors: pink back halves + center panel, cyan grip lids (sketches)
-    if k.startswith("back_"): return [0.82,0.36,0.50,1]
-    if k == "center_panel": return [0.95,0.48,0.62,0.85]
-    if k.startswith("grip_lid"): return [0.25,0.75,0.80,0.75]
-    if k.startswith("keymat"): return [0.55,0.45,0.85,0.92]
+    # v0.19 GBC "Atomic Purple": translucent purple shells, dark button-gray keymats
+    if k.startswith("back_"): return [0.48,0.35,0.65,0.55]
+    if k == "center_panel": return [0.48,0.35,0.65,0.55]
+    if k.startswith("grip_lid"): return [0.48,0.35,0.65,0.55]
+    if k.startswith("keymat"): return [0.23,0.23,0.24,1]
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
     if k == "magsafe":      return [0.72,0.72,0.74,1]

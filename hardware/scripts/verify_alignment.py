@@ -13,7 +13,7 @@ keymat caps to the dome pads and diodes on the PCB, for BOTH grips:
      gutters (>= 1.0 mm X between openings incl. 0.2/side lid clearance).
   5. Keycap rectangles fully cover their dome (7.0 mm dia) so the plunger always
      presses the dome centre.
-  6. Mount-hole bosses (r 3.0) clear every cap rectangle and dome courtyard.
+  6. Mount-hole bosses (r 4.0, v0.19 M3) clear every cap rectangle and dome courtyard.
   7. J2 (FFC) body clears the key field and the keymat web outline.
   8. E73 antenna keep-out crosses the TOP board edge; USB-C mouth is at the top.
   9. Board dims match deck (79.5 x 97.0) on both .kicad_pcb files.
@@ -56,11 +56,14 @@ for side in ("right", "left"):
 
     b = pcbnew.LoadBoard(os.path.join(GEN, f"thumbdeck_{side}.kicad_pcb"))
 
-    # 9. board dims
+    # 9. board dims — compare against the OUTLINE's true bbox (v0.19: the 1.0mm
+    # bottom crown dips below y=0, so bbox height = board_h + crown)
     bb = b.GetBoardEdgesBoundingBox()
     bw, bh = bb.GetWidth()/1e6, bb.GetHeight()/1e6
-    check("board dims match deck", abs(bw - geo["board_w"]) < 0.2 and abs(bh - H) < 0.2,
-          f"pcb {bw:.1f}x{bh:.1f} vs deck {geo['board_w']:.1f}x{H:.1f}")
+    oxs = [p2[0] for p2 in geo["outline"]]; oys = [p2[1] for p2 in geo["outline"]]
+    ow, oh = max(oxs) - min(oxs), max(oys) - min(oys)
+    check("board dims match deck", abs(bw - ow) < 0.3 and abs(bh - oh) < 0.3,
+          f"pcb {bw:.1f}x{bh:.1f} vs deck outline {ow:.1f}x{oh:.1f}")
 
     # 1+2. SW / diode positions vs model
     sws = {f.GetReference(): f for f in b.GetFootprints() if f.GetValue() == "SNAP7"}
@@ -96,15 +99,20 @@ for side in ("right", "left"):
                 for k, r in zip(keys, rects))
     check("caps cover domes (<=0.5 shortfall)", cover)
 
-    # 6. mount-hole bosses (r3.0) vs caps + courtyards
-    minb = 99.0
+    # 6. v0.19 split gate — two DIFFERENT physical constraints:
+    #  (a) boss disc (r4.0: Ø7.5 M3 boss + margin) vs DOME COURTYARDS (r3.9) at
+    #      PCB level: the boss seats the board next to the contact rings;
+    #  (b) the lid's countersink CONE (r3.1) vs CAP OPENINGS at face level —
+    #      the boss itself lives 10mm below the caps and never meets them.
+    mind = 99.0; minc = 99.0
     for hh in geo["mount_holes"]:
+        for k in allk:
+            mind = min(mind, math.hypot(k["x"]-hh["x"], k["y"]-hh["y"]) - 3.9)
         for r in rects:
             dx = max(r[0]-hh["x"], hh["x"]-r[2], 0.0); dy = max(r[1]-hh["y"], hh["y"]-r[3], 0.0)
-            minb = min(minb, math.hypot(dx, dy))
-        for k in allk:
-            minb = min(minb, math.hypot(k["x"]-hh["x"], k["y"]-hh["y"]) - 3.9)
-    check("bosses clear caps+courtyards (>=3.0)", minb >= 3.0, f"min {minb:.2f} mm")
+            minc = min(minc, math.hypot(dx, dy))
+    check("bosses clear dome courtyards (>=4.0)", mind >= 4.0, f"min {mind:.2f} mm")
+    check("countersink cones clear cap openings (>=3.3)", minc >= 3.3, f"min {minc:.2f} mm")
 
     # 7. J2 vs key field (x extent) — body from the board
     j2 = b.FindFootprintByReference("J2")

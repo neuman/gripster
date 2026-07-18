@@ -4,10 +4,10 @@
 Produces models/thumbdeck_full_asm.glb: a named node hierarchy (opens as an
 object tree in Blender / any glTF viewer):
 
-    thumbdeck_v018
-    ├── shells/            back_left, back_right (pink) · grip_lid_* (cyan)
-    │                      center_panel (pink)          — concept-sketch colors
-    ├── keymats/           keymat_left, keymat_right (purple)
+    thumbdeck_v019
+    ├── shells/            back_left, back_right, grip_lid_*, center_panel —
+    │                      translucent GBC "Atomic Purple" PBR material
+    ├── keymats/           keymat_left, keymat_right (GBC dark button gray)
     ├── pcb_right/         board/ (KiCad-generated: real Edge.Cuts body, copper
     │   │                  tracks+pads, soldermask, silkscreen — exported by
     │   │                  kicad-cli from the routed .kicad_pcb, consolidated
@@ -16,12 +16,12 @@ object tree in Blender / any glTF viewer):
     │                      diodes, passives) as its real-dimension fit body,
     │                      plus the 37 snap domes
     ├── pcb_left/          same (42 domes + FFC)
-    ├── screws/            the 10 M2x10 pan-head shell screws (top-in, at the
-    │                      deck.build mount bosses — 5 per grip)
+    ├── screws/            the 14 M3x10 flush-countersunk shell screws (top-in:
+    │                      5 per grip at the deck.build mount bosses + 4 panel)
     ├── battery            403040 pouch in the left grip (sketch tan)
     ├── flex               FFC jumper in the floor channel (ribbon amber)
     ├── magsafe_ring       N52 ring in the well recess
-    └── phone              cased S25 Ultra, screen flush at z 14.3
+    └── phone              cased S25 Ultra, screen flush with the face (WELL_TOP)
 
 Run under the CAD venv (needs trimesh); the two board GLBs must exist first:
 
@@ -60,12 +60,18 @@ MODELS = os.path.join(HERE, "models")
 GEN = os.path.join(HERE, "..", "kicad", "generated")
 OUT = os.path.join(MODELS, "thumbdeck_full_asm.glb")
 
-# ---- colors: concept sketches (sketches/side.png, All.png) where possible ----
+# ---- colors: v0.19 Game Boy Color "Atomic Purple" (feedback item 5) ----------
+# Shells are TRANSLUCENT purple via a real glTF PBR material (baseColorFactor is
+# LINEAR-space RGBA; [0.198,0.102,0.381] = sRGB #7B5AA6, alpha 0.55, alphaMode
+# BLEND + doubleSided so the guts show through in Blender/three.js). Keymats are
+# the GBC's dark-gray buttons, opaque. Everything else keeps vertex colors.
+SHELL_MAT = trimesh.visual.material.PBRMaterial(
+    name="atomic_purple", baseColorFactor=[0.198, 0.102, 0.381, 0.55],
+    metallicFactor=0.0, roughnessFactor=0.35, alphaMode="BLEND", doubleSided=True)
+KEYMAT_MAT = trimesh.visual.material.PBRMaterial(
+    name="gbc_button_gray", baseColorFactor=[0.042, 0.042, 0.048, 1.0],
+    metallicFactor=0.0, roughnessFactor=0.65)
 COL = {
-    "back":   [209, 92, 128, 255],   # pink back halves + center panel
-    "panel":  [242, 122, 158, 217],
-    "lid":    [64, 191, 204, 210],   # cyan grip lids
-    "keymat": [140, 115, 217, 235],  # purple keymats
     "battery": [199, 184, 148, 255], # tan pouch (sketch battery)
     "flex":   [230, 140, 51, 255],   # amber ribbon (sketch wiring)
     "ring":   [184, 184, 189, 255],
@@ -73,7 +79,7 @@ COL = {
     "dome":   [212, 175, 55, 255],   # gold snap domes on ENIG
     "comp":   [56, 56, 62, 255],     # component bodies
     "conn":   [88, 88, 96, 255],     # connectors (J1/J2/J3)
-    "screw":  [186, 189, 195, 255],  # M2 pan-head shell screws (steel)
+    "screw":  [186, 189, 195, 255],  # M3 flush-countersunk shell screws (steel)
 }
 
 def _kicad_glb(side):
@@ -148,13 +154,17 @@ def _grip_T(side, prod):
 def _stl(name):
     return trimesh.load(os.path.join(BUILD, f"{name}.stl"))
 
-def _add(scene, mesh, name, parent, color=None, transform=None):
+def _add(scene, mesh, name, parent, color=None, transform=None, material=None):
     """Add one mesh under `parent`, BAKING any transform into the vertices so
-    the node itself stays identity (viewer-proof; see module docstring)."""
+    the node itself stays identity (viewer-proof; see module docstring).
+    `material` (a PBRMaterial) wins over `color` — used for the translucent
+    Atomic-Purple shells and the GBC-gray keymats."""
     m = mesh.copy()
     if transform is not None:
         m.apply_transform(transform)
-    if color is not None:
+    if material is not None:
+        m.visual = trimesh.visual.TextureVisuals(material=material)
+    elif color is not None:
         m.visual = trimesh.visual.ColorVisuals(m, face_colors=color)
     scene.add_geometry(m, node_name=name, geom_name=name,
                        parent_node_name=parent)
@@ -162,18 +172,17 @@ def _add(scene, mesh, name, parent, color=None, transform=None):
 def main():
     prod = deck._last_prod = deck.product(deck.Config())
     scene = trimesh.Scene()
-    root = "thumbdeck_v018"
+    root = "thumbdeck_v019"
     scene.graph.update(frame_to=root, matrix=np.eye(4))
     for grp in ("shells", "keymats", "pcb_right", "pcb_left"):
         scene.graph.update(frame_to=grp, frame_from=root, matrix=np.eye(4))
 
-    # shells + keymats (printed parts, sketch colors)
-    for n, col in (("back_left", COL["back"]), ("back_right", COL["back"]),
-                   ("center_panel", COL["panel"]),
-                   ("grip_lid_left", COL["lid"]), ("grip_lid_right", COL["lid"])):
-        _add(scene, _stl(n), n, "shells", col)
+    # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
+    for n in ("back_left", "back_right", "center_panel",
+              "grip_lid_left", "grip_lid_right"):
+        _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
     for n in ("keymat_left", "keymat_right"):
-        _add(scene, _stl(n), n, "keymats", COL["keymat"])
+        _add(scene, _stl(n), n, "keymats", material=KEYMAT_MAT)
 
     # boards: KiCad-generated body/copper/mask/silk + deck3d component bodies
     for side in ("right", "left"):
@@ -197,7 +206,7 @@ def main():
             _add(scene, m, f"{grp}/components/{ref}", f"{grp}/components", col,
                  transform=gripT)
 
-    # the 10 shell screws (already in product frame, z-placed by screw_bodies)
+    # the 14 shell screws (already in product frame, z-placed by screw_bodies)
     scene.graph.update(frame_to="screws", frame_from=root, matrix=np.eye(4))
     for n, m in deck3d.screw_bodies().items():
         _add(scene, m, f"screws/{n}", "screws", COL["screw"])
