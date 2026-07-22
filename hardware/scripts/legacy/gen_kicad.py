@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 gen_kicad.py — emit a real, openable KiCad board + DXF outline + placement CSV
 from the converged geometry (deck.py).

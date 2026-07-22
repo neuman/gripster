@@ -1,9 +1,10 @@
 # Bill of materials — rev-A (v0.19)
 
 Authoritative electrical BOM is machine-exported per board to
-[`hardware/kicad/generated/fab/right/bom.csv`](../hardware/kicad/generated/fab/right/bom.csv)
-and [`fab/left/bom.csv`](../hardware/kicad/generated/fab/left/bom.csv) (JLC format,
-exported only when DRC is clean). The tables below mirror those files and add the
+`hardware/kicad/generated/fab/right/bom.csv`
+and `fab/left/bom.csv` (JLC format, exported only when DRC is clean —
+regenerate with `python3 hardware/scripts/gen_fab.py`; the fab package is a build
+artifact and is not committed). The tables below mirror those files and add the
 mechanical / hand-installed items. Older 50-key and Raytac/Cirque BOMs are history —
 see git history and [design-decisions.md](design-decisions.md).
 

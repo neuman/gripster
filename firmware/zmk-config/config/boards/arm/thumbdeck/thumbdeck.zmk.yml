@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
 file_format: "1"
 id: thumbdeck
 name: thumbdeck (E73 nRF52840 split thumb keyboard)

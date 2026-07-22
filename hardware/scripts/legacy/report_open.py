@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """report_open.py <board> — print any non-GND nets that are still open (>1 copper
 component), so the loop honestly reports what Freerouting left for the GUI finish."""
 import sys, os, importlib.util, pcbnew

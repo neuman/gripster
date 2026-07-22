@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """export_placement.py — run with SYSTEM python3 (has KiCad pcbnew). Dumps each
 grip's footprint placement to JSON so deck3d.py (which runs in a venv without
 pcbnew) can build the 3D fit-model. Keeps pcbnew out of the CAD venv.

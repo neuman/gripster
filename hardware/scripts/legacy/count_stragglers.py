@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """count_stragglers.py <placed_board> <ses> <out_board>
 Import a Freerouting SES onto a pristine placed board, save it, and print how many
 non-GND ratsnest connections remain (sum of components-1 over signal/power nets).

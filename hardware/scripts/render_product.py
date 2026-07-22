@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 render_product.py — whole-assembly PRODUCT view: both grips flanking the phone,
 MagSafe ring in the centre, front-face features (keys, D-pad, mouse buttons,

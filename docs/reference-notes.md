@@ -1,10 +1,13 @@
 # Reference notes — Rii i8+ (loop Step 0)
 
-Layout observations recorded to guide the render. Described, not copied — no
-images imported.
+Layout observations recorded to guide the render. The layout was **described, not
+copied** — no i8+ artwork or geometry was imported into the design. Note that
+`references/` does contain three third-party i8+ images (one vendor product photo
+and two teardown photographs) used purely as visual reference; they are not part
+of the design output and still need a stated source and rights basis.
 
 > **Historical document.** The i8+ observations below are still the reference,
-> but the "How thumbdeck reinterprets it" section describes the **v0.3 50-key**
+> but the "How Gripster reinterprets it" section describes the **v0.3 50-key**
 > reduction and is **superseded**: the current design is **78 keys** (9×10
 > matrix, 6×6/half + clusters, 2u space bars + a Rii-style 2u Enter ending the
 > right H-row, with `'` on FN+`;`), a D-pad + OK + mouse buttons on
@@ -26,9 +29,9 @@ images imported.
 
 Sources: riitek.com product pages; The Pi Hut; Amazon listings; Windows Central review.
 
-## How thumbdeck reinterprets it (v0.3 — HISTORICAL, superseded)
+## How Gripster reinterprets it (v0.3 — HISTORICAL, superseded)
 
-The i8+ is a single ~92-key slab thumb-typed with both thumbs. **thumbdeck** is
+The i8+ is a single ~92-key slab thumb-typed with both thumbs. **Gripster** is
 an *i8+-inspired* reduction, not a faithful half:
 
 - **50 keys total, 25/half** (5×5). The i8+'s 92 keys don't survive a literal

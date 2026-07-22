@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """gen_fab.py — production package for JLCPCB, one order per board.
 
 Gate: DRC must be clean (0 error-severity violations, 0 unconnected) or this

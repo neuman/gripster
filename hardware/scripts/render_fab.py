@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 render_fab.py — fabrication-view render straight from the converged geometry,
 mirroring exactly what gen_kicad.py writes to the .kicad_pcb (Edge.Cuts outline,

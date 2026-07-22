@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """route_nets.py <board> — deterministically finish the nets Freerouting leaves
 open, with a 2-layer A* maze router on a 0.2 mm grid.
 

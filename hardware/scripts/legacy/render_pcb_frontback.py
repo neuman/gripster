@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 render_pcb_frontback.py — FRONT vs BACK fab view, Rii i8+ style:
   FRONT (F.Cu): the 81 snap-dome pads + the vertical COLUMN traces + the keymat.

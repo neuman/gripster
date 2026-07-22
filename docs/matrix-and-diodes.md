@@ -1,6 +1,7 @@
-# Matrix, diodes & the single-controller scan — rev-A (v0.15)
+# Matrix, diodes & the single-controller scan — rev-A (v0.19)
 
-thumbdeck is **one 9-row × 10-column matrix, 78 keys** (78 of the 90 positions
+Gripster (board id `thumbdeck` internally) is **one 9-row × 10-column matrix,
+78 keys** (78 of the 90 positions
 used), scanned by the single
 E73 (nRF52840) module on the right grip — a ZMK **unibody** board, *not* a split.
 Do **not** set `CONFIG_ZMK_SPLIT` or `col-offset`; there is no BLE bond between

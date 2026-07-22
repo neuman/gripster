@@ -6,9 +6,10 @@ buildability, mechanical/DFM) of the v0.14 design against datasheets, real part
 geometry and the fab houses' constraints. It produced **120 findings, 14 of them
 blockers**. Every blocker is fixed in the boards, firmware and CAD now in the
 repo; both boards subsequently routed to **0 DRC violations / 0 unconnected**. The
-CI workflow is a **self-contained ZMK v0.3.0 build** — **require one green Actions
-run producing `thumbdeck-zmk.uf2` before ordering boards** (no green run exists
-yet). Earlier review records (the v0.4 nice!nano-era EE pass,
+CI workflow is a **self-contained ZMK v0.3.0 build** and it **passes** — run
+29443394494 (2026-07-15) produced `thumbdeck-zmk.uf2`, and `firmware/` has not
+changed since. That proves the firmware *compiles*, nothing more: it has never
+been flashed to silicon. Earlier review records (the v0.4 nice!nano-era EE pass,
 the v0.14 fab-readiness audit) are superseded by this file plus
 [evaluation.md](evaluation.md).
 
@@ -33,8 +34,9 @@ the v0.14 fab-readiness audit) are superseded by this file plus
    151.2 mm apart + ~4 mm ZIF insertion per end, so a 150 mm ribbon cannot mate).
    **(v0.18: the jumper now crosses in a 0.5 mm-deep floor channel under the
    flush-screen panel's well slab, S-bending down from each ZIF inside the grip
-   cavities — the J2 contact rows are 169.4 mm apart and the minimum length is
-   190 mm; the 200 mm stock ribbon still works, ~10 mm slack.)**
+   cavities. v0.19's well end walls widened the spine: the J2 contact rows are
+   now 173.3 mm apart and the minimum length is **194 mm**; the 200 mm stock
+   ribbon still works, ~6 mm slack.)**
    Left-grip connector nets are assigned **by
    ribbon geometry**, so a straight jumper is correct by construction (verified:
    net-at-same-height matches 1:1). *Was:* a 2×08 THT pin header that (a)
@@ -90,8 +92,9 @@ Board-envelope consequence of 3–7: each grip grew **74.5 × 109.5 → 76.5 ×
 the module-at-edge + passive lane), and the back-cavity height 5.7 → 6.3 mm for
 the mated JST-PH.
 **(v0.17: re-proportioned to 79.5 × 97.0 mm — the E73 + power front-end moved up to
-the top zone, so the bottom chin shrank to ~9 mm; 3D shells/keymats regenerated and
-fit-checked 2026-07-14, 0 collisions.)**
+the top zone, so the bottom chin shrank to ~9 mm. v0.19: narrowed again to
+75.0 × 97.0 mm with the boxy GBC outline; 3D shells/keymats regenerated and
+fit-checked 2026-07-17, 0 collisions.)**
 
 ## Firmware findings (5 build-breakers, all fixed)
 
@@ -107,8 +110,9 @@ The board definition moved to `firmware/zmk-config/config/boards/arm/thumbdeck`
 (ZMK discovers it via `ZMK_CONFIG`). CI (`.github/workflows/build.yml`) is a
 **self-contained build** — `west init -l config` inside `firmware/zmk-config`,
 `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2` — because ZMK's reusable
-workflow cannot handle a nested config dir. **Require one green Actions run
-producing `thumbdeck-zmk.uf2` before ordering boards.** The FN layer gained
+workflow cannot handle a nested config dir. This build is **green as of run
+29443394494 (2026-07-15)**; re-run it before ordering so the artifact you flash
+matches the tree you built from. The FN layer gained
 MINUS/EQUAL, HOME/END, PSCRN, BT_CLR/BT_SEL 0–3, bootloader/sys_reset.
 
 ## Residual risks (rev-A is unbuilt)

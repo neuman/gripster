@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 # route.sh — autonomous route + validate loop for one grip (KiCad 9 + Freerouting).
 #   ./route.sh <right|left> [max_passes]
 # Pipeline: (gen_board.py already ran) -> Specctra DSN -> Freerouting -> SES ->

@@ -2,10 +2,13 @@
 
 **State: DONE. Both boards are fully routed and DRC-clean.** `kicad-cli 9.0.9`,
 error severity: **0 violations, 0 unconnected items** on `thumbdeck_right` and
-`thumbdeck_left` (right re-verified 2026-07-15 after the 2u-Enter reroute, left
-2026-07-11; results in
-`hardware/kicad/generated/drc_{right,left}.json`). The fab package (gerbers, JLC
-BOM, CPL) is exported to `hardware/kicad/generated/fab/`. There is **no
+`thumbdeck_left` (both re-routed and re-verified 2026-07-17 for the v0.19 GBC
+outline; results in
+`hardware/kicad/generated/drc_{right,left}.json`, a local build artifact — it is
+git-ignored, regenerate with `route.sh`). The fab package (gerbers, JLC BOM, CPL)
+is written to `hardware/kicad/generated/fab/` by `gen_fab.py` and is likewise not
+committed. Note that DRC-clean means **no design rule is violated** — it is not a
+statement that the circuit is correct, and neither board has been fabricated. There is **no
 finish-in-the-GUI step left** — the loop below converges headlessly.
 
 > Older revisions of this file described KiCad-7 headless limitations (no
@@ -67,10 +70,11 @@ python3 gen_fab.py          # refuses to export unless DRC is 0/0
 
 ## Board facts
 
-- **79.5 × 97.0 mm** per grip (v0.17: Rii-height, chin cut + electronics moved to
-  the top zone), **4-layer**: F.Cu (signal) / **In1.Cu (solid GND plane, never
-  routed through)** / In2.Cu (signal) / B.Cu (signal). Note the v0.17 route is
-  tighter than rev-A — the module (top) and the FFC bridge (inner-bottom) put the
+- **75.0 × 97.0 mm** per grip (v0.19: GBC-boxy straight outer edge; v0.17's chin
+  cut + top-zone electronics retained), **4-layer**: F.Cu (signal) / **In1.Cu
+  (solid GND plane, never routed through)** / In2.Cu (signal) / B.Cu (signal).
+  Note the v0.17 route is
+  tighter than rev-A — and tighter again at 75.0 mm in v0.19 — the module (top) and the FFC bridge (inner-bottom) put the
   14 bridge nets across the board, so `route.sh`'s route-until-clean loop may need a
   few passes to hit 0/0.
 - 1.6 mm FR-4, **ENIG** (dome contacts), 0.2 mm clearance/track rules, via 0.6/0.3.

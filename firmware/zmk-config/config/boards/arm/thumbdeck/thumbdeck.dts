@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright 2026 Eric Neuman
+ */
+
+/*
  * thumbdeck.dts — ZMK board for the bare Ebyte E73-2G4M08S1C (nRF52840) soldered
  * directly to the thumbdeck PCB. Flash partitions copied VERBATIM from nice!nano v2
  * (Adafruit nRF52840 UF2 bootloader layout: SoftDevice @0x0, app @0x26000, settings

@@ -2,8 +2,10 @@
 
 Everything in `generated/` is produced headlessly by the pipeline in
 `hardware/scripts/`. **Both boards are fully routed and DRC-clean** (0 violations,
-0 unconnected, kicad-cli 9.0.9) and the JLC fab package is exported. Nothing here
-is hand-drawn; to change the board, change the model/scripts and regenerate.
+0 unconnected, kicad-cli 9.0.9) and the JLC fab package exports cleanly. Nothing
+here is hand-drawn; to change the board, change the model/scripts and regenerate.
+**The boards are unbuilt** — nothing here has been fabricated or bring-up tested,
+and DRC-clean means no rule is violated, not that the circuit is correct.
 
 ## The pipeline
 
@@ -14,11 +16,13 @@ python3 gen_board.py                  # placement + full netlist + deterministic
 ./route.sh right                      # Specctra DSN (In1 marked power) -> Freerouting (-Xss16m)
 ./route.sh left                       #   -> SES import -> stitch.py (GND vias + zone fill) -> DRC -> renders
 python3 gen_fab.py                    # gerbers/BOM/CPL per side; REFUSES to export unless DRC is 0/0
-python3 sim_matrix.py                 # 79-key matrix ghosting/NKRO proof (final pass)
+python3 sim_matrix.py                 # 78-key matrix ghosting/NKRO proof (final pass)
 ```
 
 Requirements: **KiCad 9** (`pcbnew` Python module + `kicad-cli`), a Java runtime
-and **freerouting.jar** (paths at the top of `route.sh`). Details and quirks in
+and **freerouting.jar**. Note that `route.sh` currently **hardcodes the author's
+toolchain paths** for both (the `JAVA=` and `FR=` lines at the top) — edit them to
+match your machine before running it. Details and quirks in
 [`docs/routing-status.md`](../../docs/routing-status.md).
 
 ## What's in `generated/`
@@ -27,9 +31,9 @@ and **freerouting.jar** (paths at the top of `route.sh`). Details and quirks in
 |---|---|
 | `thumbdeck_right.kicad_pcb` / `thumbdeck_left.kicad_pcb` | routed, DRC-clean 4-layer boards (F.Cu / In1 GND plane / In2 / B.Cu) |
 | `thumbdeck_*.kicad_pro/.kicad_prl/.kicad_dru` | project + 0.2 mm rules (via 0.6/0.3) |
-| `thumbdeck_*.dsn` / `thumbdeck_*.ses` | Freerouting in/out (kept for reproducibility) |
-| `drc_right.json` / `drc_left.json` | DRC results: **0 violations, 0 unconnected** (error severity) |
-| `fab/right/`, `fab/left/` | **the order package**: `thumbdeck_*_gerbers.zip` + `bom.csv` + `positions.csv` (JLC format) |
+| `thumbdeck_*.dsn` / `thumbdeck_*.ses` | Freerouting in/out (local build artifacts — git-ignored, regenerate with `route.sh`) |
+| `drc_right.json` / `drc_left.json` | DRC results: **0 violations, 0 unconnected** (error severity) — git-ignored, regenerate with `route.sh` |
+| `fab/right/`, `fab/left/` | **the order package**: `thumbdeck_*_gerbers.zip` + `bom.csv` + `positions.csv` (JLC format) — git-ignored, regenerate with `gen_fab.py` |
 | `thumbdeck_*_placement.csv` | placement summary (ref, value, x, y, rot, side) |
 
 ## Ordering

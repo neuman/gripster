@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 render_wiring.py — assembly + wiring views that show WHERE to solder each switch
 and diode, and exactly what the bridge cable carries.

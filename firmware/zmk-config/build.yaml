@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
 # build.yaml — drives ZMK's GitHub Actions build matrix.
 # Single non-split firmware for the bare E73 (nRF52840) thumbdeck board.
 include:

@@ -1,10 +1,15 @@
 # Assembly, first flash, charge, pair & test — rev-A (v0.19)
 
+> **This device has never been physically built.** The boards are routed and
+> DRC-clean and the shells are fit-checked in CAD, but no first article exists —
+> this guide is a design-derived procedure, not a walkthrough of a build that
+> actually happened. Expect to find things it does not anticipate.
+
 Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
 machine-placed) — there is **no hand-soldering** in this build. Your work is
 mechanical + one one-time SWD flash.
 
-> **v0.18 status:** the boards, fab package and firmware in this guide are the
+> **Status (superseded by the v0.19 note below):** the boards, fab package and firmware in this guide are the
 > re-routed **v0.17** grip (79.5 × 97 mm; the E73 + power front-end — USB-C,
 > charger, ESD, power slide switch, reset, charge LED — moved to the **top**
 > zone, with the JST-PH battery connector in the bottom chin) — **unchanged in
@@ -28,7 +33,9 @@ mechanical + one one-time SWD flash.
 
 1. **Boards:** two JLCPCB PCBA orders from `hardware/kicad/generated/fab/` —
    see [fabrication-sourcing.md](fabrication-sourcing.md), including the DFM
-   preview checklist (LED polarity!).
+   preview checklist (LED polarity!). That directory is **not committed**;
+   generate it first with `python3 hardware/scripts/gen_fab.py` (it refuses
+   unless DRC is 0/0).
 2. **Prints:** five PETG shell parts — `back_left`, `back_right`,
    `grip_lid_left`, `grip_lid_right`, `center_panel` — and the two keymats
    (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
@@ -138,6 +145,10 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
 5. From now on it's drag-and-drop: **double-tap reset** (paperclip in the floor
    pinhole) → a UF2 drive mounts → drag on `thumbdeck-zmk.uf2` from the GitHub
    Actions build (`.github/workflows/build.yml`, self-contained ZMK v0.3.0).
+   That build is green (run 29443394494, 2026-07-15) so the artifact does exist —
+   but **it has never been flashed to hardware, because no hardware exists.**
+   Actions artifacts also expire, so re-run the workflow and use a fresh build
+   rather than an old download.
 
 ## 4. Power-on checkpoints
 
@@ -155,10 +166,17 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
   is wired, not a BLE peer.
 - Type across **both** grips. Debug map: a dead left-grip **column** → reseat the
   FFC ribbon; a dead **row** affects **both** grips (rows are shared).
-- **FN layer** (hold FN): MINUS/EQUAL on 0/9, HOME/END on PgUp/PgDn, PSCRN on DEL,
-  **SQT (`'`) on `;`** (the apostrophe has no physical key — the right H-row
-  ends in the 2u Enter), `BT_CLR` + `BT_SEL 0–3` for profiles, plus
-  `&bootloader` / `&sys_reset`.
+- **Modifiers are mirrored** (v0.20): both grips end in the same stack — Ctrl at
+  the bottom-outside corner, Shift directly above it, Alt beside Space. Hold the
+  modifier with the thumb OPPOSITE the target key (Ctrl+C = right-thumb Ctrl +
+  left-thumb C). No sticky/one-shot behaviors — everything is a plain hold;
+  same-side triples (Ctrl+Shift+letter) use the corner Ctrl+Shift one-thumb
+  bridge or a quick cross-hand reach.
+- **FN layer** (hold FN, left grip): MINUS/EQUAL on 0/9, HOME/END on PgUp/PgDn,
+  PSCRN on DEL, **SQT (`'`) on `;`** (the apostrophe has no physical key — the
+  right H-row ends in the 2u Enter), **PIPE (`|`) on `[` and BSLH (`\`) on `]`**
+  (the backslash cap became the right Ctrl in v0.20), `BT_CLR` + `BT_SEL 0–3`
+  for profiles, plus `&bootloader` / `&sys_reset`.
 - Pointer: D-pad + ZMK mouse keys on the FN layer (no trackpad in v1).
 - Chord several keys at once — the diodes kill ghosting (verified exhaustively in
   `sim_matrix.py`, but enjoy confirming it with fingers).

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """finish_route.py <board> — deterministically close every remaining unconnected
 signal net after Freerouting, with an A* maze router on a 0.1 mm 2-layer grid.
 

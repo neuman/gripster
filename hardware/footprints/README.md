@@ -39,7 +39,9 @@ JUSHUO **AFA07-S16FCC-00** (LCSC C13744): FFC/FPC ZIF, **1.0 mm pitch, 16
 positions, side entry, BOTTOM contacts**, slide-lock drawer, 2.5 mm tall. Land
 pattern per the customer drawing: 16× 0.6×1.8 mm pads at 1.0 mm + 2 nail pads
 2.6×3.0. One per grip, on the inner edge, cable opening toward the spine. Mates
-with a **150 mm 16-way type-A** (same-side contacts) jumper — the left grip's
+with a **16-way type-A** (same-side contacts) jumper, **≥194 mm** (200 mm stock —
+the J2 contact rows sit 173.3 mm apart in v0.19, so a 150 mm ribbon cannot mate) —
+the left grip's
 pin→net assignment is generated from ribbon geometry so the straight jumper is
 correct by construction.
 
@@ -49,7 +51,8 @@ SHOU HAN **MSK12C02** SPDT slide (LCSC C431540): body 8.0×2.8×1.4 mm, knob
 protrudes ~1.5 mm from the −y face, 1.6 mm travel. Land per the manufacturer
 drawing: 3 signal pads (**pin 2 = common**) + 4 mechanical lug pads + 2× Ø0.85
 NPTH locating holes. Wired between cell+ and the VBAT rail; the knob passes
-through the 8×2.8 slot in the bottom shell wall.
+through the 8×2.8 slot in the top shell wall (v0.17 moved the electronics cluster
+and its shell openings to the top zone).
 
 ## Also in the library
 

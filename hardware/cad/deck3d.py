@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """deck3d.py — parametric 3D generator for the thumbdeck: PCB fit-model (real
 component dimensions), the 5-part shell set (left/right back halves, left/right
 grip lids, center front panel — every part fits an Ender 3 V2 220x220 bed flat),
@@ -760,9 +762,10 @@ SHIFTED = {"1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&",
            "`": "~", "[": "{", "]": "}", "\\": "|"}
 # FN-layer legends (Rii's blue print), small at bottom-right — ONLY where the
 # keymap binds them: FN+0/9 = minus/equal, FN+; = SQT, FN+PGUP/PGDN = Home/End,
-# FN+DEL = PrintScreen (thumbdeck.keymap fn_layer).
+# FN+DEL = PrintScreen, FN+[/] = pipe/backslash (v0.20 — the \ cap became the
+# right CTL; direct bindings, no Shift) (thumbdeck.keymap fn_layer).
 FN_LEGENDS = {"0": "-", "9": "=", ";": "'", "PGUP": "Home", "PGDN": "End",
-              "DEL": "PrtSc"}
+              "DEL": "PrtSc", "[": "|", "]": "\\"}
 
 def _text_cutter(txt, fs, cx, cy, max_w=None, anchor="c"):
     """One legend as a deboss cutter: 3D text extruded LEGEND_DEPTH below the cap

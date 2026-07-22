@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 gen_kicad_pcbnew.py — emit a REAL, netlisted KiCad 7 board per grip using the
 pcbnew Python API (supersedes the hand-emitted gen_kicad.py placement guide).

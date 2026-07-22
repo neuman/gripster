@@ -3,7 +3,44 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.19 (first entry).
+current design is rev-A / v0.20 (first entry).
+
+## v0.20 — mirrored modifiers: Ctrl/Shift/Alt on both grips (2026-07-22)
+
+The 147 mm phone gap means a thumb can never reach the opposite grip, so any
+modifier+same-side-key chord needs that modifier on BOTH grips — with left-only
+Ctrl, the entire core shortcut cluster (Ctrl+Z/X/C/V/A/S — all left-grip
+letters) was physically impossible. The Rii i8+ itself half-acknowledges this:
+it duplicates Shift at both ends of the Z-row and carries a right-side AltGr,
+and its layout demotes Del to Fn+Backspace. We extend its own logic to the
+split geometry. Reviewed by a 3-critic panel (thumb ergonomics, ZMK
+feasibility, Rii fidelity) before landing.
+
+- **Two right-grip caps relabel, nothing else moves**: bottom-row `AGR` → `Alt`
+  (the keycode was already RALT; AltGr ≡ right Alt on US layouts) and the
+  outer-corner `\` → `Ctrl`. Both grips now end in the identical mirrored
+  stack — **Ctrl at the bottom-outside corner, Shift directly above it, Alt
+  beside Space** (the Rii's own Alt|Space|AltGr grammar). Left grip, brackets,
+  FN and WIN are untouched. Zero PCB/matrix change: `thumbdeck.dtsi`
+  regenerated **byte-identical**; all 78 domes keep their positions; the JLC
+  fab package stays valid.
+- **Backslash demotes to the FN layer as DIRECT bindings — FN+`]` = `\`,
+  FN+`[` = `|`** (same pattern as `'` on FN+`;`). Pipe deliberately does NOT go
+  through Shift: Shift+FN+] would be a three-key chord no thumb-pair can hold.
+  Bracket caps get debossed Rii-blue sublegends (`|` and `\`).
+- **Side-aware HID codes** in `gen_firmware.py` (`KC_RIGHT`): the right grip
+  emits RCTRL/RSHFT/RALT so left/right modifiers stay distinguishable and AltGr
+  keeps working under intl layouts. Previously `kc()` was side-agnostic.
+- **No sticky/one-shot behaviors — deliberate.** All chords are plain holds;
+  the modifier is held by the thumb opposite the target key. Same-side triples
+  (Ctrl+Shift+letter) use the vertical corner Ctrl+Shift one-thumb bridge or an
+  occasional cross-hand reach. Known residual gaps, accepted: Win+left-side
+  combos (Win+E/D, Super+1–5) and left-grip FN-layer targets (BT select) need
+  the cross-hand reach — BT is setup-time, Win combos are rare on this device.
+- Stale-count cleanup: `gen_firmware.py` docstring and `sim_matrix.py` banner
+  said 79 keys; the matrix has been 78 since the v0.17 2u-Enter change.
+  `sim_matrix.py` re-run fresh: **78 keys (right 36 + left 42), 0 cross-grip
+  collisions, 0 ghost/miss failures — PASS**.
 
 ## v0.19 — Game-Boy-Color rework: boxy outline, flush M3 screws, closed well (2026-07-17)
 
@@ -476,7 +513,12 @@ real requirement for something that clamps a phone.
   differ by role. Bridge connector at the inner-bottom corner of each grip.
 - **Render path.** matplotlib PNG (no KiCad in this env); board file is
   hand-authored KiCad S-expression.
-- **License:** MIT.
+- **License:** Apache License 2.0. Chosen over MIT for the explicit **patent
+  grant** (§3) and the explicit **inbound contribution terms** (§5) — both matter
+  for a hardware-adjacent project that ships fabricable board files and invites
+  outside build reports. It also states attribution/NOTICE handling explicitly,
+  which is what carries the vendored third-party footprint attribution
+  (marbastlib, CERN-OHL-2.0-P) cleanly alongside the original work.
 
 ## History: v0.2 (superseded)
 

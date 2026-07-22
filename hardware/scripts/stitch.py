@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """stitch.py <board> — tie the GND pour together with vias, then fill.
 
 A 2-layer autoroute chops the GND pour into a big board-wide plane plus a

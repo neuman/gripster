@@ -1,4 +1,4 @@
-# Connectivity & power — rev-A (v0.15)
+# Connectivity & power — rev-A (v0.19)
 
 One controller, one battery, one USB-C. The **right grip** carries the E73
 (nRF52840) module and the entire power front-end; the **left grip** is a passive
@@ -77,7 +77,7 @@ this file (nice!nano/BQ24075, JST-GH harness, telescoping-cable era).
 
 | Control | Part | Access |
 |---|---|---|
-| Power | MSK12C02 slide (SW90) | knob through an 8 × 2.8 mm slot in the bottom shell wall |
+| Power | MSK12C02 slide (SW90) | knob through an 8 × 2.8 mm slot in the **top** shell wall (v0.17 relocation, see note below) |
 | Reset / UF2 | TS-1187A tact (SW91), top-actuated | paperclip through a 1.6 mm pinhole in the shell floor (double-tap = bootloader) |
 | Charge state | red LED (D80) | 1.5 mm light hole in the shell floor |
 

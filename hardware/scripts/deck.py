@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
 """
 deck.py — parametric geometry model for the split thumb keyboard (v0.3).
 
@@ -19,7 +22,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.19"
+VERSION = "v0.20"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -32,13 +35,22 @@ VERSION = "v0.19"
 # v0.16 (Rii-follow): ENTER is a DOUBLE-WIDE key at the outer end of the H-row,
 # like the i8+. The apostrophe key gives up its physical spot (5 caps span the
 # 6-unit width); SQT moves to FN+; in the keymap.
+# v0.20 (mirrored modifiers): the 147mm phone gap means a thumb can never reach
+# the opposite grip, so any modifier+same-side-key chord needs that modifier on
+# BOTH grips (Ctrl+Z/X/C/V/A/S are all left-grip letters). Both grips now end in
+# the identical stack — CTL at the bottom-outside corner, SHF directly above it,
+# ALT beside Space (the Rii's own Alt|Space|AltGr grammar; AGR was already RAlt).
+# Backslash gives up its cap: BSLH moves to FN+], PIPE to FN+[ (direct bindings,
+# no Shift — same demotion pattern as SQT on FN+;). No sticky/one-shot behaviors:
+# chords are plain holds; rare triples use the corner CTL+SHF bridge or a
+# cross-hand reach.
 RIGHT_LEGENDS = [
     ["F6", "F7", "F8", "F9", "F10", "DEL"],
     ["6",  "7",  "8",  "9",  "0",   "BSP"],
     ["Y",  "U",  "I",  "O",  "P",   ";"],
     ["H",  "J",  "K",  "L",  "ENT"],          # ENT = 2u (Rii-style wide Enter)
     ["N",  "M",  ",",  ".",  "/",   "SHF"],
-    ["SPC", "AGR", "[", "]",  "\\"],          # SPC = 2u; MEN dropped
+    ["SPC", "ALT", "[", "]",  "CTL"],         # SPC = 2u; v0.20: AGR->ALT, \->CTL
 ]
 
 # double-wide keycaps (one dome under the cap centre, like the i8+)

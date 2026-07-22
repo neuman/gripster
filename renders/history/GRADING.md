@@ -1,8 +1,17 @@
-# Grading system & iteration log
+# Grading system & iteration log — HISTORICAL (v0.4 era, superseded)
 
-Two gates, enforced by `hardware/scripts/final_grade.py`. Done only when both pass.
-As of v0.4 the grade also encodes the **EE design-review** findings (see
-`docs/design-review.md`) so the design is held to them, not just reminded of them.
+> **Historical record.** This describes the v0.4 auto-grader for the abandoned
+> **50-key nice!nano** design. None of it reflects rev-A / v0.19 (78 keys, one
+> E73 module, routed 4-layer boards) — the "PASS" verdict below is a pass of that
+> old geometry/config grader, **not** a statement about the current design or
+> about any physical hardware. Current status lives in
+> [`docs/evaluation.md`](../../docs/evaluation.md); the scripts referenced below
+> are archived in `hardware/scripts/legacy/`.
+
+Two gates, enforced by `hardware/scripts/legacy/final_grade.py`. Done only when
+both pass. As of v0.4 the grade also encodes the **EE design-review** findings
+(see `../../docs/design-review.md`) so the design is held to them, not just
+reminded of them.
 
 > Scope caveat: the grade covers **geometry + config/doc structure**. It is *not*
 > electrical sign-off — no compile, no DRC/ERC, no RF sim. Passing is necessary,
@@ -48,10 +57,10 @@ VISUAL     : 9/9 checklist items                 -> PASS
 OVERALL    : *** PASS ***
 ```
 
-Reproduce: `cd hardware/scripts && python3 layout_gen.py --iter 6 && python3 final_grade.py --iter 6`
+Reproduce: `cd hardware/scripts/legacy && python3 ../layout_gen.py --iter 6 && python3 final_grade.py --iter 6`
 
 **Kept renders:** `iter_03.png` (v0.2), `iter_05.png` (v0.3), `iter_06.png` (v0.4 final).
 
-## What the grade still does NOT prove (human gates — `docs/design-review.md`)
+## What the grade still does NOT prove (human gates — `../../docs/design-review.md`)
 Compile (ZMK CI), DRC/ERC, RF performance, the metered switch pinout, mechanical
 flex, and the real bridge-cable flex life. Those gate a fab order; the grade doesn't.

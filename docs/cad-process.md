@@ -1,4 +1,4 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.18
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.19
 
 **v0.18 flush-screen well + battery relocation (2026-07-14).** The center panel is
 now a **sunken tray**: its border flange tops out flush with the grip lids
@@ -74,14 +74,15 @@ deck.py geometry ─▶ deck3d.py (CadQuery) ─▶ STEP + STL per part
    └──────────── tweak shells/keymats, re-run ◀────────┘   (change the PCB only if unavoidable)
 ```
 
-## The height stack (rev-A / v0.18, verified)
+## The height stack (rev-A / v0.19, verified)
 
 Per grip, bottom → top: **floor 1.6 | back cavity 6.3 | PCB 1.6 | domes 0.5 |
 keymat | lid** → keyboard face at **z 14.7**, keycaps 1.0 proud (15.7). The 6.3 mm
 PCB standoff is sized by the tallest back-side part — the **mated JST-PH battery
-connector** (6.0 mm) + 0.24 mm margin. In the spine (v0.18): FFC duct 1.1..1.6 |
-well slab 2.1..4.7 (ring recess floor 2.9, 0.8 mm web) | N52 ring 2.9..4.9
-(0.2 proud) | **cased phone 5.3..14.7 — screen flush with the lids**. The whole
+connector** (6.0 mm) + 0.24 mm margin. In the spine (v0.19): FFC duct 1.1..1.6 |
+well slab 2.5..5.1 (2.6 mm thick; ring recess floor 3.3, 0.8 mm web) | N52 ring
+3.3..5.3 (0.2 proud of the 5.1 well floor) | **cased phone 5.3..14.7 — screen
+flush with the lids** (5.3 + 9.4 mm cased phone = 14.7). The whole
 device is **15.7 mm** thick (keycap tops); there is no plateau above the front
 plane any more.
 
@@ -91,7 +92,8 @@ plane any more.
   every placed component as a solid at its real datasheet height (the
   `SPECS` table in `deck3d.py`), plus snap-domes (0.5 mm), a realistic
   ~500 mAh pouch cell, and the FFC jumper. Used for collision-checking the shells
-  against real hardware — `--check` reports **0 collisions**. Caveat: the bridge
+  against real-dimension component models — datasheet heights, not a physical
+  build — `--check` reports **0 collisions**. Caveat: the bridge
   ribbon is modeled ~2 mm below its physical run in the fit-check (clearances in
   that region are ≥4 mm, so it was not re-modeled).
 - **Back halves (`back_left` / `back_right`)** — the tray split at **x=0**
@@ -138,8 +140,9 @@ plane any more.
   the **bolted splice for the x=0 back seam and the spine service hatch**:
   4 M3 countersunk screws into Ø8 floor bosses straddling the seam + (until v0.18) 2 more at
   **ring height** into the transverse-wall bosses (heads sink 1.4 mm below the
-  pocket floor, under the phone). Remove 6 screws → battery + FFC exposed,
-  grips untouched.
+  pocket floor, under the phone). Remove the 4 panel screws → FFC exposed, grips
+  untouched; since v0.18 the battery lives in the **left grip** and is serviced
+  there, not behind this panel.
 - **Keymats** (per grip, TPU 95A) — keycap plungers over the dome centres joined
   by **living-hinge webs**; each plunger nub actuates its dome; the web edge is
   what the grip lid's rim clamps. Print a 3×3 coupon to tune travel + hinge

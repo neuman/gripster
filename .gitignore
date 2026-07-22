@@ -36,6 +36,8 @@ Thumbs.db
 hardware/kicad/generated/*.dsn
 hardware/kicad/generated/*.ses
 hardware/kicad/generated/drc_*.json
+# kicad-cli drc writes <board>-drc.rpt next to the invocation dir
+*-drc.rpt
 hardware/kicad/generated/fab/
 
 # routing intermediates

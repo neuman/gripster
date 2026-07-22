@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """inspect_board.py <board> — factual inventory of a KiCad board for review."""
 import sys, pcbnew
 from collections import Counter, defaultdict

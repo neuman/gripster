@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """export_full_asm.py — one full-build assembly GLB with SEPARATE NESTED OBJECTS.
 
 Produces models/thumbdeck_full_asm.glb: a named node hierarchy (opens as an

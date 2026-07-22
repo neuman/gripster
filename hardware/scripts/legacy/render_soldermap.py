@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """
 render_soldermap.py — true 1:1 printable solder/placement map (PDF, A4 portrait).
 

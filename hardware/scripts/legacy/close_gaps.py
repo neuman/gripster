@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """close_gaps.py <board> [maxgap_mm] — close the short signal stubs Freerouting
 leaves behind, by reconstructing each net's copper connectivity ourselves (the
 KiCad ratsnest object isn't usable from Python).

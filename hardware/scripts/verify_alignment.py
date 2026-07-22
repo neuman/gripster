@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
 """verify_alignment.py — v0.17 top-to-bottom 2D stack alignment audit.
 
 Checks that every layer of the stack lines up, from the shell openings through the
