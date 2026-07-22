@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
+name: Bug report
+description: Something in the repo is wrong or does not work — a generator that crashes, a check that fails, a doc that lies.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. A quick orientation so we file this in the right place:
+
+        - **A generator script crashed, a gate check failed, or a doc is wrong** → you are in the right form.
+        - **You are trying to build one and are stuck** → use *Build help / first-article report* instead.
+        - **You want to propose a change to the design** → use *Design proposal* instead.
+
+        Remember that this device has never been physically built, so "it does not work"
+        about *hardware* is expected, not a bug. Bugs here are about the repo: the model,
+        the generators, the checks, the firmware config and the docs.
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Which subsystem?
+      options:
+        - PCB / routing (gen_board.py, route.sh, stitch.py, gen_fab.py, KiCad boards)
+        - 3D shells & keymats (deck3d.py, export_full_asm.py, STL/GLB output)
+        - Firmware / ZMK (board definition, keymap, CI build)
+        - Generator scripts (deck.py, gen_firmware.py, sim_matrix.py, verify_*.py, render_*.py)
+        - Docs (README, docs/, in-repo READMEs)
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What went wrong, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: What command did you run?
+      description: The exact command, from the directory you ran it in. Leave blank for a docs issue.
+      placeholder: |
+        cd hardware/scripts
+        python3 gen_board.py
+      render: shell
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Full output
+      description: >
+        Paste the complete output including the traceback — not just the last line.
+        For a DRC problem, the relevant part of drc_right.json / drc_left.json is ideal.
+        This is automatically formatted as code, no backticks needed.
+      render: text
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Output of `git rev-parse --short HEAD`, plus whether you have local modifications.
+      placeholder: "1f2ad77 (clean)"
+
+  - type: textarea
+    id: toolchain
+    attributes:
+      label: Toolchain versions
+      description: >
+        Only the ones relevant to your subsystem. Useful commands:
+        `python3 --version`, `kicad-cli version`, `java -version`,
+        `hardware/cad/.venv/bin/pip show cadquery trimesh`.
+      placeholder: |
+        OS:        Ubuntu 24.04 (WSL2)
+        Python:    3.12.3
+        KiCad:     9.0.9
+        Java:      21.0.4 (for Freerouting)
+        CadQuery:  2.8.0
+      render: text
+
+  - type: checkboxes
+    id: sanity
+    attributes:
+      label: Sanity checks
+      options:
+        - label: I did not hand-edit any generated file (see CONTRIBUTING.md for which paths are generated).
+        - label: I searched existing issues first.

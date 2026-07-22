@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
+name: Build help / first-article report
+description: You are attempting a physical build — stuck on a step, a part does not fit, or you have results to report.
+title: "[build] "
+labels: ["build-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **If you are building one, you are building the first one that has ever existed.**
+
+        Nobody has fabricated these boards, printed these shells, pressed these domes or
+        flashed this firmware onto real hardware. rev-A (v0.19) is complete on paper only.
+        That makes this issue form the single most valuable one in the repo — whatever you
+        find, good or bad, is the first real-world data this project has ever had.
+
+        Please report even partial results. A failed print, a board that arrived wrong, a
+        dome that will not seat, a screw boss that is 0.3 mm off: all of it is signal.
+        Photos help enormously.
+
+  - type: checkboxes
+    id: acknowledge
+    attributes:
+      label: Before you continue
+      options:
+        - label: >
+            I understand this is **unbuilt, unvalidated rev-A hardware**. No physical unit
+            has ever been assembled, and the ergonomics, dome feel, RF range and battery
+            life are all unmeasured. I am not expecting a finished product.
+          required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where are you?
+      options:
+        - Ordering / sourcing — parts, stock, quotes
+        - 3D printing — shells or keymats
+        - PCB arrived — inspection, domes, retention tape
+        - Assembly — FFC, battery, screws, fit
+        - Bring-up — SWD bootloader flash, UF2, pairing
+        - Testing — matrix, keys, range, battery
+        - Finished a build (report!)
+    validations:
+      required: true
+
+  - type: input
+    id: docstep
+    attributes:
+      label: Which step of docs/assembly.md?
+      description: Section heading or step number, if applicable.
+      placeholder: "Step 3 — seat the FFC jumper"
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: >
+        What you did, what you expected, what you got. If something did not fit, please
+        include the measurement you took and the number the docs predicted.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part is involved?
+      multiple: true
+      options:
+        - back_left.stl
+        - back_right.stl
+        - grip_lid_left.stl
+        - grip_lid_right.stl
+        - center_panel.stl
+        - keymat_left.stl
+        - keymat_right.stl
+        - Right PCB (thumbdeck_right)
+        - Left PCB (thumbdeck_left)
+        - Snap domes / retention tape
+        - FFC jumper
+        - Battery / charging
+        - E73 module / firmware
+        - Not part-specific
+
+  - type: textarea
+    id: printer
+    attributes:
+      label: Printer, filament and slicer settings
+      description: >
+        For any printing issue. Shells are designed for PETG; keymats need TPU 95A (or a
+        tough resin) for the living hinges. Everything is sized for a 220 × 220 mm bed.
+      placeholder: |
+        Printer:   Ender 3 V2, stock
+        Material:  PETG, 240 °C / 80 °C bed
+        Slicer:    PrusaSlicer 2.8, 0.2 mm layers, 4 perimeters, 25% infill
+        Supports:  none
+      render: text
+
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos
+      description: >
+        Drag images in here. Photos of a failure are more useful than a description of it —
+        especially prints, seated domes, and anything that did not fit.
+
+  - type: textarea
+    id: sourcing
+    attributes:
+      label: Sourcing notes (optional)
+      description: >
+        What you actually paid, and whether anything was out of stock. E73 module stock
+        (JLC C356849) has been observed swinging wildly, so real numbers are valuable.
+
+  - type: textarea
+    id: anything
+    attributes:
+      label: Anything else
+      description: Suggestions, things the docs should have warned you about, or things that went better than expected.

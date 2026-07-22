@@ -1,0 +1,164 @@
+Gripster
+Copyright 2026 Eric Neuman
+
+This product includes software and hardware designs developed by Eric Neuman.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this work except in compliance with the License. You may obtain a copy of the
+License in the LICENSE file distributed with this work, or at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+"Gripster" is the public name of this project. Internally — in filenames,
+directory paths, the ZMK board id, the KiCad board files and the CI firmware
+artifact — the project is named `thumbdeck`. Both names refer to the same work.
+
+
+================================================================================
+THIRD-PARTY ATTRIBUTIONS
+================================================================================
+
+The following third-party components are included in, or referenced by, this
+repository. They are NOT covered by the Apache License, Version 2.0 above; each
+remains under its own license as stated below.
+
+--------------------------------------------------------------------------------
+1. marbastlib — KiCad footprints
+--------------------------------------------------------------------------------
+
+Path:     hardware/footprints/thumbdeck.pretty/
+License:  CERN Open Hardware Licence Version 2 - Permissive (CERN-OHL-P v2)
+License text: hardware/footprints/thumbdeck.pretty/marbastlib-LICENSE
+              (vendored verbatim and preserved unmodified)
+
+The following footprints in hardware/footprints/thumbdeck.pretty/ are derived
+from marbastlib:
+
+  - nRF52840_E73-2G4M08S1C.kicad_mod  (Ebyte E73-2G4M08S1C module footprint;
+    used in the shipped boards)
+  - CON_JST_ACH_BM02B.kicad_mod       (JST ACH 2-position connector; unused
+    spare, present in the library)
+
+Upstream project: marbastlib, by ebastler.
+Substantiation: both .kicad_mod files reference 3D models under the path
+`${KICAD8_3RD_PARTY}/3dmodels/com_github_ebastler_marbastlib/`, and
+hardware/footprints/README.md records the E73 footprint as being "from
+marbastlib (see marbastlib-LICENSE)". The upstream repository is understood to
+be https://github.com/ebastler/marbastlib; that URL is not recorded in any file
+in this repository and is therefore UNCONFIRMED from repository contents alone.
+
+Note: the vendored marbastlib-LICENSE file contains the CERN-OHL-P v2 license
+text, which is itself "copyright CERN 2020" and may be used in unmodified form
+only. It must not be edited.
+
+--------------------------------------------------------------------------------
+2. Samsung Galaxy S25 Ultra 3D model
+--------------------------------------------------------------------------------
+
+Path:     hardware/cad/assets/s25_ultra.glb
+Used by:  hardware/cad/export_full_asm.py (inserted into the exported assembly
+          model hardware/cad/models/thumbdeck_full_asm.glb)
+Source:   UNKNOWN
+License:  UNKNOWN
+
+This file is a third-party 3D model of a Samsung Galaxy S25 Ultra. It is used
+ONLY for visualization and CAD fit-checking of the phone well; it is not part of
+the buildable design and is not required to fabricate, print, assemble or flash
+this device. No PCB, shell, keymat or firmware output depends on it.
+
+*** TODO: CONFIRM PROVENANCE BEFORE REDISTRIBUTION. ***
+
+Neither the source, the author, nor the license of this file is recorded
+anywhere in this repository, and it could not be determined from repository
+contents. No attribution is asserted here because none can be substantiated.
+The file is demonstrably not self-authored: its glTF asset block names only
+"Khronos glTF Blender I/O v4.3.47" with no copyright field, and it carries a
+material named "samsung logo" plus an embedded display texture named
+"Screenshot_20250131-095535_Pixel Launcher" — a third-party screenshot whose
+copyright is separate from that of the mesh.
+
+Before this repository is published or otherwise redistributed, this file's
+origin and license terms must be established and stated here — and, if the
+upstream license permits redistribution of a derivative at all, any required
+attribution must also be carried on the Sketchfab upload listed below — or the
+file must be removed from version control and every derivative below must be
+regenerated from a self-authored placeholder solid.
+
+This model has propagated into derivative works that must be remediated
+together with the source asset. Removing only hardware/cad/assets/s25_ultra.glb
+does NOT remove the third-party geometry from what this project distributes:
+
+  - hardware/cad/models/thumbdeck_full_asm.glb — the committed assembly export;
+    it carries the phone's meshes and materials verbatim. Regenerate it with
+    hardware/cad/export_full_asm.py. Note that that script has no placeholder
+    fallback today: _add_phone() calls trimesh.load(PHONE_GLB) unguarded, so a
+    fallback solid must be written before the asset can be removed.
+  - renders/sketchfab_grab.png — the phone, its bezels and its lock-screen
+    texture are visible in this render, and it is the hero image at the top of
+    README.md. It must be re-rendered and the README image replaced, not merely
+    relinked.
+  - the public Sketchfab upload at
+    https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279
+    (linked from README.md in several places, including the hero image above),
+    which is thumbdeck_full_asm.glb hosted by a third party. It is already
+    public and must be re-uploaded from a clean export, or taken down.
+
+After regenerating, confirm no third-party geometry survives by checking that
+the node and material names of hardware/cad/models/thumbdeck_full_asm.glb no
+longer include "samsung logo", "Back glass", "camera black glass" or
+"lens glass".
+
+"Samsung" and "Galaxy" are trademarks of Samsung Electronics Co., Ltd. This
+project is not affiliated with, endorsed by, or sponsored by Samsung.
+
+--------------------------------------------------------------------------------
+3. ZMK Firmware
+--------------------------------------------------------------------------------
+
+Referenced by: firmware/zmk-config/config/west.yml
+License:       MIT License (as published by the ZMK project upstream)
+Upstream:      https://github.com/zmkfirmware/zmk
+
+The firmware in firmware/zmk-config/ is a configuration and board definition for
+ZMK Firmware. The west manifest pins ZMK at revision v0.3.0 from the
+`zmkfirmware` remote (https://github.com/zmkfirmware). ZMK itself is not
+vendored in this repository; it is fetched at build time by west, and it is
+separately licensed by its own authors under the terms distributed with it.
+
+Substantiation: the pinned revision and remote are recorded verbatim in
+firmware/zmk-config/config/west.yml. The MIT license designation is taken from
+the upstream ZMK project rather than from any file in this repository; consult
+the LICENSE file in the ZMK repository for the authoritative terms.
+
+--------------------------------------------------------------------------------
+4. Rii i8+ reference photographs
+--------------------------------------------------------------------------------
+
+Paths:    references/rii8_ref.png
+          references/rii_8plus_pcb_back.png
+          references/rii_8plus_pcb_front.png
+Used by:  docs/reference-notes.md (design reference only)
+Source:   UNKNOWN
+License:  UNKNOWN
+
+These are three third-party photographs of a Rii i8+ keyboard — one vendor
+product photo and two teardown photographs of its PCB. They were used as visual
+design reference while establishing this project's key pitch, grip proportions
+and matrix layout.
+
+*** TODO: CONFIRM PROVENANCE BEFORE REDISTRIBUTION. ***
+
+Neither the photographer, the source, nor the license of these files is recorded
+anywhere in this repository, and none could be determined from repository
+contents. No attribution is asserted here because none can be substantiated.
+
+They are reference material only: no PCB, shell, keymat, firmware or render
+output is derived from the image files themselves, and deleting all three does
+not affect any generated artifact. Before this repository is published or
+otherwise redistributed, either their origin and license terms must be
+established and stated here, or the files must be removed from version control.
+The design conclusions drawn from them are recorded independently in
+docs/reference-notes.md and survive the removal of the images.
+
+Rii and i8+ are trademarks of their respective owner. This project is not
+affiliated with, endorsed by, or sponsored by Riitek.

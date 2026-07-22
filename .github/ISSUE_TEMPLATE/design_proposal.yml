@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
+name: Design proposal
+description: Propose a change to the design — layout, board, shells, matrix, firmware architecture.
+title: "[proposal] "
+labels: ["design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Design changes start here, not as a PR. Routing is slow, the boards are tightly
+        packed at 75 × 97 mm per grip, and it is disheartening to sink a weekend into a PR
+        that was architecturally off the table. A short issue first saves that.
+
+        Two things worth knowing before you write:
+
+        - **Everything is generated from `hardware/scripts/deck.py`.** A good proposal
+          usually describes a change to the *model*, not to an output file.
+        - **There are open design calls already on the table** — canted vs flat key arc,
+          shoulder buttons, an I²C trackpad on the TP6–8 breakout. Check the README's
+          *Project status & roadmap* before proposing one of them fresh.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you propose?
+      description: The change itself, concretely. Sketches, photos and references welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve?
+      description: >
+        What is wrong or missing today. If this is ergonomics, please say whether it comes
+        from experience with a comparable device — that is worth a lot here, since nothing
+        has been built.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Which subsystem does it touch?
+      multiple: true
+      options:
+        - Key layout / legends (LEGENDS tables in deck.py)
+        - Matrix / diodes / scanning
+        - PCB placement & routing
+        - Power, charging, USB, ESD
+        - RF / antenna / BLE
+        - 3D shells, keymats, ergonomics
+        - Firmware / ZMK board definition & keymap
+        - Generator scripts & pipeline
+        - Docs only
+    validations:
+      required: true
+
+  - type: dropdown
+    id: respin
+    attributes:
+      label: Does it require a board respin?
+      description: >
+        A respin means re-running gen_board.py and re-routing both grips — hours of
+        Freerouting plus a fresh DRC pass. Not a blocker, but it sets expectations.
+      options:
+        - "No — model/firmware/docs only, boards unaffected"
+        - "Yes — placement or netlist changes, both boards must be re-routed"
+        - "Yes — board outline or mounting changes, shells must be regenerated too"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: gate
+    attributes:
+      label: Effect on the acceptance gate
+      description: >
+        Which checks does this put at risk, and how would you expect to satisfy them?
+        (See CONTRIBUTING.md → The acceptance gate.)
+      value: |
+        - DRC 0 violations / 0 unconnected (`gen_fab.py` refuses to export otherwise):
+        - `verify_alignment.py` → ALL CHECKS PASS:
+        - `verify_geometry.py` → exit 0:
+        - `deck3d.py --all --check` → 0 impossible overlaps, all parts fit a 220 × 220 mm bed:
+        - `sim_matrix.py` → FINAL: PASS:
+        - CI firmware build:
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: >
+        And anything that made you reject them. `docs/design-decisions.md` records the
+        decisions already made and what they replaced — worth a skim, in case this ground
+        has been covered.
+
+  - type: dropdown
+    id: help
+    attributes:
+      label: Are you offering to implement it?
+      options:
+        - "Just an idea — someone else may pick it up"
+        - "I could implement it with guidance"
+        - "I want to implement it"
+    validations:
+      required: true
