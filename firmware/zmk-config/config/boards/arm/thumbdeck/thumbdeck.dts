@@ -15,6 +15,7 @@
  */
 /dts-v1/;
 #include <nordic/nrf52840_qiaa.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 #include "thumbdeck.dtsi"
 
 / {
@@ -34,6 +35,55 @@
         io-channels = <&adc 0>;
         output-ohms = <1000000>;
         full-ohms = <2000000>;
+    };
+
+    /* v0.21 (Bean-style hall nub): the pointing nub's input listener — the
+     * sensor itself lives on &i2c0 below. Rate-control pointing: the driver
+     * (firmware/zmk-modules/tmag5273_nub) maps magnet deflection to cursor
+     * VELOCITY, ThinkPad-style. */
+    nub_listener: nub_listener {
+        compatible = "zmk,input-listener";
+        device = <&nub>;
+    };
+};
+
+/* Spare-I2C pads finally used for what they were reserved for: SDA = E73 pad
+ * 15 (P0.05), SCL = pad 4 (P0.28). TWIM0. The TMAG5273's INT (pad 8/P0.29)
+ * is wired on the board but the driver polls; INT stays available. */
+&pinctrl {
+    i2c0_default: i2c0_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 5)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 28)>;
+        };
+    };
+    i2c0_sleep: i2c0_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 5)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 28)>;
+            low-power-enable;
+        };
+    };
+};
+
+&i2c0 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    nub: tmag5273@35 {
+        compatible = "thumbdeck,tmag5273-nub";
+        reg = <0x35>;
+        sampling-hz = <100>;
+        deadzone = <150>;
+        gain-num = <1>;
+        gain-div = <3500>;
+        max-out = <12>;
+        calib-samples = <32>;
+        /* axis orientation is a first-article calibration: flip/swap here */
     };
 };
 

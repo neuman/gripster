@@ -180,7 +180,7 @@ if __name__ == "__main__":
     allok = True
     for side in ("right", "left"):
         allok &= run(side, os.path.join(GEN, f"thumbdeck_{side}.kicad_pcb"))
-    # 5) combined full 78-key matrix (both grips share rows over the bridge)
+    # 5) combined full matrix (both grips share rows over the bridge)
     mr, dr = extract_matrix(os.path.join(GEN, "thumbdeck_right.kicad_pcb"))
     ml, dl = extract_matrix(os.path.join(GEN, "thumbdeck_left.kicad_pcb"))
     combined = {}
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         for k, v in m.items():
             if k in combined: coll.append((k, combined[k], v))
             combined[k] = v
-    print(f"\n===== COMBINED 78-key matrix (rows shared over bridge) =====")
+    print(f"\n===== COMBINED {len(mr)+len(ml)}-key matrix (rows shared over bridge) =====")
     print(f"total keys: {len(combined)}  (right {len(mr)} + left {len(ml)})")
     print(f"  cross-grip (row,col) collisions: {len(coll)} {coll if coll else '(none)'}")
     print(f"\nFINAL: {'PASS' if allok and not coll else 'FAIL'}")

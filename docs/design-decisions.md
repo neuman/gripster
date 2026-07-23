@@ -3,7 +3,79 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.20 (first entry).
+current design is rev-A / v0.21 (first entry).
+
+## v0.21 — right-grip pointing nub: Bean-style TMAG5273 hall sensor (2026-07-23, branch feature/right-joystick)
+
+The right top zone becomes a mirror of the left cluster, with a real pointing
+device where the D-pad mirror lands. Final architecture: a **ThinkPad-style
+rate-control nub** built the way the
+[Ploopy Bean pointing stick](https://github.com/ploopyco/bean-pointing-stick/)
+does it (hardware CERN-OHL-S v2 — credit where due; our sensor placement,
+flexure, and driver are original implementations of the same architecture):
+a **TI TMAG5273A1 I²C 3-axis hall sensor** (SOT-23-6, LCSC **C3716049**,
+~$0.60, basic SMT — machine-placed like everything else) under the board, a
+**Ø4×2 mm N52 disc magnet** press-fit into a **3D-printed flexure spring**
+above the lid, and a printed friction cap. Deflecting the nub tilts/shifts the
+magnet; the sensor reads the X/Y field **through the 1.6 mm FR4**; firmware
+maps deflection to cursor **velocity** (quadratic curve + deadzone + remainder
+accumulation) — steeper tilt = faster cursor, exactly the trackpoint behavior
+the user asked for, with zero moving parts on the PCB.
+
+- **The ALPS detour, recorded honestly**: the first implementation used an
+  ALPS RKJXV1224005 analog gimbal stick (THT, JLC hand-solder). It worked
+  electrically (routed 0/0) but the 11.2 mm module body stood proud of the
+  face with a housing built around it — the user expected "the stick pokes
+  out, not the module," and a Switch-style flush face is geometrically
+  impossible with any COTS gimbal in a 5.2 mm under-lid cavity: the module
+  that fits doesn't exist at JLC, and the module JLC has doesn't fit. The
+  hall-nub architecture inverts the problem: the tall part (spring + cap) is
+  a printed part *outside* the shell; the electronic part is a 1 mm SMT chip
+  *inside* it. It also restores the all-SMT, no-hand-solder fab story and
+  drops the moving-part count on the board to zero.
+- **Placement**: sensor U4 at (32.3, 79.0) right-grip-local — the **exact**
+  left-D-pad mirror (32.3 mm from the inner edge on both grips, same y — the
+  ALPS variant's 2 mm terminal-row offset died with the ALPS). Back
+  side, under the lid's Ø10 nub aperture. PgUp/PgDn are the mouse-button
+  pair's mirror: same y-heights (cy_lo ± 5.5), same 11 mm spacing, at
+  x = 45.7 — the true MB mirror x (57.25) is ON the E73 body; the right
+  outer-top has belonged to the antenna since v0.17, so the pair sits between
+  nub and radio.
+- **Electrical**: the rev-B "trackpad breakout" pads finally do their job —
+  **SDA = TP6 (P0.05), SCL = TP7 (P0.28), INT = TP8 (P0.29)**, TWIM0 at
+  400 kHz, addr 0x35. Adds only R26/R27 (4k7 pullups) and C8 (100 nF bypass).
+  No new MCU pins, no analog domain, no SAADC conflict with the battery
+  divider (the ALPS plan's open risk), and deep-sleep drain is the sensor's
+  sleep current instead of 660 µA of pot bias.
+- **Board knock-ons**: TP6-8 relocate to deck y 67.5 (PgDn's diode landed on
+  the old row); C7 beside the USB-C; SW91 reset to deck (53.5, 71.5); the
+  deterministic In2 USB lanes get a reworked D+ elbow (rev-A 24.0 → 33.0) and
+  a dedicated D− resurface column — the v0.17 columns are inside the new
+  PGUP dome ring. Board is back to **all-SMT, 36 right keys, 78 total**; the
+  ALPS footprint file is deleted.
+- **Firmware**: new in-tree Zephyr module **`firmware/zmk-modules/tmag5273_nub`**
+  (Apache-2.0, register map from the upstream Zephyr tmag5273 sensor driver +
+  TI datasheet — NOT derived from the Bean's GPLv3 QMK firmware): polls X/Y at
+  100 Hz, boot-averages the magnetic zero (which also swallows the MagSafe
+  ring's static field), then quadratic rate-control → `input_report_rel`
+  into a `zmk,input-listener`. Deadzone/gain/max-speed/axis-flips are DT
+  properties — first-article tuning without touching C. A `pm_device` hook +
+  `CONFIG_PM_DEVICE` puts the sensor into its ~nA sleep mode when ZMK deep
+  sleep fires (continuous mode free-runs at ~2.3 mA on the always-up REG0
+  rail — enough to kill the cell in a week of "sleep"; caught in review) and
+  re-zeros on resume. Matrix stays 78 keys; west.yml carries no third-party
+  modules.
+- **Shell/CAD**: right lid gets a plain **Ø10 aperture** (no collar, no pod —
+  the face stays flat like a ThinkPad keyboard) with an underside counterbore
+  over a printed **nub_spring** (Ø14.8 flange + 3 spiral flexure arms + Ø7 hub;
+  the magnet pocket is a press-fit, N-up). The spring is **clamped, not
+  floating**: 3 legs on the flange underside bear on the PCB front face and
+  the counterbore ceiling presses the flange onto them with 0.05 mm preload
+  when the lid screws go home (the adversarial fit review caught the first cut
+  leaving the flange 0.9 mm free to drop). A **nub_cap** (Ø8.5 TPU friction
+  dome, 4.25 mm proud of the face) press-fits 0.95 mm onto the hub's Ø5
+  spigot — cap and spring are prints 8 and 9. Spring compliance is a
+  print-tune parameter (arm thickness 0.8); both parts verified watertight.
 
 ## v0.20 — mirrored modifiers: Ctrl/Shift/Alt on both grips (2026-07-22)
 

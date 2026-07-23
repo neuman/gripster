@@ -37,3 +37,8 @@ CONFIG_FLASH_PAGE_LAYOUT=y
 # board (setting it is a hard Kconfig error), and the bare E73 has no external
 # DCDC inductors, so the nRF52840 must stay in LDO mode anyway. High-voltage
 # regulator output = 3.3V (REGOUT0); UICR set once over SWD if blank.
+
+# v0.21 pointing nub: TWIM0 to the TMAG5273 hall sensor (the in-tree
+# tmag5273_nub module is default-y once these + its DT node exist)
+CONFIG_I2C=y
+CONFIG_INPUT=y

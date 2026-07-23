@@ -94,6 +94,7 @@ LCSC = {
     "JST-PH-2": "C295747",            # S2B-PH-SM4-TB side entry
     "MSK12C02": "C431540",            # SPDT slide
     "TS-1187A": "C318884",            # reset tact
+    "TMAG5273": "C3716049",           # TMAG5273A1QDBVR I2C 3D hall (the nub sensor)
 }
 
 
@@ -419,7 +420,10 @@ def place_components(bd):
     assert abs(p29.x - p31.x) < 1000, "module USB pads expected on one column"
     In2 = pcbnew.In2_Cu
     yA, yB = py - MM(7.05), py - MM(6.25)                  # DM / DP In2 lanes
-    vx = MM(23.2)                                          # resurface via column
+    # v0.21: resurface column moved inboard (rev-A 23.2 -> 31.5, deck 49.3 ->
+    # 41.0) — the rev-A column sits inside the relocated PGUP dome's ring/via
+    # keep-out (PGUP moved to deck 45.7, 84.5 for the mirrored cluster)
+    vx = MM(31.5)                                          # resurface via column
     # D-: extend the B7 tie stub down, dive to In2, low lane west, up to p29
     via(xb7, py - MM(2.46), dm_net)
     seg(xb7, y_dm, xb7, py - MM(2.46), dm_net)
@@ -428,13 +432,15 @@ def place_components(bd):
     seg(vx, yA, vx, p29.y, dm_net, In2)
     via(vx, p29.y, dm_net)
     seg(vx, p29.y, p29.x, p29.y, dm_net)
-    # D+: from the pair-close via, mid lane west, elbow north of the DM via, to p31
+    # D+: from the pair-close via, mid lane, elbow AND resurface merged on one
+    # column at rev-A 33.0 (deck 39.5) — v0.21: the rev-A 24.0 elbow is inside
+    # the PGUP dome zone, and a via anywhere x > ~30.7 rev-A sits in the dome's
+    # via keep-out (vx-1.2 was flagged at 3.8mm from the ring; 33.0 is 6.4mm)
     seg(v2x, y_dp, v2x, yB, dp_net, In2)
-    seg(v2x, yB, MM(24.0), yB, dp_net, In2)
-    seg(MM(24.0), yB, MM(24.0), p31.y, dp_net, In2)
-    seg(MM(24.0), p31.y, vx, p31.y, dp_net, In2)
-    via(vx, p31.y, dp_net)
-    seg(vx, p31.y, p31.x, p31.y, dp_net)
+    seg(v2x, yB, MM(33.0), yB, dp_net, In2)
+    seg(MM(33.0), yB, MM(33.0), p31.y, dp_net, In2)
+    via(MM(33.0), p31.y, dp_net)
+    seg(MM(33.0), p31.y, p31.x, p31.y, dp_net)
 
     # NOTE from here down: coords are the rev-A BOTTOM-strip layout; P()/S() rotate each
     # part 180 deg into the TOP zone, so the arrangement below reads exactly like rev-A.
@@ -445,9 +451,12 @@ def place_components(bd):
        "2": "GND", "5": "VBUS"})
 
     # reset tact (top actuator -> pinhole in the shell floor), between module and USB-C
-    P(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 27.5, 9.0,
+    # v0.21: SW91 moved from rev-A (27.5,9.0) — that deck spot (45.0,88.0) is
+    # inside the relocated PGUP dome's via keep-out. Now at deck (53.5, 71.5),
+    # the strip below the module.
+    P(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 18.993, 25.5,
       {"1": "RESET", "2": "GND"})
-    S("RST", 27.5, 12.5)
+    S("RST", 18.993, 29.0)
 
     # charger MCP73831 (SOT-23-5): 1=STAT 2=VSS 3=VBAT(cell) 4=VDD(VBUS) 5=PROG,
     # with BOTH datasheet stability caps AT the chip (C3 VDD, C5 VBAT_CELL).
@@ -491,7 +500,10 @@ def place_components(bd):
     P(bd.load("C", "C_0402_1005Metric"), "C1", "1uF", 16.6, 19.0, {"1": "3V3", "2": "GND"})
     P(bd.load("C", "C_0402_1005Metric"), "C2", "100nF", 19.2, 19.0, {"1": "VBAT", "2": "GND"})
     P(bd.load("C", "C_0805_2012Metric"), "C4", "4u7/0805", 12.2, 19.0, {"1": "VBAT", "2": "GND"})
-    P(bd.load("C", "C_0402_1005Metric"), "C7", "1uF", 24.3, 13.9, {"1": "VBUS", "2": "GND"})
+    # v0.21: C7 moved from rev-A (24.3,13.9) — that deck spot (48.2,83.1) is
+    # inside the relocated PGUP dome's via keep-out. Proven-clean spot east of
+    # the ESD chip.
+    P(bd.load("C", "C_0402_1005Metric"), "C7", "1uF", 24.993, 3.5, {"1": "VBUS", "2": "GND"})
 
     # 9 row pull-downs in the passive lane between module and key field
     for i in range(9):
@@ -501,13 +513,34 @@ def place_components(bd):
     # SWD + spare-I2C test pads (back), labeled. x >= 10 keeps them clear of the
     # FFC bridge body on the inner edge; y 21.3 clears the cap row below and the
     # dome courtyards above.
-    tps = [("TP1", "SWDIO", 10.0), ("TP2", "SWDCLK", 13.0), ("TP3", "RESET", 16.0),
-           ("TP4", "3V3", 19.0), ("TP5", "GND", 22.0),
-           ("TP6", "SDA", 24.8), ("TP7", "SCL", 27.3), ("TP8", "TP_INT", 29.8)]
-    for ref, net, x in tps:
-        tp = P(bd.load("TP", "TestPoint_Pad_1.5x1.5mm"), ref, net, x, 21.3, {"1": net})
+    # v0.21: TP6-8 drop to deck y 67.5 — at the rev-A y 75.7 they sit exactly
+    # where the relocated PGDN's matrix diode auto-places (deck 45.7, 76.5).
+    tps = [("TP1", "SWDIO", 10.0, 21.3), ("TP2", "SWDCLK", 13.0, 21.3), ("TP3", "RESET", 16.0, 21.3),
+           ("TP4", "3V3", 19.0, 21.3), ("TP5", "GND", 22.0, 21.3),
+           ("TP6", "SDA", 24.5, 29.5), ("TP7", "SCL", 27.0, 29.5), ("TP8", "TP_INT", 29.5, 29.5)]
+    for ref, net, x, y in tps:
+        tp = P(bd.load("TP", "TestPoint_Pad_1.5x1.5mm"), ref, net, x, y, {"1": net})
         tp.SetExcludedFromPosFiles(True); tp.SetExcludedFromBOM(True)
-        S(net if net != "TP_INT" else "INT", x, 23.4, size=0.8)
+        S(net if net != "TP_INT" else "INT", x, y + 2.1, size=0.8)
+
+    # ---- v0.21 (Bean-style hall nub): one TMAG5273 I2C 3D-hall sensor on the
+    # BACK at the exact left-D-pad mirror, reading the magnet in the printed
+    # flexure spring above the FRONT face THROUGH the 1.6mm FR4 (u_r ~ 1 —
+    # magnetically transparent; ~2.5-4mm die-to-magnet gap is comfortably inside
+    # the A1 variant's +/-40mT range). Rides the spare-I2C nets that were
+    # reserved for exactly this ("rev-B trackpad breakout"): SDA/SCL/TP_INT on
+    # E73 pads 15/4/8. All SMT, single-side assembly preserved.
+    nubs = [f for f in bd.geo["features"] if f["type"] == "hall_nub"]
+    if nubs:
+        f = nubs[0]
+        bd.place(bd.load("SOT", "SOT-23-6"), "U4", "TMAG5273", f["x"], f["y"],
+                 {"1": "SCL", "2": "GND", "3": "GND", "4": "3V3", "5": "TP_INT", "6": "SDA"})
+        # I2C pullups (the spare-I2C breakout never had any — a plug-in trackpad
+        # would have brought its own; an on-board sensor needs them here)
+        bd.place(bd.load("R", "R_0402_1005Metric"), "R26", "4k7", 36.0, 68.5, {"1": "SDA", "2": "3V3"})
+        bd.place(bd.load("R", "R_0402_1005Metric"), "R27", "4k7", 38.5, 68.5, {"1": "SCL", "2": "3V3"})
+        # sensor bypass
+        bd.place(bd.load("C", "C_0402_1005Metric"), "C8", "100nF", 32.3, 73.0, {"1": "3V3", "2": "GND"})
 
 
 def gnd_escapes(bd):
@@ -573,9 +606,15 @@ def gnd_escapes(bd):
             continue                              # domes: front side, no GND
         if ref.startswith(("TP", "D")) and fp.GetValue() in ("1N4148WS",):
             continue                              # diodes have no GND
-        if ref in ("U1", "J1", "J2"):
-            continue                              # module/USB/FFC: big pads, dense fan-in — stitcher territory
+        if ref in ("J1", "J2"):
+            continue                              # USB/FFC: big pads, dense fan-in — stitcher territory
         for p in fp.Pads():
+            # module: stitcher territory EXCEPT the two interior bottom-row GND
+            # castellations (21/24) — v0.21's denser fan-out walls their pour
+            # blob in on every layer and the stitcher verifiably finds no via
+            # spot (deterministic B.Cu island, kicad 51.9..55.5 x 14.5..18.6)
+            if ref == "U1" and p.GetNumber() not in ("21", "24"):
+                continue
             if p.GetNetname() != "GND" or p.GetAttribute() != pcbnew.PAD_ATTRIB_SMD:
                 continue
             px, py = p.GetPosition().x, p.GetPosition().y

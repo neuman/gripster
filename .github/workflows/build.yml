@@ -48,7 +48,8 @@ jobs:
       - name: Build thumbdeck
         run: |
           west build -s zmk/app -p always -b thumbdeck -- \
-            -DZMK_CONFIG="${GITHUB_WORKSPACE}/firmware/zmk-config/config"
+            -DZMK_CONFIG="${GITHUB_WORKSPACE}/firmware/zmk-config/config" \
+            -DZEPHYR_EXTRA_MODULES="${GITHUB_WORKSPACE}/firmware/zmk-modules/tmag5273_nub"
 
       - name: Rename firmware
         run: cp build/zephyr/zmk.uf2 thumbdeck-zmk.uf2

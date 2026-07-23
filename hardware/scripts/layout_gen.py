@@ -81,6 +81,14 @@ def _draw_half(ax, geo, title):
                          edgecolor="#7fd1ff", lw=1.4, ls=":" if opt else "-", zorder=5))
             ax.text(f["x"], f["y"], "trackpad\n(opt)" if opt else "trackpad",
                     ha="center", va="center", fontsize=5.5, color="#7fd1ff", zorder=6)
+        elif f["type"] == "hall_nub":
+            ad = f.get("aperture_d", 10.0)
+            ax.add_patch(Circle((f["x"], f["y"]), ad / 2, facecolor="#22333b",
+                         edgecolor="#f4a259", lw=1.4, zorder=5))
+            ax.add_patch(Circle((f["x"], f["y"]), 4.25, facecolor="#1d1d1d",
+                         edgecolor="#f4a259", lw=1.6, zorder=6))
+            ax.text(f["x"], f["y"], "NUB", ha="center", va="center", fontsize=4.2,
+                    color="#f4a259", fontweight="bold", zorder=7)
         else:
             ax.add_patch(Circle((f["x"], f["y"]), f["d"] / 2,
                          facecolor="#1d1d1d", edgecolor="#f4a259", lw=1.2, zorder=5))

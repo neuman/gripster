@@ -9,7 +9,7 @@ thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 <sub>☝️ **This image is a link — click it to spin the real assembly in 3D on Sketchfab.**</sub>
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-rev--A%20v0.20%20%C2%B7%20never%20physically%20built-orange)
+![Status](https://img.shields.io/badge/status-rev--A%20v0.21%20%C2%B7%20never%20physically%20built-orange)
 ![Hardware](https://img.shields.io/badge/KiCad-9-brightgreen?logo=kicad&logoColor=white)
 ![DRC](https://img.shields.io/badge/DRC-0%20violations%20%C2%B7%200%20unconnected-brightgreen)
 ![Firmware](https://img.shields.io/badge/firmware-ZMK%20v0.3.0-blue)
@@ -27,8 +27,9 @@ thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
   keyboard face form one continuous plane 14.7 mm off the back — 15.7 mm thick overall. It is not a
   phone bolted on top of a keyboard.
 - **No switches, no hand-soldering.** 78 Snaptron 7 mm metal snap domes press directly onto gold
-  ENIG pads. Everything that gets soldered is on one side of each board, so JLCPCB can build it
-  100 % turnkey.
+  ENIG pads. Every soldered part is SMT on one side of each board — v0.21's pointing nub is a
+  single SOT-23-6 hall sensor on the same reflow pass — so JLCPCB builds it 100 % turnkey,
+  zero soldering by you.
 - **It's not a split.** One certified nRF52840 module in the right grip scans a single 9×10 matrix;
   the left grip is fully passive, joined by one 16-way FFC ribbon. One BLE device, no half-to-half
   pairing, one battery, one firmware image.
@@ -44,9 +45,9 @@ thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 > **No physical Gripster has ever existed.** Every image *of this device* is a render or a generated
 > layout — the only photographs in the repo are of the Rii i8+ that was studied as a reference
 > ([`references/`](references/)), alongside the original hand drawings in [`sketches/`](sketches/).
-> rev-A (v0.20) is complete on paper: both boards routed and DRC-clean, the fab package
-> exports cleanly, all 5 shell parts watertight and bed-fit-checked for an Ender 3 V2, and the
-> firmware compiles green in CI. Nothing has been ordered, printed, pressed, flashed or typed on.
+> rev-A (v0.21) is complete on paper: both boards routed and DRC-clean, the fab package
+> exports cleanly, all 9 printed parts watertight and bed-fit-checked for an Ender 3 V2. (CI is
+> stale for v0.21 — re-run it; the last green build predates the nub module.) Nothing has been ordered, printed, pressed, flashed or typed on.
 >
 > **Unmeasured and unknown:** ergonomics, dome feel and dome life, BLE range with a phone
 > centimetres away and a hand around the antenna, real battery life, and every print tolerance.
@@ -170,7 +171,7 @@ will either talk you out of it or tell you exactly what you are signing up for �
 
 ## Project status & roadmap
 
-**rev-A (v0.20). Designed to the point of being orderable. Never built.**
+**rev-A (v0.21). Designed to the point of being orderable. Never built.**
 
 ### Done
 
@@ -179,9 +180,9 @@ will either talk you out of it or tell you exactly what you are signing up for �
 | Both PCBs | Fully placed and **autorouted**, **0 DRC violations / 0 unconnected items** (KiCad 9, `kicad-cli 9.0.9`, error severity; both boards re-routed and re-verified 2026-07-17 for the v0.19 outline, in the same commit that regenerated them) |
 | Fab package | 4-layer gerbers + JLC-format BOM + CPL export cleanly to `hardware/kicad/generated/fab/` via `gen_fab.py`; the exporter refuses to run unless DRC is clean. (That directory is a build artifact and is **not committed** — regenerate it, see [Reproduce the design](#reproduce-the-design).) |
 | BOM | Every part real, LCSC-stocked and machine-placeable; no hand-soldered components |
-| 3D | 215 bodies assembled and collision-checked (`deck3d.py --check` → 0 impossible overlaps); all 5 shell parts + 2 keymats fit a 220 × 220 mm Ender 3 V2 bed (204 mm brim-safe limit) |
+| 3D | 221 bodies assembled and collision-checked (`deck3d.py --check` → 0 impossible overlaps); all 7 shell parts (incl. the v0.21 nub spring + cap) + 2 keymats fit a 220 × 220 mm Ender 3 V2 bed (204 mm brim-safe limit) |
 | Matrix proof | `sim_matrix.py` proves the full 78-key matrix is ghost-free with a diode per key |
-| Firmware | Real ZMK v0.3.0 board definition; keymap and matrix transform generated from the model. **CI builds green** — the workflow produced a `thumbdeck-zmk.uf2` artifact (≈137 KB) on 2026-07-15. It has never been flashed, because no hardware exists. |
+| Firmware | Real ZMK v0.3.0 board definition; keymap and matrix transform generated from the model. CI last built green on 2026-07-15, **before the v0.21 nub module — re-run the workflow to validate v0.21**. Never flashed; no hardware exists. |
 
 ### Not done — read this before spending money
 
@@ -303,9 +304,11 @@ breaks out far more GPIO than the 19 matrix pins + 1 battery ADC this design use
 **Why no trackpad?**
 It was designed in and then deliberately **cut from v1**: a maintained ZMK driver plus ATI/sensitivity
 tuning is a large burden for a single maintainer, and it competed for the exact board area the module
-and power front-end now occupy. Pointing today is the left-grip **D-pad + OK** plus ZMK mouse keys on
-the FN layer. A labelled I²C breakout (**TP6–8**: SDA/SCL/INT) is on the board specifically to keep a
-rev-B trackpad possible.
+and power front-end now occupy. Pointing since v0.21 is the right-grip **hall-effect nub**
+(rate-control, ThinkPad-style) — which now lives on the very I²C breakout (**TP6–8**) that was
+reserved for a rev-B trackpad — plus the left D-pad with FN-layer mouse keys as fallback. And the
+user verdict behind the nub choice: trackpad-style thumb pointing means constantly lifting the
+finger; a velocity-controlled nub doesn't.
 
 **What's the battery life?**
 Unknown — nothing has been measured. The design carries a standard **403040 LiPo (~450–500 mAh)** in
@@ -355,16 +358,16 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 | Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.7 mm front plane, 15.7 mm max thickness); two dome-key grips, **fixed shell in 5 printed parts** in **Game-Boy-Color design language** (v0.19: boxy rounded-corner outline, translucent Atomic-Purple shells, dark-gray keymats; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
-| Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + **PgUp/PgDn**, plus the module and the whole power front-end |
+| Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |
 | Modifiers | **mirrored** (v0.20): Ctrl at each grip's bottom-outside corner, Shift directly above it, Alt beside each Space — a thumb can't cross the phone gap, so every mod+same-side-key chord holds the mod with the opposite thumb (right emits RCTRL/RSHFT/RALT). `\` and `\|` moved to FN+`]` / FN+`[`; **no sticky keys — all chords are plain holds** |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals, UF2-flashable after a one-time SWD bootloader flash |
 | Matrix | single **9 × 10**, `col2row`, one **SOD-323** diode/key on the back, 9× 4.7 kΩ row pull-downs, NKRO best-effort |
 | Bridge | **16-pin 1.0 mm FFC ZIF** (JUSHUO AFA07-S16FCC-00, C13744) on each grip's inner edge + a **16-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥194 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A; the S25U spine, v0.19's well end-walls and the under-well floor channel raised the minimum from 160) — nets assigned by ribbon geometry so a straight jumper is correct by construction |
 | Grip boards | **75.0 × 97.0 mm** each (v0.19: GBC-boxy straight outer edge — the parabolic cheek bow is gone for thumb reach), **4-layer** (sig / GND plane / sig / sig), 1.6 mm FR-4, **ENIG** (mandatory — dome contacts) |
 | Power | **LiPo 403040 (4.0 × 30 × 40, ~450–500 mAh) in the LEFT grip cavity** under the passive PCB (v0.18 — the sunken phone well leaves no cell height in the spine); **MCP73831** charger + **USB-C** + inline **USBLC6-2** ESD + **MSK12C02 power switch** + **reset tact** (pinhole) + **charge LED** in the right grip |
-| Pointer | **no trackpad in v1** — D-pad + ZMK mouse keys on the FN layer; a labelled I²C breakout (TP6–8) keeps a rev-B trackpad possible |
+| Pointer | v0.21: **ThinkPad-style hall-effect nub** on the right grip, Ploopy-Bean architecture — a TMAG5273 I²C hall sensor (SOT-23-6, machine-placed) reads a magnet in a printed flexure spring **through the PCB**; true **rate-control** firmware (deflection → cursor velocity, quadratic curve) in an in-tree Zephyr module on the repurposed TP6–8 I²C breakout; FN+D-pad mouse keys remain as fallback |
 | Wireless | BLE HID; USB-C for charging + UF2 flashing |
-| Fabrication | **JLCPCB** turnkey, **two separate orders** (right + left), single-sided reflow (**all SMT on the back**, no hand-soldered parts — the USB-C shell's plated stakes and the FFC/slide-switch locating pegs are the only through-board features, all placed in the same single-pass JLC assembly) → rough target **~$150–250 for 5 sets**, boards + assembly only (re-quote at order time) |
+| Fabrication | **JLCPCB** turnkey, **two separate orders** (right + left), single-sided reflow (**all SMT on the back**, single-pass — v0.21 adds no THT) → rough target **~$150–250 for 5 sets**, boards + assembly only (re-quote at order time) |
 | Firmware | **ZMK v0.3.0**, real board definition `thumbdeck` (unibody, not a split); the CI workflow is a **self-contained** ZMK v0.3.0 build producing `thumbdeck-zmk.uf2` |
 
 ### Why a module, not chip-down
@@ -391,12 +394,12 @@ spine).
 
 ### Per-grip layout
 
-![Layout, both grips](renders/iter_20.png)
+![Layout, both grips](renders/iter_21.png)
 
 6-col grid of rectangular 8.5 × 7 mm keys at 10 × 9 mm pitch per grip (bottom row = a 2u space bar;
 the right H-row ends in a Rii-style 2u Enter — `H J K L + ENT`, `'` on FN+`;`), plus the cluster
 features. The E73 + power front-end sit in the top zone with the antenna up off the top edge;
-PgUp/PgDn move to the inner-top corner.
+PgUp/PgDn sit beside the pointing nub as the mouse-button pair's mirror (v0.21).
 
 ### Assembly layers — front face to back
 
@@ -519,7 +522,7 @@ placed by JLC; your hands do domes, shell, battery and the FFC jumper.
 | Charge LED | 0603 red (C2286) + 1 kΩ | 1 | On MCP73831 STAT; visible through a 1.5 mm floor hole. |
 | Battery connector | **JST-PH 2.0 mm side-entry SMT** (S2B-PH-SM4-TB, C295747) | 1 | Polarized; the hobby-LiPo standard. |
 | Battery sense | 2× 1 MΩ divider (÷2) + 100 nF SAADC filter | 1 | On P0.02/AIN0. |
-| SWD pads | **TP1–5** (SWDIO / SWDCLK / RESET / 3V3 / GND), silk-labelled | — | One-time bootloader flash / recovery. TP6–8 = spare I²C (SDA/SCL/INT) for a rev-B trackpad. |
+| SWD pads | **TP1–5** (SWDIO / SWDCLK / RESET / 3V3 / GND), silk-labelled | — | One-time bootloader flash / recovery. TP6–8 = the nub sensor's live I²C (SDA/SCL/INT), still probe-able. |
 
 #### Matrix hardening (on the board)
 
@@ -536,7 +539,8 @@ appear.
 | Item | Spec | Qty | Notes |
 |---|---|---|---|
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package exported by `gen_fab.py` into `hardware/kicad/generated/fab/`. |
-| Shell | 5 prints (2 back halves, 2 grip lids, center panel), **MagSafe N52 ring** in the panel recess | 1 | MagSafe = alignment; the phone pocket takes the load. All parts fit a 220 × 220 bed. |
+| Shell | 7 prints (2 back halves, 2 grip lids, center panel, v0.21 nub spring + cap), **MagSafe N52 ring** in the panel recess | 1 | MagSafe = alignment; the phone pocket takes the load. All parts fit a 220 × 220 bed. |
+| Pointing nub | **TMAG5273A1** hall sensor (C3716049, on the right board) + **Ø4 × 2 mm N52 disc magnet** in the printed spring | 1 + spare magnets | v0.21: the only added electronics is one SOT-23-6 — machine-placed with everything else. |
 | M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 14 | Heads flush with the face (v0.19). 5/grip + 4 on the center panel border; detach load goes to the border screws + slab stiffness. |
 
 ---

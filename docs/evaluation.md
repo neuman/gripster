@@ -1,4 +1,4 @@
-# Gripster — fab-readiness evaluation (rev-A, v0.19, 2026-07-17)
+# Gripster — fab-readiness evaluation (rev-A, v0.21, 2026-07-22)
 
 Authoritative status of the design's readiness to be produced. Supersedes the
 v0.14 evaluation and all older review notes. Where any other doc disagrees with
@@ -24,18 +24,18 @@ first-article run of 5 and run the bring-up checkpoints in
 
 | Item | Evidence |
 |---|---|
-| **Routing + DRC** | Both boards **0 violations, 0 unconnected** (kicad-cli 9.0.9, error severity; both boards re-routed and re-verified 2026-07-17 for the v0.19 GBC outline) — `hardware/kicad/generated/drc_{right,left}.json`. |
+| **Routing + DRC** | Both boards **0 violations, 0 unconnected** (kicad-cli 9.0.9, error severity; both boards re-routed and re-verified 2026-07-23 with the v0.21 hall nub — the rework added pre-placed GND escape vias for the E73's two interior bottom-row GND castellations, whose pour blob the denser fan-out deterministically walled in) — `hardware/kicad/generated/drc_{right,left}.json`. |
 | **Fab package** | `gen_fab.py` (hard-gated on clean DRC) exported 4-layer gerbers + JLC BOM/CPL for both boards to `hardware/kicad/generated/fab/`. |
 | **E73 module pinout** (the silent killer) | `E73_PINMAP` matches the official Ebyte pin table 1:1; footprint pad N = datasheet pin N. VDDH=cell, VDD=REG0 output, USB D±=29/31, SWD=37/39, RESET=26, VBUS=27, VBAT_SENSE=AIN0, **COL9 on P0.04 (XTAL pins free)**. |
 | **Power architecture** | High-voltage mode: cell → charger(cell side) → SW90 → VBAT → VDDH(23); VDD(19) = internal REG0 3.3 V output, never driven; module has no DCDC inductors → LDO mode, matching the firmware config. |
-| **Matrix / NKRO** | `sim_matrix.py` (final pass): **78 unique (row,col) keys, 0 cross-grip collisions, 0 ghost/miss failures** over ~68,500 scenarios; the no-diode control ghosts ~35 k× (sim detects ghosting). |
+| **Matrix / NKRO** | `sim_matrix.py` (final pass, re-run 2026-07-23): **78 unique (row,col) keys (right 36 + left 42), 0 cross-grip collisions, 0 ghost/miss failures** over ~68,500 scenarios; the no-diode control ghosts ~35 k× (sim detects ghosting). The v0.21 nub is I²C — it adds no matrix key. |
 | **USB** | CC1/CC2 5.1 k pulldowns; USBLC6-2SC6 **inline**, D+=pins 1&6 / D−=pins 3&4 per ST datasheet; interleaved data pads joined by deterministic generated copper. |
 | **Charger** | MCP73831-2ACI, PROG 5.1 k → ~196 mA (~0.43 C @ the 403040 cell's ~450–500 mAh); 4.7 µF 0805 25 V at both supply and cell nodes, at the chip. |
 | **Bridge correctness** | Left-grip FFC nets assigned by ribbon geometry; verified net-at-same-height matches 1:1 → a straight type-A jumper is correct by construction. |
-| **Footprints** | Production `snaptron_7mm_contact` (ring + 67.5° escape gap, pour/via keepouts); E73 43-pad land pattern with embedded antenna keepout; **no hand-soldered parts** — the USB-C shell's plated stakes and the FFC/slide-switch locating pegs are the only through-board features, all placed in the same single-pass JLC assembly. |
+| **Footprints** | Production `snaptron_7mm_contact` (ring + 67.5° escape gap, pour/via keepouts); E73 43-pad land pattern with embedded antenna keepout; v0.21 adds only a stock SOT-23-6 (TMAG5273 hall sensor) — **everything is single-pass SMT, zero hand-soldered parts**. |
 | **Board outline / mounts** | Closed, non-self-intersecting, **75.0 × 97.0 mm** (v0.19 GBC-boxy: straight outer edge, r8/r11 corners, 1.0 mm bottom crown); **5× M3** per grip clear of keep-outs (bbox-gate ≥4.0). |
-| **Mechanical fit** | `deck3d.py --check` **re-run on v0.19 geometry (2026-07-17)**: **215 bodies, 0 collisions** across the 5-part shell set + 14 M3 flush screws + PCB (real part heights) + domes + keymats + 403040 LiPo (left grip) + ring + cased phone; adversarially re-measured from the built STLs: screen plane = lid top = panel border = **14.7000**, well floor 5.1 / slab spanning 2.5..5.1 (2.6 mm thick), FFC duct 1.1..1.6 under the slab, battery 0.84 mm under the diodes, phone 0.3 mm/side laterally; 6.3 mm back cavity still clears the mated JST-PH by 0.24 mm; every part bed-gated (`--all`: lids 77.9 × 103.8, backs 170.5/162.8 × 103.8, panel 169.1 × 102.8 × 13.1). |
-| **Firmware buildability** | 5 build-breakers fixed (v0.3.0 pin, pointing.h include, DCDC removed, LF-RC clock, exact Adafruit/nice!nano-v2 flash partition layout); board definition at `config/boards/arm/thumbdeck`; CI = a **self-contained ZMK v0.3.0 build** (`west init -l config` inside `firmware/zmk-config`, `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2`) — ZMK's reusable workflow cannot handle a nested config dir. **The firmware builds green**: run 29443394494 (2026-07-15, commit `d1ef751`) succeeded and uploaded a 139,947-byte `thumbdeck-zmk-uf2` artifact; `firmware/` and `.github/workflows/` are unchanged since that commit, so it covers the current firmware. **It has never been flashed — no hardware exists.** |
+| **Mechanical fit** | `deck3d.py --check` **re-run on v0.21 geometry (2026-07-23)**: **221 bodies, 0 collisions** (344 AABB-overlapping pairs checked) across the 7-shell set (incl. the nub flexure spring + friction cap; the TMAG5273 is a back-side SMT body) + 14 M3 flush screws + PCB (real part heights) + domes + keymats + 403040 LiPo (left grip) + ring + cased phone; adversarially re-measured from the built STLs: screen plane = lid top = panel border = **14.7000**, well floor 5.1 / slab spanning 2.5..5.1 (2.6 mm thick), FFC duct 1.1..1.6 under the slab, battery 0.84 mm under the diodes, phone 0.3 mm/side laterally; 6.3 mm back cavity still clears the mated JST-PH by 0.24 mm; every part bed-gated (`--all`: lids 77.9 × 103.8, backs 170.5/162.8 × 103.8, panel 169.1 × 102.8 × 13.1). |
+| **Firmware buildability** | 5 build-breakers fixed (v0.3.0 pin, pointing.h include, DCDC removed, LF-RC clock, exact Adafruit/nice!nano-v2 flash partition layout); board definition at `config/boards/arm/thumbdeck`; CI = a **self-contained ZMK v0.3.0 build** (`west init -l config` inside `firmware/zmk-config`, `west build -b thumbdeck`, uploads `thumbdeck-zmk.uf2`) — ZMK's reusable workflow cannot handle a nested config dir. **CI is STALE for v0.21**: the last green run (29443394494, 2026-07-15, commit `d1ef751`) predates the nub — v0.21 adds the `tmag5273_nub` module, the `&i2c0` node and the `-DZEPHYR_EXTRA_MODULES` build flag, none of which that run compiled. **Re-run the workflow and get green before ordering boards.** It has never been flashed — no hardware exists. |
 
 ## What is NOT yet verified (needs the physical prototype)
 
@@ -46,10 +46,11 @@ first-article run of 5 and run the bring-up checkpoints in
 3. **Real charge curve + idle/sleep current** on the assembled board.
 4. **JLC's actual part rotations** (LED/SOT-23/E73) — controlled by the DFM
    preview checklist, confirmed only at delivery.
-5. **The firmware on real silicon.** The CI build itself is green — run
-   29443394494 (2026-07-15) compiled the v0.3.0 board definition and produced
-   `thumbdeck-zmk.uf2`, and nothing under `firmware/` has changed since. What is
-   unverified is everything past the compiler: the image has never been flashed,
+5. **The firmware on real silicon — and, for v0.21, the compiler itself.** The
+   last green CI run (29443394494, 2026-07-15) predates the nub module; the
+   v0.21 firmware (tmag5273_nub, i2c0, PM hooks) has NOT yet been CI-built —
+   push the branch and re-run the workflow first. Beyond that, everything past
+   the compiler is unverified: the image has never been flashed,
    the matrix has never been scanned, and the pin map, kscan timing and power
    config have only ever been checked by eye against the datasheet. **A clean
    build is not a working keyboard.** Re-run the workflow before ordering so the

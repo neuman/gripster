@@ -22,7 +22,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.20"
+VERSION = "v0.21"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -70,7 +70,10 @@ LEFT_LEGENDS = [
 #     buttons. RIGHT grip: Cirque trackpad + PgUp/PgDn. These are switches
 #     (except the trackpad pad) that join the same scanned matrix. --------------
 LEFT_FEATURES = ["NAV_U", "NAV_D", "NAV_L", "NAV_R", "NAV_OK", "MB_L", "MB_R"]
-RIGHT_FEATURES = ["PGUP", "PGDN"]
+# v0.21: right top zone mirrors the left cluster — NUB (TMAG5273 hall trackpoint,
+# type "hall_nub": back-side sensor + magnet-in-printed-spring, Bean-style) at
+# the exact D-pad mirror + PgUp/PgDn as the mouse-button pair's mirror.
+RIGHT_FEATURES = ["NUB", "PGUP", "PGDN"]
 
 
 @dataclass
@@ -327,16 +330,33 @@ def _features(geo: dict, c: Config) -> list:
     # D-pad's bottom key clears the F-row and its top key clears the board edge.
     cy_lo = (field_top + geo["board_h"]) / 2.0        # upper-zone mid
     if geo["side"] == "right":
-        # inner edge at x=0; grip body toward +x. (The PCB-integrated trackpad was
-        # DROPPED for v1 — pointer duty goes to ZMK mouse keys; the I2C pins are
-        # broken out to spare pads for a rev-B trackpad. No feature emitted.)
-        # v0.17: the E73 + power cluster now fill the OUTER/centre of this top zone (module
-        # antenna at the outer-top edge, farthest from the phone = best RF), so PgUp/PgDn
-        # move to the INNER-top corner — clear of the module body and its back-side
-        # diodes/vias, still an easy up-and-in flick for the right thumb.
-        ix = c.inner_margin + 3.0
-        feats.append({"type": "key", "label": "PGUP", "x": round(ix, 2), "y": round(geo["board_h"] - 6.5, 2), "d": c.feat_key_d})
-        feats.append({"type": "key", "label": "PGDN", "x": round(ix, 2), "y": round(geo["board_h"] - 17.5, 2), "d": c.feat_key_d})
+        # inner edge at x=0; grip body toward +x.
+        # v0.21: the right top zone MIRRORS the left cluster as far as the radio
+        # allows. An ALPS RKJXV1224005 analog thumbstick sits at the exact mirror
+        # of the left D-pad centre (x = W - 32.3 = 32.3), acting as the mouse
+        # (X/Y wipers -> AIN3/AIN4 on the repurposed TP6/TP7 nets; centre-push =
+        # a matrix key). PgUp/PgDn keep the mouse-button pair's exact y-heights
+        # (cy_lo +/- 5.5) and 11mm spacing, but the TRUE MB mirror x (W - 17.75
+        # = 57.25) sits ON the E73 body — the right outer-top belongs to the
+        # antenna since v0.17 — so the pair lands inboard of the module at
+        # x = 45.5, between stick and radio (the closest legal mirror).
+        jx = 32.3                                     # exact D-pad mirror: 32.3 from the
+        #                                               inner edge on BOTH grips (left D-pad
+        #                                               sits at left-local W-32.3; right
+        #                                               inner edge is x=0)
+        # v0.21b (Bean pivot): the pointer is a ThinkPad-style HALL NUB, not a
+        # gimbal module — one TMAG5273 I2C 3D-hall sensor on the board BACK at
+        # the EXACT D-pad mirror, reading a magnet in a printed flexure spring
+        # above the front face (architecture adapted from the Ploopy Bean,
+        # CERN-OHL-S v2 — the sensor is JLC-stocked SMT, so single-side
+        # assembly and "no hand-soldering" both hold). Rate-control pointing:
+        # deflection angle -> cursor velocity, no finger lifting. No stick
+        # click (ThinkPad grammar: clicks are the left grip's MB_L/MB_R).
+        feats.append({"type": "hall_nub", "label": "NUB", "x": round(jx, 2), "y": round(cy_lo, 2),
+                      "aperture_d": 10.0})
+        px = 45.7
+        feats.append({"type": "key", "label": "PGUP", "x": round(px, 2), "y": round(cy_lo + 5.5, 2), "d": c.feat_key_d})
+        feats.append({"type": "key", "label": "PGDN", "x": round(px, 2), "y": round(cy_lo - 5.5, 2), "d": c.feat_key_d})
     else:
         # left grip: inner edge at x=W; grip body toward -x (mirrored)
         # v0.19: the cluster is anchored to the INNER edge (where the key field lives)

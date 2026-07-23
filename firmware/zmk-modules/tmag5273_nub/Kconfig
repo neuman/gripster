@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
+config INPUT_TMAG5273_NUB
+	bool "TMAG5273 hall-effect trackpoint nub input driver"
+	default y
+	depends on DT_HAS_THUMBDECK_TMAG5273_NUB_ENABLED
+	depends on I2C
+	depends on INPUT
+	help
+	  ThinkPad-style rate-control pointing from a TI TMAG5273 I2C 3D hall
+	  sensor reading a magnet embedded in a printed flexure spring (Ploopy
+	  Bean architecture, adapted). Each poll converts X/Y field deflection
+	  from the boot-calibrated zero into relative pointer motion through a
+	  quadratic response curve: cursor VELOCITY follows deflection angle, so
+	  the thumb never lifts. Emits INPUT_EV_REL X/Y for zmk,input-listener.

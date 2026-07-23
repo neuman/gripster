@@ -60,6 +60,13 @@ def _spec(fp):
 
 DOME_D, DOME_H = 7.0, 0.5   # Snaptron 7mm snap dome (dia, height above pad)
 KNOB = (3.0, 1.5, 2.0)      # MSK12C02 slide knob (w, protrusion toward the nearest edge — derived from rot, h)
+# v0.21 Bean-style hall nub (printed flexure spring + magnet over a back-side
+# TMAG5273; architecture adapted from the Ploopy Bean, CERN-OHL-S v2):
+NUB_MAGNET_D, NUB_MAGNET_H = 4.0, 2.0    # N42/N52 disc, press-fit N-up (Bean spec)
+NUB_HUB_D = 7.0                          # flexure hub / post through the aperture
+NUB_CAP_D, NUB_CAP_H = 8.5, 2.5          # TPU friction cap, 4.25mm proud of the face
+NUB_SPRING_FLANGE_D = 14.8               # flange captured in the lid's counterbore
+NUB_ARM_T = 0.8                          # flexure arm thickness (print-tune = feel)
 
 
 def _box(dx, dy, dz):
@@ -186,6 +193,18 @@ def _key_centers_product(only_side=None):
 
 CAP_R = 1.6            # keycap corner radius (matches the 2D renders)
 CAP_CLR = 0.2          # per-side clearance between cap and its lid opening
+
+def _nub_zone(side):
+    """v0.21: the right grip's hall-nub zone in the product frame, or None.
+    Returns the nub centre + lid aperture diameter (the sensor is a plain
+    back-side SOT-23 handled by SPECS; only the printed spring/cap and the lid
+    aperture need geometry here)."""
+    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    ns = [f for f in geo.get("features", []) if f["type"] == "hall_nub"]
+    if not ns:
+        return None
+    f = ns[0]
+    return {"x": f["x"]+ox, "y": f["y"]+oy, "aperture_d": f.get("aperture_d", 10.0)}
 def _rrect(cx, cy, w, h, r=CAP_R):
     """Rounded-rect shapely polygon centred on (cx, cy)."""
     return shp_box(cx - w/2 + r, cy - h/2 + r, cx + w/2 - r, cy + h/2 - r).buffer(r)
@@ -637,8 +656,19 @@ def _grip_lid_build(side):
     # cluster), cut AFTER the rim union, deep enough to keep the full plunger bore
     # clear through the rim band. One MultiPolygon cut instead of per-key booleans.
     from shapely.ops import unary_union
-    openings = unary_union([op for (_p, op, _x, _y) in _cap_shapes_product(side)])
-    plate = plate.cut(_cq_from_poly(openings, web_top - 0.2, TOP_T + (z0 - web_top) + 0.4))
+    openings = [op for (_p, op, _x, _y) in _cap_shapes_product(side)]
+    plate = plate.cut(_cq_from_poly(unary_union(openings), web_top - 0.2, TOP_T + (z0 - web_top) + 0.4))
+    # v0.21 (Bean-style hall nub): a plain round aperture — ONLY the printed
+    # nub emerges; the face stays flat (no pod, no exposed mechanism). The
+    # spring's flange is captured in an underside counterbore: it drops in
+    # from below at assembly and the O10 aperture keeps it captive.
+    nz = _nub_zone(side)
+    if nz:
+        x, y, ad = nz["x"], nz["y"], nz["aperture_d"]
+        plate = plate.cut(cq.Workplane("XY").workplane(offset=z0 - 0.1)
+                          .center(x, y).circle(ad/2).extrude(TOP_T + 0.2))
+        plate = plate.cut(cq.Workplane("XY").workplane(offset=z0 - 0.1)
+                          .center(x, y).circle(NUB_SPRING_FLANGE_D/2 + 0.2).extrude(1.0 + 0.1))
     # M3 clearance holes + flush countersinks at this grip's 5 bosses (v0.19: the
     # proud pan heads were uncomfortable under the thumbs — heads now sit in
     # 90-degree cones, flush with the face). Lid prints face-down: cones print clean.
@@ -1013,7 +1043,96 @@ BATT_Z = FLOOR + 2.0                   # 403040 cell (4mm) seated flush on the L
                                        # (was +0.3, which left 0.84mm and read as a clash)
 FLEX_Z = 1.3                           # ribbon in the under-slab floor channel (duct 1.1..1.6)
 
-SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel")
+def nub_spring():
+    return _memo("nub_spring", _nub_spring_build)
+
+def _nub_spring_build():
+    """v0.21 Bean-style printed flexure spring: an OD14.8 flange (captured in the
+    right lid's underside counterbore) joined to a central hub by 3 spiral
+    flexure arms. The hub carries the N42/52 magnet in a downward pocket
+    (~2.6mm over the back-side TMAG5273, through the FR4) and rises through the
+    lid aperture as the nub post. Arm thickness NUB_ARM_T is the print-tune
+    stiffness parameter (the pointing FEEL). Print hub-down with a brim.
+    Architecture adapted from the Ploopy Bean (CERN-OHL-S v2)."""
+    from shapely.geometry import LineString
+    from shapely.ops import unary_union
+    nz = _nub_zone("right")
+    assert nz, "nub_spring needs the right grip's hall_nub feature"
+    x, y = nz["x"], nz["y"]
+    # flange ring in the lid counterbore (z 12.3..13.3): 12.35..13.35, 0.05 clamp
+    flange = (cq.Workplane("XY").workplane(offset=12.35).center(x, y)
+              .circle(NUB_SPRING_FLANGE_D/2).circle(5.8).extrude(1.0))
+    # 3 spiral flexure arms, 1.2 wide x NUB_ARM_T thick, r 3.6 -> 5.9
+    arms = []
+    for k in range(3):
+        a0 = k * 2*math.pi/3
+        pts = [(x + (3.6 + 2.3*t/100.0) * math.cos(a0 + math.radians(t)),
+                y + (3.6 + 2.3*t/100.0) * math.sin(a0 + math.radians(t)))
+               for t in range(0, 101, 10)]
+        arms.append(LineString(pts).buffer(0.6))
+    spring = flange.union(_cq_from_poly(unary_union(arms), 12.35, NUB_ARM_T))
+    # hub: magnet stub down toward the PCB, post up through the aperture,
+    # O5 cap spigot on top
+    hub = (cq.Workplane("XY").workplane(offset=10.4).center(x, y)
+           .circle(NUB_HUB_D/2).extrude(16.4 - 10.4))
+    spigot = (cq.Workplane("XY").workplane(offset=16.4).center(x, y)
+              .circle(2.5).extrude(1.0))
+    spring = spring.union(hub).union(spigot)
+    # 3 legs from the flange underside to the PCB front face (z 9.5): the axial
+    # datum for the whole nub. The lid counterbore ceiling (13.3) presses the
+    # flange (top 13.35) 0.05 onto them when the lid screws go home — without
+    # them nothing opposes the flange from below and the spring can drop ~0.9mm
+    # (rattling, no flexure preload; found by the v0.21 adversarial fit review)
+    for k in range(3):
+        a = math.radians(40 + 120 * k)
+        spring = spring.union(
+            cq.Workplane("XY").workplane(offset=9.5)
+            .center(x + 6.6 * math.cos(a), y + 6.6 * math.sin(a))
+            .circle(0.7).extrude(12.35 - 9.5))  # r0.7: 0.1 inside both flange
+            # edges (r5.8/7.4) — tangent legs tessellate non-watertight
+    # magnet pocket, opening downward (press-fit, N up — compass-check!)
+    spring = spring.cut(cq.Workplane("XY").workplane(offset=10.3).center(x, y)
+                        .circle(NUB_MAGNET_D/2 + 0.05).extrude(NUB_MAGNET_H + 0.15))
+    return _to_trimesh(spring, "nub_spring")
+
+def nub_cap():
+    return _memo("nub_cap", _nub_cap_build)
+
+def _nub_cap_build():
+    """TPU friction cap for the nub: O8.5 with a shallow finger dish, press-fit
+    on the spring's O5 spigot. One revolved profile (boolean sphere cuts
+    tessellate non-watertight); the revolve's dish-apex seam edge is welded
+    after export."""
+    nz = _nub_zone("right")
+    assert nz, "nub_cap needs the right grip's hall_nub feature"
+    x, y = nz["x"], nz["y"]
+    import math as _m
+    z0 = 16.45                                   # cap base (0.05 over spigot base)
+    CAP_R_, CAP_H = NUB_CAP_D/2, NUB_CAP_H
+    SOCK_R, SOCK_DEPTH = 2.6, 1.6
+    DISH_R, DISH_SINK = 9.0, 0.6
+    zc = CAP_H - DISH_SINK + DISH_R
+    rm = _m.sqrt(DISH_R**2 - (DISH_R - DISH_SINK)**2)
+    rmid = rm / 2.0
+    zmid = zc - _m.sqrt(DISH_R**2 - rmid**2)
+    prof = (cq.Workplane("XZ")
+            .moveTo(0.0, SOCK_DEPTH).lineTo(SOCK_R, SOCK_DEPTH).lineTo(SOCK_R, 0.0)
+            .lineTo(CAP_R_, 0.0).lineTo(CAP_R_, CAP_H).lineTo(rm, CAP_H)
+            .threePointArc((rmid, zmid), (0.0, CAP_H - DISH_SINK))
+            .close())
+    cap = prof.revolve(360, (0, 0), (0, 1)).translate((x, y, z0))
+    m = _to_trimesh(cap, "nub_cap")
+    if not m.is_watertight:
+        m.merge_vertices(merge_tex=True, merge_norm=True)
+        m.update_faces(m.nondegenerate_faces())
+        m.remove_unreferenced_vertices()
+        trimesh.repair.fill_holes(m)
+        assert m.is_watertight, "nub_cap repair failed"
+        m.export(os.path.join(BUILD, "nub_cap.stl"))
+    return m
+
+SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel",
+          "nub_spring", "nub_cap")
 
 def assemble():
     A = {}
@@ -1022,6 +1141,8 @@ def assemble():
     A["grip_lid_right"] = grip_lid("right")
     A["grip_lid_left"] = grip_lid("left")
     A["center_panel"] = center_panel()
+    A["nub_spring"] = nub_spring()
+    A["nub_cap"] = nub_cap()
     A["keymat_right"] = keymats("right")
     A["keymat_left"] = keymats("left")
     prod = _product()
@@ -1044,8 +1165,12 @@ def _allowed(a, b):
     Everything else that interpenetrates is a real clash to fix."""
     s = {a, b}
     km = any(x.startswith("keymat") for x in s)
+    # v0.21: SW40 is the thumbstick, NOT a dome — keymat contact with it is real
     if km and any(":SW" in x and not x.endswith(("_pwr", "_rst")) for x in s): return True  # nub presses dome
     if km and any(x.startswith("grip_lid") for x in s): return True  # clamp rim presses the web 0.1mm (intended preload)
+    if s == {"nub_spring", "grip_lid_right"}: return True  # counterbore ceiling clamps the flange (0.05 preload)
+    if "nub_spring" in s and any("pcb_right" in x for x in s): return True  # spring legs bear on the PCB face
+    if s == {"nub_cap", "nub_spring"}: return True         # cap press-fits the spigot
     if s == {"phone", "magsafe"} or s == {"magsafe", "center_panel"}: return True           # rests on/in
     if s == {"back_right", "back_left"}: return True   # seam tabs/shiplap mate face-to-face
     # screw heads SEAT in the lid/panel countersinks (45-degree cone-on-cone);
@@ -1126,7 +1251,9 @@ def main():
                        (lambda: back_half("left"), "back_left"),
                        (lambda: grip_lid("right"), "grip_lid_right"),
                        (lambda: grip_lid("left"), "grip_lid_left"),
-                       (center_panel, "center_panel")]:
+                       (center_panel, "center_panel"),
+                       (nub_spring, "nub_spring"),
+                       (nub_cap, "nub_cap")]:
             m = fn(); print(f"  {nm}: watertight={m.is_watertight} vol={m.volume/1000:.1f}cm3 bbox={[round(v,1) for v in m.extents]}")
             ok = bed_fit(m, nm) and ok
             built.append(m)
@@ -1136,12 +1263,12 @@ def main():
             built.append(m)
         if not ok:
             sys.exit("bed-fit FAILED: a part exceeds the Ender 3 V2 printable area")
-        # reference STL of all 7 printed parts in their assembled positions (they
+        # reference STL of all 9 printed parts in their assembled positions (they
         # share the product frame, so plain concatenation IS the assembly) — a
         # multi-body viewing aid for spatial reasoning, not a printable part
         asm = trimesh.util.concatenate(built)
         asm.export(os.path.join(BUILD, "assembled_printed.stl"))
-        print(f"  assembled_printed.stl: all 7 printed parts in place, bbox={[round(v,1) for v in asm.extents]}")
+        print(f"  assembled_printed.stl: all 9 printed parts in place, bbox={[round(v,1) for v in asm.extents]}")
     if args.check:
         A = assemble()
         print(f"assembly: {len(A)} bodies")
@@ -1184,6 +1311,8 @@ def _explode_offset(k):
     if k.startswith("grip_lid"): return 40
     if k.startswith("screw_"): return 56   # above the lids they drop through
     if k == "center_panel": return 52
+    if k == "nub_spring": return 56        # lifts out of the lid counterbore
+    if k == "nub_cap": return 66           # pulls off the spring spigot
     if k == "magsafe":      return 68
     if k == "phone":        return 84
     return 0
@@ -1204,6 +1333,7 @@ def _asm_col(k):
     if k == "center_panel": return [0.48,0.35,0.65,0.55]
     if k.startswith("grip_lid"): return [0.48,0.35,0.65,0.55]
     if k.startswith("keymat"): return [0.23,0.23,0.24,1]
+    if k in ("nub_spring", "nub_cap"): return [0.23,0.23,0.24,1]  # keymat gray
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
     if k == "magsafe":      return [0.72,0.72,0.74,1]
@@ -1220,6 +1350,8 @@ def _render_parts(A):
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
               "center_panel": "center panel (sunken flush-screen well + MagSafe recess + 4 screws + scallop)",
+              "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
+              "nub_cap": "nub friction cap (O8.5 TPU, press-fits the spring spigot)",
               "keymat_right": "right keymat (plungers + hinge web)"}
     for nm, title in titles.items():
         render_iso([(A[nm], [0.4, 0.45, 0.5, 1])], os.path.join(RENDERS, f"part_{nm}.png"),

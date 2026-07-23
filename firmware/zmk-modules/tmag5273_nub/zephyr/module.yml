@@ -1,0 +1,6 @@
+name: tmag5273_nub
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    dts_root: .

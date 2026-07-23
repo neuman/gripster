@@ -1,13 +1,14 @@
-# Assembly, first flash, charge, pair & test — rev-A (v0.19)
+# Assembly, first flash, charge, pair & test — rev-A (v0.21)
 
 > **This device has never been physically built.** The boards are routed and
 > DRC-clean and the shells are fit-checked in CAD, but no first article exists —
 > this guide is a design-derived procedure, not a walkthrough of a build that
 > actually happened. Expect to find things it does not anticipate.
 
-Both boards arrive from JLC **fully assembled** (every soldered part is SMT and
-machine-placed) — there is **no hand-soldering** in this build. Your work is
-mechanical + one one-time SWD flash.
+Both boards arrive from JLC **fully assembled** — every part is machine-placed
+SMT (the v0.21 pointing nub's electronics are a single SOT-23-6 hall sensor,
+U4, on the same reflow pass as everything else). There is **no soldering by
+you** in this build. Your work is mechanical + one one-time SWD flash.
 
 > **Status (superseded by the v0.19 note below):** the boards, fab package and firmware in this guide are the
 > re-routed **v0.17** grip (79.5 × 97 mm; the E73 + power front-end — USB-C,
@@ -36,9 +37,14 @@ mechanical + one one-time SWD flash.
    preview checklist (LED polarity!). That directory is **not committed**;
    generate it first with `python3 hardware/scripts/gen_fab.py` (it refuses
    unless DRC is 0/0).
-2. **Prints:** five PETG shell parts — `back_left`, `back_right`,
-   `grip_lid_left`, `grip_lid_right`, `center_panel` — and the two keymats
-   (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
+2. **Prints:** six PETG shell parts — `back_left`, `back_right`,
+   `grip_lid_left`, `grip_lid_right`, `center_panel`, and the v0.21 nub pair:
+   `nub_spring` (Ø14.8 flexure; **its 3 spiral arms are the compliance coupon**
+   — print one, flex it by hand, and if it feels dead-stiff or floppy retune
+   `NUB_ARM_T` ±0.2 in `deck3d.py` before printing the final) and `nub_cap`
+   (**TPU 95A** like the keymats — the grippy dome IS the point; tune its
+   Ø5.2 socket ±0.1 to press snug on the spring's spigot) — and the two
+   keymats (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
    `hardware/cad/build/`, STEP alongside). Every part fits a 220 × 220 bed
    (Ender 3 V2) flat; orientations + slicer notes in
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
@@ -111,7 +117,27 @@ serviced through the left grip, not the panel).
    through the lead windows in both transverse walls toward J3 (still
    unplugged), then engage the two floor tabs and the wall shiplaps at x=0 and
    press the halves flush. No screws here — the center panel is the splice.
-7. Seat the **MagSafe ring** in the panel recess (epoxy the full annulus — the
+7. **Pointing nub (v0.21):** three steps, all on the right lid.
+   **(a) Magnet:** press the Ø4 × 2 N52 disc into the `nub_spring` hub pocket
+   **N pole facing down** (toward the sensor). Find N BEFORE seating, with a
+   compass: **the disc face that attracts the needle's SOUTH end (the
+   unpainted/white end) is the N face** — seat that face down. The driver
+   zero-calibrates at boot but cannot fix a flipped magnet (both axes invert
+   and the offset range is wrong). It's a press fit; a drop of CA if loose.
+   **(b) Spring:** stand the spring on the bare PCB zone under the aperture —
+   its 3 legs on the board's front face, magnet down over the sensor — then
+   lower the lid over it so the spigot rises through the Ø10 aperture and the
+   underside counterbore captures the flange. Driving the lid screws presses
+   the counterbore ceiling onto the flange (0.05 mm preload against the legs):
+   the spring is clamped rigid, no adhesive. If it can rattle after screwing
+   down, a print tolerance ate the preload — shim the counterbore with a strip
+   of tape rather than glue.
+   **(c) Cap:** with the lid screwed down, press the `nub_cap` onto the Ø5
+   spigot. It pulls off for lid removal — pull straight up, don't lever.
+   First power-up: leave the nub untouched for the first ~2 s (32-sample zero
+   calibration); axis flips/swaps are DT properties in `thumbdeck.dts`, not
+   code.
+8. Seat the **MagSafe ring** in the panel recess (epoxy the full annulus — the
    bond takes the detach pull, backed by the border screws and the slab's
    stiffness), then fit the **center panel** — its sunken tray drops over the
    spine, the border flange lands flush with the grip lids' keyboard face and
@@ -177,6 +203,11 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
   right H-row ends in the 2u Enter), **PIPE (`|`) on `[` and BSLH (`\`) on `]`**
   (the backslash cap became the right Ctrl in v0.20), `BT_CLR` + `BT_SEL 0–3`
   for profiles, plus `&bootloader` / `&sys_reset`.
-- Pointer: D-pad + ZMK mouse keys on the FN layer (no trackpad in v1).
+- Pointer: nudge the **nub** — the cursor should track, faster with steeper
+  deflection (rate control). **Hands off the nub for the first ~2 s after
+  power-up** (zero calibration). If an axis is mirrored or swapped, set
+  `invert-x` / `invert-y` / `swap-xy` on the `nub` node in `thumbdeck.dts` —
+  a first-article calibration, not a code change. FN-layer mouse keys on the
+  D-pad remain as a fallback pointer.
 - Chord several keys at once — the diodes kill ghosting (verified exhaustively in
   `sim_matrix.py`, but enjoy confirming it with fingers).

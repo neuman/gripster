@@ -1,4 +1,4 @@
-# Matrix, diodes & the single-controller scan — rev-A (v0.19)
+# Matrix, diodes & the single-controller scan — rev-A (v0.21)
 
 Gripster (board id `thumbdeck` internally) is **one 9-row × 10-column matrix,
 78 keys** (78 of the 90 positions

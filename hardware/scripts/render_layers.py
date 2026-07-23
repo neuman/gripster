@@ -300,6 +300,14 @@ def front_shell(ax, P):
                              edgecolor="#7fd1ff", ls=":", lw=1.4, zorder=4))
                 ax.text(f["x"] + ox, f["y"] + oy, "trackpad\nwindow (opt)", ha="center",
                         va="center", fontsize=5.5, color="#7fd1ff", zorder=5)
+            elif f["type"] == "hall_nub":
+                ad = f.get("aperture_d", 10.0)
+                ax.add_patch(Circle((f["x"] + ox, f["y"] + oy), ad / 2, facecolor=BG,
+                             edgecolor="#7fd1ff", lw=1.4, zorder=4))
+                ax.add_patch(Circle((f["x"] + ox, f["y"] + oy), 4.25, facecolor=BG,
+                             edgecolor="#7fd1ff", lw=1.6, zorder=5))
+                ax.text(f["x"] + ox, f["y"] + oy, "NUB", ha="center", va="center",
+                        fontsize=4.2, color="#7fd1ff", fontweight="bold", zorder=6)
         for h in geo["mount_holes"]:
             ax.add_patch(Circle((h["x"] + ox, h["y"] + oy), h["d"] / 2 + 0.4,
                          facecolor=BG, edgecolor=INK, lw=0.9, zorder=5))

@@ -1,4 +1,19 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.19
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.21
+
+**v0.21 right-grip pointing nub (2026-07-23, branch feature/right-joystick).**
+Bean-style hall nub at the left-D-pad mirror: the right lid gains a plain
+**Ø10 through-aperture** with an **underside Ø15.2 × 1.2 counterbore**, and
+prints **8 and 9** join the set — the **`nub_spring`** (Ø14.8 flange + 3 spiral
+flexure arms + Ø7 magnet hub; 3 underside legs bear on the PCB front face and
+the counterbore ceiling clamps the flange onto them with 0.05 mm preload — no
+axial float; arm thickness `NUB_ARM_T` = 0.8 is the compliance coupon-tune)
+and the **`nub_cap`** (Ø8.5 × 2.5 TPU friction dome with an r9 concave dish,
+press-fit 0.95 mm onto the spring's Ø5 spigot). Only ~1.7 mm of hub and the
+cap emerge — the cap tops out 4.25 mm proud of the face, ThinkPad-flat vs the
+ALPS gimbal's ~12 mm
+(that variant was implemented and reverted; see design-decisions.md). The
+TMAG5273 sensor is back-side SMT under the aperture: nothing electronic
+penetrates the face. Both nub parts are in the fit-check and bed-gate.
 
 **v0.18 flush-screen well + battery relocation (2026-07-14).** The center panel is
 now a **sunken tray**: its border flange tops out flush with the grip lids
@@ -124,7 +139,10 @@ plane any more.
   dome centres** (cap + 0.2 mm/side; round for the cluster keys) and a **rim that clamps the keymat web with ~0.1 mm preload** so the
   mat can't float or rattle; the **5 screw positions per grip are unchanged**
   from rev-A. The inner edge is cut straight at the grip boundary with a 0.8 mm
-  top chamfer (its half of the reveal V). Print cosmetic-face-down.
+  top chamfer (its half of the reveal V). Print cosmetic-face-down. v0.21: the
+  RIGHT lid additionally carries the **nub aperture** (Ø10 through) with an
+  underside **Ø15.2 × 1.2 counterbore** that seats and clamps the `nub_spring`
+  flange — prints clean face-down (the counterbore is a top-layers void).
 - **Center panel (`center_panel`)** — the pink "front of the back", v0.18 a
   **sunken tray** (~169 × 102.8 mm): border flange 12.3..14.7 flush with
   the lids, then a deep well whose floor slab (2.1..4.7) puts the **cased
@@ -181,7 +199,7 @@ against the dome-pad grid).
 ## Run
 
 ```bash
-hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all          # build all 7 parts + Ender 3 V2 bed-fit gate
+hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all          # build all 9 printed parts + Ender 3 V2 bed-fit gate
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --check        # collision + printability report
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --render       # PNG part sheets + assembly views
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --sync-models  # copy printable STLs to tracked models/
@@ -199,6 +217,8 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
 | `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |
+| `nub_spring` | flange down (PETG) | legs + hub up; brim; NO supports (arms self-support); `NUB_ARM_T` is the stiffness coupon |
+| `nub_cap` | base down (TPU 95A) | dish up; print with the keymats |
 
 Slicer: ~0.12 mm elephant-foot compensation keeps the printed seam faces true;
 the modeled 0.25–0.3 mm joint clearances assume roughly that. Solid infill on the

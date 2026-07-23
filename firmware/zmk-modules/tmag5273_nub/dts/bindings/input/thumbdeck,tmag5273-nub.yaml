@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Eric Neuman
+
+description: |
+  TI TMAG5273 I2C 3D hall sensor used as a ThinkPad-style rate-control
+  pointing nub (magnet in a printed flexure above the sensor; deflection
+  angle maps to cursor velocity). Pair with a zmk,input-listener node.
+
+compatible: "thumbdeck,tmag5273-nub"
+
+include: i2c-device.yaml
+
+properties:
+  sampling-hz:
+    type: int
+    default: 100
+    description: Poll rate while active, Hz.
+
+  deadzone:
+    type: int
+    default: 150
+    description: |
+      Raw sensor LSB counts (at the +/-80 mT range, ~2.44 uT/LSB) the field
+      must move from the boot-calibrated zero before the cursor moves. Covers
+      flexure hysteresis, sensor noise and MagSafe-ring ambient drift.
+
+  gain-num:
+    type: int
+    default: 1
+    description: Numerator of the quadratic velocity curve gain.
+
+  gain-div:
+    type: int
+    default: 3500
+    description: |
+      Denominator of the quadratic velocity curve. Velocity in 1/256 px per
+      poll = excess_counts^2 * gain-num / gain-div, clamped to max-out px.
+
+  max-out:
+    type: int
+    default: 12
+    description: Max pointer pixels emitted per poll (velocity clamp).
+
+  calib-samples:
+    type: int
+    default: 32
+    description: Samples averaged at boot to find the magnetic zero point.
+
+  invert-x:
+    type: boolean
+    description: Flip the X axis.
+
+  invert-y:
+    type: boolean
+    description: Flip the Y axis.
+
+  swap-xy:
+    type: boolean
+    description: Swap the X and Y axes (mounting-rotation correction).
