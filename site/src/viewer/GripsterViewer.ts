@@ -210,7 +210,6 @@ export class GripsterViewer {
     this.scene.add(root)
     this.model = root
 
-    this.fixBoardDepth(root)
     this.bindMovers(root)
     this.bindPins(root)
     this.applyExplode(this.explodeT)
@@ -236,30 +235,6 @@ export class GripsterViewer {
       this.readyFired = true
       this.opts.onReady?.()
     }
-  }
-
-  // The KiCad board layers (body/copper/soldermask/silkscreen) are coplanar and
-  // would z-fight. Bias each layer's depth with polygonOffset so they stack in
-  // physical order — body behind, then copper, mask over copper, silk on top —
-  // instead of flickering. Preserves every trace/pad; no geometry change.
-  private fixBoardDepth(root: Object3D) {
-    const bias = (o: any, factor: number, units: number) => {
-      const mats = Array.isArray(o.material) ? o.material : [o.material]
-      for (const m of mats) {
-        if (!m) continue
-        m.polygonOffset = true
-        m.polygonOffsetFactor = factor
-        m.polygonOffsetUnits = units
-      }
-    }
-    root.traverse((o: any) => {
-      if (!o.isMesh) return
-      const n: string = o.name || ''
-      if (n.endsWith('__body')) bias(o, 1, 1) // push substrate back
-      else if (n.endsWith('__copper')) bias(o, -1, -2)
-      else if (n.endsWith('__soldermask')) bias(o, -2, -4)
-      else if (n.endsWith('__silkscreen')) bias(o, -3, -6) // frontmost
-    })
   }
 
   private bindMovers(root: Group) {

@@ -44,6 +44,21 @@ PRESERVE = {
     "pcb_right/components/J1": "pcb_right__J1",   # USB-C receptacle
 }
 
+# The KiCad board layers are exported COPLANAR with the FR4 body surface, which
+# z-fights in a realtime viewer. Lift each surface layer a few hundredths of a
+# mm OUTWARD (along its own normal, so both board faces separate correctly) so
+# nothing is coplanar — invisible on a 1.6 mm board, but no depth-buffer tie.
+LAYER_LIFT = {"copper": 0.06, "soldermask": 0.12, "silkscreen": 0.18}
+
+
+def _lift(mv, key, m):
+    """Displace a board surface layer outward along its normals (see LAYER_LIFT)."""
+    if mv in ("pcb_right", "pcb_left") and key in LAYER_LIFT:
+        m = m.copy()
+        nrm = m.vertex_normals.copy()
+        m.vertices = m.vertices + nrm * LAYER_LIFT[key]
+    return m
+
 
 def mover_of(node):
     """Full-assembly node name -> explode mover id (or None to drop)."""
@@ -112,14 +127,13 @@ def main():
         for node, g in items:
             buckets[suffix_of(mv, node, g)].append(g)
         for key, gs in buckets.items():
-            if len(gs) == 1:
-                add(gs[0], f"{mv}__{key}")
-                continue
             try:
-                add(trimesh.util.concatenate(gs), f"{mv}__{key}")
+                m = gs[0] if len(gs) == 1 else trimesh.util.concatenate(gs)
             except Exception:
                 for j, gg in enumerate(gs):
-                    add(gg, f"{mv}__{key}_{j}")
+                    add(_lift(mv, key, gg), f"{mv}__{key}_{j}")
+                continue
+            add(_lift(mv, key, m), f"{mv}__{key}")
 
     for name, g in preserved:
         add(g, name)
