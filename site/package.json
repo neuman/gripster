@@ -1,0 +1,25 @@
+{
+  "name": "gripster-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Homepage for the Gripster thumb-keyboard project: interactive GLB viewer + build story.",
+  "scripts": {
+    "models": "node scripts/optimize-models.mjs && node scripts/build-content.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.1.1",
+    "@gltf-transform/extensions": "^4.1.1",
+    "@gltf-transform/functions": "^4.1.1",
+    "@types/three": "^0.169.0",
+    "meshoptimizer": "^0.22.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

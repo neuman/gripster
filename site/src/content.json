@@ -1,0 +1,247 @@
+{
+  "hotspots": [
+    {
+      "id": "phone",
+      "anchorNode": "phone",
+      "title": "Flush-screen phone well",
+      "oneLiner": "A sunken pocket in the center panel that seats the S25 Ultra so its screen sits level with the keyboard face.",
+      "blurb": "v0.18 sank the center panel into a well so a cased Samsung S25 Ultra's screen sits flush with the keyboard face — the device face plane sits 14.7 mm off the back while the well floor drops to 5.1 mm, closing the step between glass and keycap. The goal was thumbs sweeping straight from screen to keys with no step, explicitly not a phone bolted on top of a keyboard. Fitting the phone that deep left no cell height in the spine, so the same v0.18 change moved the 403040 LiPo battery into the left grip's cavity with no PCB reroute. Like the rest of rev-A, this is a CAD fit-check against real component dimensions — no physical well has been printed or tested against an actual phone.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)"
+    },
+    {
+      "id": "module",
+      "anchorNode": "pcb_right/components/U1",
+      "title": "nRF52840 module (Ebyte E73-2G4M08S1C)",
+      "oneLiner": "The single certified BLE radio/MCU module that scans the whole keyboard, mounted in the right grip.",
+      "blurb": "A bare nRF52840 would have forced Gripster to own a 2.4 GHz RF match, FCC/IC/RED radiated certification, a USB bootloader, crystals, and a from-scratch Zephyr board port. The pre-certified Ebyte E73 retires all of that and still breaks out far more GPIO than the 19 matrix pins + battery sense this design needs, and it's stocked in the JLCPCB library so it machine-places. That choice is also why Gripster isn't a true split keyboard: one E73 in the right grip scans the entire 9x10 matrix, while the left grip carries only domes, diodes, and a connector back to it.",
+      "docPath": "README.md",
+      "docHeading": "Why a module, not chip-down"
+    },
+    {
+      "id": "nub-sensor",
+      "anchorNode": "pcb_right/components/U2",
+      "title": "TI TMAG5273A1 Hall Sensor",
+      "oneLiner": "A SOT-23-6 I²C 3-axis hall-effect IC on the board's back side that reads a magnet in the printed pointing nub above it.",
+      "blurb": "The right-grip pointing nub is built Bean-pointing-stick style: this TMAG5273A1 (SOT-23-6, ~$0.60, basic SMT) sits under the PCB and senses a Ø4×2 mm N52 magnet in a 3D-printed flexure spring through 1.6 mm of FR4 — no hole in the board, no moving parts on it. It replaces an earlier ALPS analog gimbal that worked electrically but whose 11.2 mm module body couldn't sit flush under the lid; moving the electronics inside the shell and the tall spring/cap outside solved that and kept the board 100% machine-placed on one reflow pass. Firmware polls the sensor at 100 Hz over TWIM0 (addr 0x35) and maps nub deflection to quadratic cursor velocity with a boot-zero calibration and deadzone.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.21 — right-grip pointing nub: Bean-style TMAG5273 hall sensor (2026-07-23, branch feature/right-joystick)"
+    },
+    {
+      "id": "nub-cap",
+      "anchorNode": "shells/nub_cap",
+      "title": "Nub cap — ThinkPad-red TPU",
+      "oneLiner": "The printed soft-dome thumb cap that presses onto the pointing-nub's flexure spring, over the hidden hall-sensor magnet.",
+      "blurb": "The cap's socket was redesigned to the standard classic TrackPoint square platform — a 4.4×2.5 mm post under a 4.6 sq × 2.6 mm socket — cross-checked against the navcaps project's cap-mount sources, so genuine soft-dome/soft-rim TrackPoint caps interchange on the same post as the printed one. The printed replica is a mushroom-profile dome (Ø7.8 flared skirt, Ø6.8 waist, dotted Ø7.8 dome, 5.25 mm tall) in ThinkPad-red TPU, sitting about 4.2 mm proud of the face. The lid's hub was dropped 0.7 mm so the cap's flared skirt nests into the Ø10 aperture just like a real TrackPoint sits between keycaps, which also moves the tilt-stop from plastic-on-plastic to rubber-skirt-on-aperture-wall, lowering peak flexure-arm strain. The sensor gap, magnet, spring arms, and clamp underneath are unchanged from v0.21.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.22 — true-mirror page keys + genuine-TrackPoint-cap mount (2026-07-24, branch feature/right-joystick)"
+    },
+    {
+      "id": "magsafe",
+      "anchorNode": "magsafe_ring",
+      "title": "MagSafe N52 ring",
+      "oneLiner": "The N52 disc-magnet ring set into the well recess that centres and aligns the phone.",
+      "blurb": "The ring sits 0.2 mm proud of the well's Ø57×1.8 mm recess so the phone's case contacts the magnets directly rather than the surrounding shell plastic, keeping it centred landscape over the keys. It's deliberately alignment-only: an early hardware review judged that magnets alone shed peel and torque on a handheld device, so actual retention is carried by the moulded phone pocket, the well's wall band, and the panel's border screws — the ring positions the phone, it doesn't hold it in.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)"
+    },
+    {
+      "id": "battery",
+      "anchorNode": "battery",
+      "title": "403040 LiPo pouch (left grip)",
+      "oneLiner": "The device's single battery — a 403040 pouch (~450–500 mAh) foam-taped under the left grip's passive board.",
+      "blurb": "When the phone well sank to put the screen flush with the keyboard face, only 0.5 mm of clearance remained under the well floor — too thin for any standard LiPo pouch. A cavity survey found the right grip (already hosting the mated JST-PH connector) had just 0.24 mm to spare, while the left grip's passive matrix board left 5.14 mm free above its floor, so the cell moved there instead. The 403040 pouch now sits foam-taped under the left grip's key field, leads crossing the spine to J3 on the right board; the trade-off is that a battery swap means opening the left grip's five screws rather than the panel hatch.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)"
+    },
+    {
+      "id": "bridge",
+      "anchorNode": "flex",
+      "title": "16-way FFC bridge",
+      "oneLiner": "The single ribbon cable that carries the passive left grip's matrix columns into the one MCU on the right — not a link between two keyboards.",
+      "blurb": "Gripster looks like a split keyboard but isn't one: a single nRF52840 module in the right grip scans one 9x10 matrix, and the left grip is just domes, diodes and a connector with no chip of its own. The 16-way FFC ribbon carries the left grip's columns 5-9 plus the shared rows across the bridge, S-bending down into a 0.5 mm floor channel under the phone-well slab. This was a v0.3 pivot away from an earlier two-controller ZMK BLE split, chosen because the grips are physically bridged (not detachable) like a Backbone-style controller, so a wired cable is simpler than pairing two radios — netting one battery, one charge session, and no inter-half BLE bond.",
+      "docPath": "docs/design-decisions.md",
+      "docHeading": "v0.3 — the architecture pivot (single controller)"
+    },
+    {
+      "id": "usb",
+      "anchorNode": "pcb_right/components/J1",
+      "title": "USB-C receptacle (J1)",
+      "oneLiner": "Full-SMD 16-pin USB-C jack on the right grip for charging and one-time SWD/UF2 flashing.",
+      "blurb": "J1 needs CC1/CC2 pulled down through 5.1 kΩ resistors (R20/R21) — without them a Type-C charger never turns on VBUS, so those two resistors are what make the port a charger and not just a connector. VBUS then splits to the E73's USB-detect pad and, through an inline USBLC6-2SC6 ESD diode, to the MCP73831 charge IC on the battery side. The connector's D+/D− pin pairs are interleaved on this footprint, which forced fixed, hand-drawn copper (a D− bar plus a D+ hop) instead of autorouted traces — no autorouter could solve that pattern. Design intent is charging and UF2/SWD flashing only; ZMK can optionally do wired HID over the same port.",
+      "docPath": "docs/connectivity-and-power.md",
+      "docHeading": "USB"
+    },
+    {
+      "id": "domes",
+      "anchorNode": "keymats/keymat_right",
+      "title": "Snaptron 7 mm snap domes",
+      "oneLiner": "The key switch layer: 78 metal snap domes pressed onto gold ENIG pads under the keymat — no switches, no solder joints.",
+      "blurb": "Instead of 78 mechanical switches, Gripster uses 78 Snaptron 7 mm metal snap domes pressed straight onto gold ENIG contact pads — the dome itself is the switch, with no stem, housing, or solder joint at the key site. That decision is what lets every soldered component sit on one side of each board (the front carries only the dome pads and traces), turning the whole build into a single-sided, single-pass SMT job that JLCPCB can place 100% turnkey. ENIG plating isn't cosmetic here — it's required because HASL finish oxidizes within weeks of cycling and would kill the dome contact. The only hand step at this layer is pressing the domes onto their pads under retention tape; nothing here is hand-soldered.",
+      "docPath": "README.md",
+      "docHeading": "What is this?"
+    }
+  ],
+  "sections": [
+    {
+      "key": "lede",
+      "heading": "What it is",
+      "dek": "Gripster turns a phone into a handheld deck — a keyboard built around the screen, not bolted onto it.",
+      "paragraphs": [
+        "Your phone mounts landscape in the center on a MagSafe ring and drops into a sunken well, deep enough that the glass and the keyboard face form one continuous plane. Two contoured grips flank it. You hold it like a game controller and thumb-type a full 78-key QWERTY on metal snap domes — the same clicky stainless discs used in TV remotes and in the Rii i8+ that was studied as a reference. There's no switch, no stem, no solder: the dome is the switch. The shell takes its design language from a Game Boy Color — boxy rounded outline, translucent Atomic-Purple shell, dark-gray keymats.",
+        "Despite the two halves, it isn't a split keyboard. One certified nRF52840 module lives in the right grip and scans a single 9x10 matrix; the left grip is fully passive — just domes, diodes, and a connector — joined by one 16-way FFC ribbon. That means one Bluetooth device to pair, one battery, one firmware image. Every part of this — the KiCad boards, the printable shells, the renders, even the ZMK keymap — is generated from one parametric Python model, so moving a key in the model moves the board pad, the shell opening, and the firmware matrix with it.",
+        "Honest status: rev-A (v0.22) is designed, not built. Both boards are routed and DRC-clean, the printable shells are watertight and bed-fit-checked, and the fab package exports cleanly — but nothing has been ordered, printed, pressed, or flashed. No physical Gripster has ever existed."
+      ],
+      "links": [
+        {
+          "label": "What is this? (README)",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this"
+        },
+        {
+          "label": "Honest status: designed, not built",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#project-status--roadmap"
+        },
+        {
+          "label": "The parametric model (deck.py)",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+        },
+        {
+          "label": "Original concept sketches",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/sketches"
+        }
+      ]
+    },
+    {
+      "key": "interesting",
+      "heading": "What makes it interesting",
+      "dek": "Five design choices that set Gripster apart from a phone case with buttons glued on — all verifiable in the repo, none yet verified on a bench.",
+      "paragraphs": [
+        "The phone doesn't sit on top of the keyboard — it sits inside it. The well is deep enough that the phone's screen and the keyboard face form one continuous plane, 14.7 mm off the back, 15.7 mm thick overall. And despite the two flanking grips, this isn't a split keyboard: one certified nRF52840 module (an Ebyte E73) lives in the right grip and scans a single 9×10 matrix across both halves. The left grip is fully passive — just domes, diodes, and a connector — joined to the right by one 16-way FFC ribbon. That means one Bluetooth device to pair, one battery, one firmware image, not two halves that have to find each other.",
+        "There are no mechanical switches and nothing to hand-solder. All 78 keys are Snaptron 7 mm metal snap domes pressed straight onto gold ENIG pads — the dome is the switch. Every part that does get soldered, including the single hall-effect sensor behind the right-grip pointing nub, sits on one side of each board in the same reflow pass, so JLCPCB can build both boards 100% turnkey.",
+        "The whole thing is generated, not drawn by hand: one parametric Python file, hardware/scripts/deck.py, emits the KiCad boards, the CadQuery shells, the renders, and the ZMK keymap together, so a key opening lands on its dome pad by construction rather than by manual alignment. Both PCBs are fully autorouted and DRC-clean in KiCad 9 — 0 violations, 0 unconnected items — with the JLCPCB fab package exporting cleanly. That's a statement about the layout, not about a physical unit: rev-A is design-complete, not ordered, printed, or flashed."
+      ],
+      "links": [
+        {
+          "label": "deck.py — the parametric source of truth",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+        },
+        {
+          "label": "Why it isn't a split keyboard",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#is-it-a-split-keyboard"
+        },
+        {
+          "label": "Routing status — autorouted, DRC-clean",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/routing-status.md"
+        },
+        {
+          "label": "Snap-dome contact pad footprint",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/footprints/snaptron_7mm_contact_pad.kicad_mod"
+        }
+      ]
+    },
+    {
+      "key": "how",
+      "heading": "How it works",
+      "dek": "One 9×10 matrix, one radio module, one battery — scanned, powered, and broadcast entirely from the right grip.",
+      "paragraphs": [
+        "Gripster is a single 9×10 matrix (78 of 90 possible positions used) scanned by one Ebyte E73 (nRF52840) module in the right grip — a ZMK unibody board, not a split. The left grip has no chip at all: just domes and one 1N4148WS diode per key (col2row, cathode to the row net) so simultaneous key presses stay unambiguous. Columns 0–4 are wired locally in the right grip; columns 5–9 and all nine shared rows reach the left grip over a 16-way FFC ribbon. `sim_matrix.py` checks the result exhaustively: 78 unique row/column intersections and zero ghost or miss failures across roughly 68,500 simulated multi-key scenarios.",
+        "The module spends 19 GPIO pins on the matrix plus one ADC pin for battery sensing, with a spare I²C bus broken out to test pads for a possible future trackpad. Power comes from a single 403040 LiPo cell (~450–500 mAh) that physically lives in the left grip; its leads cross to the right grip, where a charger, a slide switch, and the module's high-voltage supply input make up the whole power tree. The switch only gates the load, so the cell keeps charging over USB-C even while the deck is switched off.",
+        "Bluetooth is one HID connection, advertised as \"thumbdeck\" — there's no second half to pair or drop. The E73's ceramic antenna is routed up off the top board edge, as far as the layout allows from the phone and the battery, with a copper keep-out and a matching relief cut in the shell wall. None of this has been measured on real hardware: antenna performance next to a phone in a closed hand is expected to take some hit, but the design has never been built to check by how much."
+      ],
+      "links": [
+        {
+          "label": "Matrix & diode design",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/matrix-and-diodes.md"
+        },
+        {
+          "label": "Connectivity & power",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/connectivity-and-power.md"
+        },
+        {
+          "label": "Ghost-proof matrix simulation",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/sim_matrix.py"
+        },
+        {
+          "label": "Full pin routing table",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/routing-status.md"
+        }
+      ]
+    },
+    {
+      "key": "parametric",
+      "heading": "The whole product is generated from one Python file",
+      "dek": "Every board, shell opening, and keycap in this repo traces back to a single parametric model — move a key there and the pad, the print, and the firmware matrix move with it.",
+      "paragraphs": [
+        "The layout for both grips — key positions, dimensions, keep-outs — lives in one file, hardware/scripts/deck.py. Everything downstream is generated from it, not drawn or measured separately: the KiCad board files, the printable shell geometry, and the ZMK firmware keymap all derive from the same coordinates.",
+        "The 3D side runs through a second script, hardware/cad/deck3d.py (CadQuery, on OpenCASCADE), which builds the 9 printed parts from deck.py's geometry plus the real KiCad component placement — so key openings land on the actual dome pads, bosses land on the actual mount holes, and the USB-C/switch cutouts land on the actual connectors, by construction rather than by hand-measuring. Every run is also checked with trimesh and manifold3d for watertightness and collisions across the full assembly.",
+        "As of rev-A (v0.22), that loop is clean end to end: both KiCad boards route with 0 DRC violations / 0 unconnected items, and all 9 printed parts pass the watertight and 0-collision checks for an Ender 3 V2 bed. None of it has been built — no board has been ordered or powered, no part has been printed. 'Clean' here means no design rule was broken and no solid interferes with another, not that the circuit works or the parts fit in hand."
+      ],
+      "links": [
+        {
+          "label": "deck.py — the parametric source of truth",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+        },
+        {
+          "label": "deck3d.py — CadQuery generation of the 9 printed parts",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/cad/deck3d.py"
+        },
+        {
+          "label": "docs/cad-process.md — full CAD pipeline and toolchain",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/cad-process.md"
+        },
+        {
+          "label": "README — Design & generation",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#design--generation-the-parametric-model"
+        }
+      ]
+    },
+    {
+      "key": "status",
+      "heading": "Honest status: designed, not built",
+      "dek": "rev-A (v0.22) is finished on paper — routed, DRC-clean, fab-package-ready — but no physical Gripster has ever existed.",
+      "paragraphs": [
+        "Every image of the device in this project is a render or a generated board layout, never a photograph. rev-A (v0.22) is complete as a design: both PCBs are fully autorouted and DRC-clean in KiCad 9 (0 violations, 0 unconnected, re-verified 2026-07-24), the JLCPCB gerber + BOM + CPL package exports cleanly, and all seven printed shell parts plus the keymats are collision-checked (0 impossible overlaps) and bed-fit-checked for a 220 x 220 mm Ender 3 V2. Nothing has been ordered, printed, pressed, flashed, or typed on. If you build one, you are building the first one that has ever existed.",
+        "The firmware compiles green in CI, but that green build predates the v0.21 pointing-nub module (I2C hall sensor, new Zephyr module, new build flag) — the workflow needs to be re-run against the current tree before it means anything for v0.22. \"0 DRC violations\" means no routing rule was broken, not that the circuit is correct: no board has ever been powered, and no net has ever been probed.",
+        "Unmeasured and unknown: ergonomics (grip shape, key pitch, thumb reach), dome feel and dome life, BLE range with a phone centimeters from the antenna and a hand around the grip, real battery life, and every print tolerance. The roadmap is a first-article run of five sets, a bring-up pass (SWD flash, matrix proof, current draw, BLE range), and a rev-B informed by whatever that build teaches."
+      ],
+      "links": [
+        {
+          "label": "Honest status (README)",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#-honest-status-designed-not-built"
+        },
+        {
+          "label": "Project status & roadmap",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#project-status--roadmap"
+        },
+        {
+          "label": "Fab-readiness evaluation",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/evaluation.md"
+        },
+        {
+          "label": "8-dimension design review",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-review.md"
+        }
+      ]
+    }
+  ],
+  "hero": {
+    "title": "Gripster",
+    "tagline": "A wireless split thumb keyboard that turns your phone into a handheld deck.",
+    "subtag": "Your phone mounts landscape in a sunken well flush with the keys, and you thumb-type a full 78-key QWERTY on metal snap domes over Bluetooth — a design that routes DRC-clean and prints watertight but has never been physically built.",
+    "badges": [
+      "78 snap-dome keys",
+      "0 DRC violations",
+      "designed, not built",
+      "ZMK firmware",
+      "one nRF52840 module"
+    ],
+    "primaryCtaLabel": "Explore the design"
+  },
+  "sectionOrder": [
+    "lede",
+    "interesting",
+    "how",
+    "parametric",
+    "status"
+  ]
+}

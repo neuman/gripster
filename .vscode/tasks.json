@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "vite: dev (gripster site)",
+      "type": "shell",
+      "command": "npm run dev -- --port 5173 --strictPort",
+      "options": { "cwd": "${workspaceFolder}/site" },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$", "file": 1, "location": 2, "message": 3 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE v.*",
+          "endsPattern": ".*(ready in|Local:).*"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "vite: build models (gripster site)",
+      "type": "shell",
+      "command": "npm run models",
+      "options": { "cwd": "${workspaceFolder}/site" },
+      "problemMatcher": []
+    }
+  ]
+}

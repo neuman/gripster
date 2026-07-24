@@ -1,0 +1,214 @@
+{
+ "axes": {
+  "thick": 2,
+  "height": 1,
+  "width": 0
+ },
+ "extent": [
+  325.5,
+  103.8,
+  19.25
+ ],
+ "center": [
+  0,
+  48,
+  9.625
+ ],
+ "step": 22.137,
+ "movers": {
+  "phone": {
+   "offset": [
+    0,
+    0,
+    88.55
+   ],
+   "nodes": [
+    "phone__0",
+    "phone__1",
+    "phone__10",
+    "phone__11",
+    "phone__12",
+    "phone__13",
+    "phone__14",
+    "phone__15",
+    "phone__16",
+    "phone__17",
+    "phone__18",
+    "phone__19",
+    "phone__2",
+    "phone__20",
+    "phone__21",
+    "phone__22",
+    "phone__23",
+    "phone__24",
+    "phone__25",
+    "phone__26",
+    "phone__27",
+    "phone__28",
+    "phone__29",
+    "phone__3",
+    "phone__30",
+    "phone__31",
+    "phone__4",
+    "phone__5",
+    "phone__6",
+    "phone__7",
+    "phone__8",
+    "phone__9"
+   ]
+  },
+  "magsafe_ring": {
+   "offset": [
+    0,
+    0,
+    66.412
+   ],
+   "nodes": [
+    "magsafe_ring__vc"
+   ]
+  },
+  "flex": {
+   "offset": [
+    0,
+    0,
+    -39.847
+   ],
+   "nodes": [
+    "flex__vc"
+   ]
+  },
+  "battery": {
+   "offset": [
+    0,
+    0,
+    -53.13
+   ],
+   "nodes": [
+    "battery__vc"
+   ]
+  },
+  "screws": {
+   "offset": [
+    0,
+    0,
+    -44.275
+   ],
+   "nodes": [
+    "screws__vc"
+   ]
+  },
+  "pcb_left": {
+   "offset": [
+    -45.57,
+    0,
+    -22.137
+   ],
+   "nodes": [
+    "pcb_left__vc"
+   ]
+  },
+  "pcb_right": {
+   "offset": [
+    45.57,
+    0,
+    -22.137
+   ],
+   "nodes": [
+    "pcb_right__J1",
+    "pcb_right__U1",
+    "pcb_right__U2",
+    "pcb_right__vc"
+   ]
+  },
+  "keymat_right": {
+   "offset": [
+    45.57,
+    0,
+    44.275
+   ],
+   "nodes": [
+    "keymat_right__m_gbc_button_gray"
+   ]
+  },
+  "keymat_left": {
+   "offset": [
+    -45.57,
+    0,
+    44.275
+   ],
+   "nodes": [
+    "keymat_left__m_gbc_button_gray"
+   ]
+  },
+  "nub_cap": {
+   "offset": [
+    45.57,
+    0,
+    57.557
+   ],
+   "nodes": [
+    "nub_cap__m_trackpoint_red"
+   ]
+  },
+  "nub_spring": {
+   "offset": [
+    45.57,
+    0,
+    28.779
+   ],
+   "nodes": [
+    "nub_spring__m_atomic_purple"
+   ]
+  },
+  "grip_lid_right": {
+   "offset": [
+    45.57,
+    0,
+    22.137
+   ],
+   "nodes": [
+    "grip_lid_right__m_atomic_purple"
+   ]
+  },
+  "grip_lid_left": {
+   "offset": [
+    -45.57,
+    0,
+    22.137
+   ],
+   "nodes": [
+    "grip_lid_left__m_atomic_purple"
+   ]
+  },
+  "center_panel": {
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "nodes": [
+    "center_panel__m_atomic_purple"
+   ]
+  },
+  "back_right": {
+   "offset": [
+    45.57,
+    0,
+    -66.412
+   ],
+   "nodes": [
+    "back_right__m_atomic_purple"
+   ]
+  },
+  "back_left": {
+   "offset": [
+    -45.57,
+    0,
+    -66.412
+   ],
+   "nodes": [
+    "back_left__m_atomic_purple"
+   ]
+  }
+ }
+}

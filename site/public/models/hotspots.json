@@ -1,0 +1,132 @@
+[
+ {
+  "id": "phone",
+  "title": "Flush-screen phone well",
+  "oneLiner": "A sunken pocket in the center panel that seats the S25 Ultra so its screen sits level with the keyboard face.",
+  "blurb": "v0.18 sank the center panel into a well so a cased Samsung S25 Ultra's screen sits flush with the keyboard face — the device face plane sits 14.7 mm off the back while the well floor drops to 5.1 mm, closing the step between glass and keycap. The goal was thumbs sweeping straight from screen to keys with no step, explicitly not a phone bolted on top of a keyboard. Fitting the phone that deep left no cell height in the spine, so the same v0.18 change moved the 403040 LiPo battery into the left grip's cavity with no PCB reroute. Like the rest of rev-A, this is a CAD fit-check against real component dimensions — no physical well has been printed or tested against an actual phone.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "phone__0",
+   "phone__1",
+   "phone__10",
+   "phone__11",
+   "phone__12",
+   "phone__13",
+   "phone__14",
+   "phone__15",
+   "phone__16",
+   "phone__17",
+   "phone__18",
+   "phone__19",
+   "phone__2",
+   "phone__20",
+   "phone__21",
+   "phone__22",
+   "phone__23",
+   "phone__24",
+   "phone__25",
+   "phone__26",
+   "phone__27",
+   "phone__28",
+   "phone__29",
+   "phone__3",
+   "phone__30",
+   "phone__31",
+   "phone__4",
+   "phone__5",
+   "phone__6",
+   "phone__7",
+   "phone__8",
+   "phone__9"
+  ]
+ },
+ {
+  "id": "module",
+  "title": "nRF52840 module (Ebyte E73-2G4M08S1C)",
+  "oneLiner": "The single certified BLE radio/MCU module that scans the whole keyboard, mounted in the right grip.",
+  "blurb": "A bare nRF52840 would have forced Gripster to own a 2.4 GHz RF match, FCC/IC/RED radiated certification, a USB bootloader, crystals, and a from-scratch Zephyr board port. The pre-certified Ebyte E73 retires all of that and still breaks out far more GPIO than the 19 matrix pins + battery sense this design needs, and it's stocked in the JLCPCB library so it machine-places. That choice is also why Gripster isn't a true split keyboard: one E73 in the right grip scans the entire 9x10 matrix, while the left grip carries only domes, diodes, and a connector back to it.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#why-a-module-not-chip-down",
+  "docLabel": "README.md",
+  "anchorNodes": [
+   "pcb_right__U1"
+  ]
+ },
+ {
+  "id": "nub-sensor",
+  "title": "TI TMAG5273A1 Hall Sensor",
+  "oneLiner": "A SOT-23-6 I²C 3-axis hall-effect IC on the board's back side that reads a magnet in the printed pointing nub above it.",
+  "blurb": "The right-grip pointing nub is built Bean-pointing-stick style: this TMAG5273A1 (SOT-23-6, ~$0.60, basic SMT) sits under the PCB and senses a Ø4×2 mm N52 magnet in a 3D-printed flexure spring through 1.6 mm of FR4 — no hole in the board, no moving parts on it. It replaces an earlier ALPS analog gimbal that worked electrically but whose 11.2 mm module body couldn't sit flush under the lid; moving the electronics inside the shell and the tall spring/cap outside solved that and kept the board 100% machine-placed on one reflow pass. Firmware polls the sensor at 100 Hz over TWIM0 (addr 0x35) and maps nub deflection to quadratic cursor velocity with a boot-zero calibration and deadzone.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v021--right-grip-pointing-nub-bean-style-tmag5273-hall-sensor-2026-07-23-branch-featureright-joystick",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "pcb_right__U2"
+  ]
+ },
+ {
+  "id": "nub-cap",
+  "title": "Nub cap — ThinkPad-red TPU",
+  "oneLiner": "The printed soft-dome thumb cap that presses onto the pointing-nub's flexure spring, over the hidden hall-sensor magnet.",
+  "blurb": "The cap's socket was redesigned to the standard classic TrackPoint square platform — a 4.4×2.5 mm post under a 4.6 sq × 2.6 mm socket — cross-checked against the navcaps project's cap-mount sources, so genuine soft-dome/soft-rim TrackPoint caps interchange on the same post as the printed one. The printed replica is a mushroom-profile dome (Ø7.8 flared skirt, Ø6.8 waist, dotted Ø7.8 dome, 5.25 mm tall) in ThinkPad-red TPU, sitting about 4.2 mm proud of the face. The lid's hub was dropped 0.7 mm so the cap's flared skirt nests into the Ø10 aperture just like a real TrackPoint sits between keycaps, which also moves the tilt-stop from plastic-on-plastic to rubber-skirt-on-aperture-wall, lowering peak flexure-arm strain. The sensor gap, magnet, spring arms, and clamp underneath are unchanged from v0.21.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v022--true-mirror-page-keys--genuine-trackpoint-cap-mount-2026-07-24-branch-featureright-joystick",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "nub_cap__m_trackpoint_red"
+  ]
+ },
+ {
+  "id": "magsafe",
+  "title": "MagSafe N52 ring",
+  "oneLiner": "The N52 disc-magnet ring set into the well recess that centres and aligns the phone.",
+  "blurb": "The ring sits 0.2 mm proud of the well's Ø57×1.8 mm recess so the phone's case contacts the magnets directly rather than the surrounding shell plastic, keeping it centred landscape over the keys. It's deliberately alignment-only: an early hardware review judged that magnets alone shed peel and torque on a handheld device, so actual retention is carried by the moulded phone pocket, the well's wall band, and the panel's border screws — the ring positions the phone, it doesn't hold it in.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "magsafe_ring__vc"
+  ]
+ },
+ {
+  "id": "battery",
+  "title": "403040 LiPo pouch (left grip)",
+  "oneLiner": "The device's single battery — a 403040 pouch (~450–500 mAh) foam-taped under the left grip's passive board.",
+  "blurb": "When the phone well sank to put the screen flush with the keyboard face, only 0.5 mm of clearance remained under the well floor — too thin for any standard LiPo pouch. A cavity survey found the right grip (already hosting the mated JST-PH connector) had just 0.24 mm to spare, while the left grip's passive matrix board left 5.14 mm free above its floor, so the cell moved there instead. The 403040 pouch now sits foam-taped under the left grip's key field, leads crossing the spine to J3 on the right board; the trade-off is that a battery swap means opening the left grip's five screws rather than the panel hatch.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "battery__vc"
+  ]
+ },
+ {
+  "id": "bridge",
+  "title": "16-way FFC bridge",
+  "oneLiner": "The single ribbon cable that carries the passive left grip's matrix columns into the one MCU on the right — not a link between two keyboards.",
+  "blurb": "Gripster looks like a split keyboard but isn't one: a single nRF52840 module in the right grip scans one 9x10 matrix, and the left grip is just domes, diodes and a connector with no chip of its own. The 16-way FFC ribbon carries the left grip's columns 5-9 plus the shared rows across the bridge, S-bending down into a 0.5 mm floor channel under the phone-well slab. This was a v0.3 pivot away from an earlier two-controller ZMK BLE split, chosen because the grips are physically bridged (not detachable) like a Backbone-style controller, so a wired cable is simpler than pairing two radios — netting one battery, one charge session, and no inter-half BLE bond.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v03--the-architecture-pivot-single-controller",
+  "docLabel": "design-decisions.md",
+  "anchorNodes": [
+   "flex__vc"
+  ]
+ },
+ {
+  "id": "usb",
+  "title": "USB-C receptacle (J1)",
+  "oneLiner": "Full-SMD 16-pin USB-C jack on the right grip for charging and one-time SWD/UF2 flashing.",
+  "blurb": "J1 needs CC1/CC2 pulled down through 5.1 kΩ resistors (R20/R21) — without them a Type-C charger never turns on VBUS, so those two resistors are what make the port a charger and not just a connector. VBUS then splits to the E73's USB-detect pad and, through an inline USBLC6-2SC6 ESD diode, to the MCP73831 charge IC on the battery side. The connector's D+/D− pin pairs are interleaved on this footprint, which forced fixed, hand-drawn copper (a D− bar plus a D+ hop) instead of autorouted traces — no autorouter could solve that pattern. Design intent is charging and UF2/SWD flashing only; ZMK can optionally do wired HID over the same port.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/connectivity-and-power.md#usb",
+  "docLabel": "connectivity-and-power.md",
+  "anchorNodes": [
+   "pcb_right__J1"
+  ]
+ },
+ {
+  "id": "domes",
+  "title": "Snaptron 7 mm snap domes",
+  "oneLiner": "The key switch layer: 78 metal snap domes pressed onto gold ENIG pads under the keymat — no switches, no solder joints.",
+  "blurb": "Instead of 78 mechanical switches, Gripster uses 78 Snaptron 7 mm metal snap domes pressed straight onto gold ENIG contact pads — the dome itself is the switch, with no stem, housing, or solder joint at the key site. That decision is what lets every soldered component sit on one side of each board (the front carries only the dome pads and traces), turning the whole build into a single-sided, single-pass SMT job that JLCPCB can place 100% turnkey. ENIG plating isn't cosmetic here — it's required because HASL finish oxidizes within weeks of cycling and would kill the dome contact. The only hand step at this layer is pressing the domes onto their pads under retention tape; nothing here is hand-soldered.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this",
+  "docLabel": "README.md",
+  "anchorNodes": [
+   "keymat_right__m_gbc_button_gray"
+  ]
+ }
+]

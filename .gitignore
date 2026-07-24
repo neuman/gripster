@@ -45,3 +45,9 @@ hardware/kicad/generated/.placed_*.kicad_pcb
 
 # --- CAD build artifacts (regenerate via deck3d.py; models/ is the tracked deliverable) ---
 hardware/cad/build/
+# web-viewer intermediate (regenerate via export_web.py; the compressed site/public/models/*.glb are tracked)
+hardware/cad/models/thumbdeck_web_raw.glb
+
+# --- site (Vite) ---
+site/node_modules/
+site/dist/
