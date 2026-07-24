@@ -25,6 +25,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # the committed og-card.png is used as-is; never fetch Playwright's browser in CI
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     defaults:
       run:
         working-directory: site

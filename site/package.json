@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Homepage for the Gripster thumb-keyboard project: interactive GLB viewer + build story.",
   "scripts": {
-    "models": "node scripts/optimize-models.mjs && node scripts/build-content.mjs",
+    "models": "node scripts/optimize-models.mjs && node scripts/build-content.mjs && npm run thumbnail",
+    "thumbnail": "node scripts/render-thumbnail.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host"
@@ -19,6 +20,7 @@
     "@gltf-transform/functions": "^4.1.1",
     "@types/three": "^0.169.0",
     "meshoptimizer": "^0.22.0",
+    "playwright": "^1.61.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
   }

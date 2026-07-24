@@ -204,6 +204,16 @@ img { max-width: 100%; display: block; }
 .footer-links { display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; font-weight: 600; }
 .footer-note { color: var(--text-dim); font-size: 0.88rem; margin-top: 1rem; }
 
+/* ---- thumbnail capture mode (?shot) -------------------------------------- */
+.shot-mode .hero-overlay,
+.shot-mode .control-bar,
+.shot-mode .hotspot-card,
+.shot-mode .viewer-loading,
+.shot-mode .story,
+.shot-mode .footer { display: none !important; }
+.shot-mode, .shot-mode body { background: #0f1216; }
+.shot-mode .hero { height: 100vh; }
+
 /* ---- responsive ---------------------------------------------------------- */
 @media (max-width: 720px) {
   .hero-overlay { align-items: flex-start; }

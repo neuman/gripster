@@ -67,6 +67,11 @@ function applyTheme(t: Theme) {
 }
 applyTheme(theme)
 
+// Thumbnail-capture mode (?shot): dark, centred, static — used by the headless
+// social-card renderer (scripts/render-thumbnail.mjs).
+const SHOT = new URLSearchParams(location.search).has('shot')
+if (SHOT) document.documentElement.classList.add('shot-mode')
+
 // ---------------------------------------------------------------------------
 // build the page
 const app = document.getElementById('app')!
@@ -236,10 +241,17 @@ const viewer = new GripsterViewer({
   mainUrl: './models/thumbdeck_web.glb',
   explodeUrl: './models/explode.json',
   hotspotsUrl: './models/hotspots.json',
-  theme,
+  theme: SHOT ? 'dark' : theme,
+  framingOffset: !SHOT, // centre the model for the thumbnail
+  frameMargin: SHOT ? 0.72 : undefined, // tighter fill for the social card
   onReady: () => loading.remove(),
+  onFullLoaded: SHOT ? () => ((window as any).__thumbReady = true) : undefined,
   onHotspotOpen: (h) => renderCard(h),
 })
+if (SHOT) {
+  viewer.setSpin(false)
+  viewer.setHotspotsVisible(false) // clean product shot, no pins
+}
 
 // explode slider
 explodeInput.addEventListener('input', () => {

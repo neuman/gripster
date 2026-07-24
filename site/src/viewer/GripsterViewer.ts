@@ -76,8 +76,11 @@ export interface ViewerOptions {
   explodeUrl: string
   hotspotsUrl: string
   theme?: 'light' | 'dark'
+  framingOffset?: boolean // default true; false = keep the model centred (thumbnail)
+  frameMargin?: number // fit distance multiplier (default 1.18; smaller = tighter)
   onHotspotOpen?: (h: Hotspot | null) => void
   onReady?: () => void
+  onFullLoaded?: () => void // fired once the full-res master is in the scene
 }
 
 export class GripsterViewer {
@@ -199,6 +202,7 @@ export class GripsterViewer {
       const full = await loader.loadAsync(this.opts.mainUrl)
       if (this.disposed) return
       this.setModel(full.scene)
+      this.opts.onFullLoaded?.()
     } catch (err) {
       console.error('[viewer] main load failed', err)
     }
@@ -270,7 +274,7 @@ export class GripsterViewer {
     this.modelCenter.copy(center)
     this.modelRadius = r
     const fov = MathUtils.degToRad(this.camera.fov)
-    const dist = (r / Math.sin(fov / 2)) * 1.18
+    const dist = (r / Math.sin(fov / 2)) * (this.opts.frameMargin ?? 1.18)
     // 3/4 hero angle: mostly along +Z (face normal), a little up and to the right
     const dir = new Vector3(0.32, 0.16, 1).normalize()
     this.camera.position.copy(center).addScaledVector(dir, dist)
@@ -457,7 +461,8 @@ export class GripsterViewer {
   // offset (doesn't move the orbit pivot, so it stays put while spinning).
   private applyFramingOffset(w: number, h: number) {
     const leftPanel = Math.min(w * 0.5, 592) // hero-copy column width (max-width 34rem + pad)
-    const shift = w >= 860 ? Math.min(leftPanel * 0.5, w * 0.2) : 0
+    const enabled = this.opts.framingOffset !== false
+    const shift = enabled && w >= 860 ? Math.min(leftPanel * 0.5, w * 0.2) : 0
     if (shift > 1) this.camera.setViewOffset(w, h, -shift, 0, w, h)
     else this.camera.clearViewOffset()
   }
