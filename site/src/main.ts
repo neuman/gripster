@@ -273,6 +273,10 @@ resetBtn.addEventListener('click', () => {
   viewer.setExplode(0)
 })
 fullBtn.addEventListener('click', () => viewer.toggleFullscreen())
+document.addEventListener('fullscreenchange', () => {
+  // reflect fullscreen state, including exits via Esc / browser chrome
+  fullBtn.setAttribute('aria-pressed', String(!!document.fullscreenElement))
+})
 
 // theme toggle
 themeBtn.setAttribute('aria-pressed', String(theme === 'dark'))

@@ -21,7 +21,6 @@ import {
   Object3D,
   PerspectiveCamera,
   PMREMGenerator,
-  Raycaster,
   Scene,
   SRGBColorSpace,
   Sphere,
@@ -60,7 +59,6 @@ interface Mover {
 interface Pin {
   data: Hotspot
   objs: Object3D[]
-  own: Set<Object3D>
   el: HTMLButtonElement
   world: Vector3
   occluded: boolean
@@ -103,13 +101,16 @@ export class GripsterViewer {
   private reducedMotion: boolean
 
   private home = { pos: new Vector3(), target: new Vector3() }
-  private raycaster = new Raycaster()
+  private modelCenter = new Vector3()
+  private modelRadius = 1
   private tmpBox = new Box3()
   private tmpV = new Vector3()
+  private viewDir = new Vector3()
   private ndc = new Vector3()
   private opts: ViewerOptions
   private disposed = false
-  private frameNo = 0
+  private needsRender = true // render-on-demand: only draw when something changed
+  private pinsDirty = true // recompute pin world anchors (explode/model changed)
   private readyFired = false
   private framed = false
 
@@ -152,6 +153,8 @@ export class GripsterViewer {
         this.container.dispatchEvent(new CustomEvent('gv:spin', { detail: false }))
       }
     })
+    // any camera change (drag, wheel, programmatic) → schedule a redraw
+    this.controls.addEventListener('change', () => this.requestRender())
 
     this.overlay = document.createElement('div')
     this.overlay.className = 'gv-overlay'
@@ -210,6 +213,8 @@ export class GripsterViewer {
     this.bindMovers(root)
     this.bindPins(root)
     this.applyExplode(this.explodeT)
+    this.pinsDirty = true
+    this.requestRender()
 
     // frame + signal ready on the FIRST model shown, whichever wins the race
     // (so a failed proxy but successful master still frames + dismisses loading)
@@ -262,6 +267,8 @@ export class GripsterViewer {
     const sphere = this.tmpBox.getBoundingSphere(new Sphere())
     const center = sphere.center
     const r = sphere.radius
+    this.modelCenter.copy(center)
+    this.modelRadius = r
     const fov = MathUtils.degToRad(this.camera.fov)
     const dist = (r / Math.sin(fov / 2)) * 1.18
     // 3/4 hero angle: mostly along +Z (face normal), a little up and to the right
@@ -280,15 +287,15 @@ export class GripsterViewer {
 
   // ---- hotspots --------------------------------------------------------------
   private bindPins(root: Group) {
+    const activeId = this.activePin?.data.id // survive the proxy→master swap
     for (const p of this.pins) p.el.remove()
     this.pins = []
+    this.activePin = null
     for (const data of this.hotspots) {
       const objs = data.anchorNodes.map((n) => root.getObjectByName(n)).filter(Boolean) as Object3D[]
       if (!objs.length) continue
       // the anchor's own meshes — excluded from the occlusion test so a deep
       // part (e.g. the phone) never dims its own pin.
-      const own = new Set<Object3D>()
-      for (const o of objs) o.traverse((c) => own.add(c))
       const el = document.createElement('button')
       el.className = 'gv-pin'
       el.type = 'button'
@@ -299,7 +306,14 @@ export class GripsterViewer {
         this.openPin(this.pins.find((pp) => pp.el === el) ?? null)
       })
       this.overlay.appendChild(el)
-      this.pins.push({ data, objs, own, el, world: new Vector3(), occluded: false })
+      this.pins.push({ data, objs, el, world: new Vector3(), occluded: false })
+    }
+    if (activeId) {
+      const restored = this.pins.find((p) => p.data.id === activeId) ?? null
+      if (restored) {
+        this.activePin = restored
+        restored.el.classList.add('is-active')
+      }
     }
     this.applyPinVisibility()
   }
@@ -308,6 +322,7 @@ export class GripsterViewer {
     this.activePin = pin
     for (const p of this.pins) p.el.classList.toggle('is-active', p === pin)
     this.opts.onHotspotOpen?.(pin?.data ?? null)
+    this.requestRender()
   }
 
   closeHotspot() {
@@ -316,41 +331,38 @@ export class GripsterViewer {
 
   private updatePins() {
     if (!this.pins.length) return
-    // keep world matrices current for projection + raycasting this frame
-    this.camera.updateMatrixWorld()
     const w = this.container.clientWidth
     const h = this.container.clientHeight
-    const camPos = this.camera.position
-    // occlusion raycast is the expensive part — refresh it at ~15Hz, not 60
-    const doOcclude = this.model !== null && this.frameNo % 4 === 0
-    this.frameNo++
-    for (const pin of this.pins) {
-      // union bbox center of the anchor nodes (follows explode)
-      this.tmpBox.makeEmpty()
-      for (const o of pin.objs) this.tmpBox.expandByObject(o)
-      this.tmpBox.getCenter(pin.world)
 
+    // Recompute anchor world centres only when the model or explode changed —
+    // not every frame. Camera orbit doesn't move the anchors, just re-projects.
+    if (this.pinsDirty) {
+      this.scene.updateMatrixWorld(true) // parts just moved (explode/load)
+      for (const pin of this.pins) {
+        this.tmpBox.makeEmpty()
+        for (const o of pin.objs) this.tmpBox.expandByObject(o)
+        this.tmpBox.getCenter(pin.world)
+      }
+      this.pinsDirty = false
+    }
+
+    this.camera.updateMatrixWorld()
+    // Cheap occlusion (no raycast): dim pins on the far hemisphere of the model.
+    // Disabled once exploded, since the explode separates parts along the view
+    // axis and every pin is then plainly visible.
+    const occlusionOn = this.explodeT < 0.06
+    this.viewDir.copy(this.modelCenter).sub(this.camera.position).normalize()
+    const backThresh = this.modelRadius * 0.12
+
+    for (const pin of this.pins) {
       this.ndc.copy(pin.world).project(this.camera)
       const behind = this.ndc.z > 1
       const x = (this.ndc.x * 0.5 + 0.5) * w
       const y = (-this.ndc.y * 0.5 + 0.5) * h
       const onScreen = !behind && this.ndc.x >= -1.05 && this.ndc.x <= 1.05 && this.ndc.y >= -1.05 && this.ndc.y <= 1.05
 
-      // occlusion: is another solid part between the camera and the anchor?
-      // (ignore the anchor's own meshes so a deep part never occludes itself)
-      if (doOcclude && onScreen) {
-        const dir = this.tmpV.copy(pin.world).sub(camPos)
-        const d = dir.length()
-        this.raycaster.set(camPos, dir.normalize())
-        this.raycaster.far = d
-        const hits = this.raycaster.intersectObject(this.model!, true)
-        pin.occluded = false
-        for (const hit of hits) {
-          if (pin.own.has(hit.object)) continue
-          if (hit.distance < d - Math.max(d * 0.02, 2)) pin.occluded = true
-          break
-        }
-      }
+      pin.occluded =
+        occlusionOn && this.tmpV.copy(pin.world).sub(this.modelCenter).dot(this.viewDir) > backThresh
 
       const show = this.hotspotsVisible && onScreen
       pin.el.style.display = show ? 'block' : 'none'
@@ -366,14 +378,22 @@ export class GripsterViewer {
     this.overlay.classList.toggle('gv-overlay--hidden', !this.hotspotsVisible)
   }
 
+  /** Ask for a single redraw on the next frame (render-on-demand). */
+  private requestRender() {
+    this.needsRender = true
+  }
+
   // ---- public controls -------------------------------------------------------
   setExplode(t: number) {
     this.explodeT = MathUtils.clamp(t, 0, 1)
     this.applyExplode(this.explodeT)
+    this.pinsDirty = true // anchors moved
+    this.requestRender()
   }
 
   setSpin(on: boolean) {
     this.controls.autoRotate = on && !this.reducedMotion
+    this.requestRender()
   }
 
   isSpinning() {
@@ -388,11 +408,13 @@ export class GripsterViewer {
     this.hotspotsVisible = on
     this.applyPinVisibility()
     if (!on) this.closeHotspot()
+    this.requestRender()
   }
 
   setTheme(theme: 'light' | 'dark') {
     this.theme = theme
     ;(this.scene.background as Color).setHex(THEME_BG[theme])
+    this.requestRender()
   }
 
   resetView() {
@@ -408,6 +430,7 @@ export class GripsterViewer {
       this.camera.position.lerpVectors(fromP, this.home.pos, k)
       this.controls.target.lerpVectors(fromT, this.home.target, k)
       this.controls.update()
+      this.requestRender()
       if (k < 1) requestAnimationFrame(step)
     }
     step()
@@ -425,13 +448,31 @@ export class GripsterViewer {
     this.renderer.setSize(w, h, false)
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
+    this.applyFramingOffset(w, h)
+    this.requestRender()
   }
 
+  // On a wide (side-by-side) layout the hero copy sits over the left of the
+  // canvas; push the model into the empty space on the right with a frustum
+  // offset (doesn't move the orbit pivot, so it stays put while spinning).
+  private applyFramingOffset(w: number, h: number) {
+    const leftPanel = Math.min(w * 0.5, 592) // hero-copy column width (max-width 34rem + pad)
+    const shift = w >= 860 ? Math.min(leftPanel * 0.5, w * 0.2) : 0
+    if (shift > 1) this.camera.setViewOffset(w, h, -shift, 0, w, h)
+    else this.camera.clearViewOffset()
+  }
+
+  // Render-on-demand: OrbitControls.update() returns true while the camera is
+  // moving (drag, damping, auto-rotate); otherwise we only draw when something
+  // asked for it. Idle frames cost nothing — matching glb-viewer-core.
   private tick() {
     if (this.disposed) return
-    this.controls.update()
-    this.updatePins()
-    this.renderer.render(this.scene, this.camera)
+    const moved = this.controls.update()
+    if (moved || this.needsRender) {
+      this.needsRender = false
+      this.updatePins()
+      this.renderer.render(this.scene, this.camera)
+    }
   }
 
   dispose() {

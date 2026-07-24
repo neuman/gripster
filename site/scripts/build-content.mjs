@@ -44,15 +44,18 @@ const content = JSON.parse(readFileSync(CONTENT, 'utf8'))
 const explode = JSON.parse(readFileSync(EXPLODE, 'utf8'))
 
 const missing = []
+const known = new Set(Object.values(explode.movers).flatMap((m) => m.nodes))
 const hotspots = content.hotspots.map((h) => {
   let anchorNodes = NODE_ANCHOR[h.id]
   if (!anchorNodes) {
     const mv = MOVER_ANCHOR[h.id]
+    if (mv && !explode.movers[mv]) missing.push(`${h.id} → mover "${mv}" not in explode.json`)
     anchorNodes = explode.movers[mv]?.nodes ?? []
   }
+  // an unmapped or empty-resolving hotspot would ship a pin with nowhere to anchor
+  if (!anchorNodes.length) missing.push(`${h.id} → no anchor nodes resolved`)
   // verify every anchor node actually exists in the shipped model
-  const known = new Set(Object.values(explode.movers).flatMap((m) => m.nodes))
-  for (const n of anchorNodes) if (!known.has(n)) missing.push(`${h.id} → ${n}`)
+  for (const n of anchorNodes) if (!known.has(n)) missing.push(`${h.id} → ${n} (not in model)`)
 
   const href = h.docHeading
     ? `${BLOB}/${h.docPath}#${slug(h.docHeading)}`
@@ -69,7 +72,8 @@ const hotspots = content.hotspots.map((h) => {
 })
 
 if (missing.length) {
-  console.error('WARNING: hotspot anchor nodes not found in model:\n  ' + missing.join('\n  '))
+  console.error('ERROR: unresolved hotspot anchors — fix NODE_ANCHOR/MOVER_ANCHOR or the model:\n  ' + missing.join('\n  '))
+  process.exit(1)
 }
 
 writeFileSync(OUT, JSON.stringify(hotspots, null, 1))
