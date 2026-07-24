@@ -17,7 +17,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions'
 import { dedup, weld, simplify, prune, quantize } from '@gltf-transform/functions'
 import { meshopt } from '@gltf-transform/functions'
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer'
-import { writeFileSync, mkdirSync, statSync } from 'node:fs'
+import { writeFileSync, readFileSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -29,6 +29,7 @@ const OUT_DIR = resolve(SITE, 'public/models')
 const OUT_MAIN = resolve(OUT_DIR, 'thumbdeck_web.glb')
 const OUT_PROXY = resolve(OUT_DIR, 'thumbdeck_proxy.glb')
 const OUT_EXPLODE = resolve(OUT_DIR, 'explode.json')
+const SCREEN = resolve(REPO, 'hardware/cad/assets/screen_app.jpg') // phone-screen texture
 
 await MeshoptDecoder.ready
 await MeshoptEncoder.ready
@@ -135,8 +136,30 @@ function computeExplode(doc) {
   return result
 }
 
+// Replace the phone's lockscreen texture (material "display") with the
+// generated writing-app image, keeping the existing UVs. The screen is a
+// glowing display, so BOTH the base-colour AND emissive channels carry it —
+// swap both or the old lockscreen keeps glowing through.
+function swapPhoneScreen(doc) {
+  const disp = doc.getRoot().listMaterials().find((m) => m.getName() === 'display')
+  if (!disp) {
+    console.warn('  ! phone "display" material not found — screen not swapped')
+    return
+  }
+  const bytes = new Uint8Array(readFileSync(SCREEN))
+  let swapped = 0
+  for (const tex of [disp.getBaseColorTexture(), disp.getEmissiveTexture()]) {
+    if (tex) {
+      tex.setImage(bytes).setMimeType('image/jpeg')
+      swapped++
+    }
+  }
+  console.log(`  swapped phone screen (${swapped} channel${swapped === 1 ? '' : 's'}) →`, SCREEN.replace(REPO + '/', ''))
+}
+
 async function buildMain() {
   const doc = await io.read(RAW)
+  swapPhoneScreen(doc)
   await doc.transform(
     dedup(),
     weld(),
