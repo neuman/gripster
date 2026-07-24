@@ -71,7 +71,7 @@
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v022--true-mirror-page-keys--genuine-trackpoint-cap-mount-2026-07-24-branch-featureright-joystick",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
-   "nub_cap__m_trackpoint_red"
+   "nub_cap__trackpoint_red"
   ]
  },
  {
@@ -126,7 +126,7 @@
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this",
   "docLabel": "README.md",
   "anchorNodes": [
-   "keymat_right__m_gbc_button_gray"
+   "keymat_right__gbc_button_gray"
   ]
  }
 ]

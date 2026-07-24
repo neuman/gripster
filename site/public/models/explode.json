@@ -104,7 +104,11 @@
     -22.137
    ],
    "nodes": [
-    "pcb_left__vc"
+    "pcb_left__body",
+    "pcb_left__components",
+    "pcb_left__copper",
+    "pcb_left__silkscreen",
+    "pcb_left__soldermask"
    ]
   },
   "pcb_right": {
@@ -117,7 +121,11 @@
     "pcb_right__J1",
     "pcb_right__U1",
     "pcb_right__U2",
-    "pcb_right__vc"
+    "pcb_right__body",
+    "pcb_right__components",
+    "pcb_right__copper",
+    "pcb_right__silkscreen",
+    "pcb_right__soldermask"
    ]
   },
   "keymat_right": {
@@ -127,7 +135,7 @@
     44.275
    ],
    "nodes": [
-    "keymat_right__m_gbc_button_gray"
+    "keymat_right__gbc_button_gray"
    ]
   },
   "keymat_left": {
@@ -137,7 +145,7 @@
     44.275
    ],
    "nodes": [
-    "keymat_left__m_gbc_button_gray"
+    "keymat_left__gbc_button_gray"
    ]
   },
   "nub_cap": {
@@ -147,7 +155,7 @@
     57.557
    ],
    "nodes": [
-    "nub_cap__m_trackpoint_red"
+    "nub_cap__trackpoint_red"
    ]
   },
   "nub_spring": {
@@ -157,7 +165,7 @@
     28.779
    ],
    "nodes": [
-    "nub_spring__m_atomic_purple"
+    "nub_spring__atomic_purple"
    ]
   },
   "grip_lid_right": {
@@ -167,7 +175,7 @@
     22.137
    ],
    "nodes": [
-    "grip_lid_right__m_atomic_purple"
+    "grip_lid_right__atomic_purple"
    ]
   },
   "grip_lid_left": {
@@ -177,7 +185,7 @@
     22.137
    ],
    "nodes": [
-    "grip_lid_left__m_atomic_purple"
+    "grip_lid_left__atomic_purple"
    ]
   },
   "center_panel": {
@@ -187,7 +195,7 @@
     0
    ],
    "nodes": [
-    "center_panel__m_atomic_purple"
+    "center_panel__atomic_purple"
    ]
   },
   "back_right": {
@@ -197,7 +205,7 @@
     -66.412
    ],
    "nodes": [
-    "back_right__m_atomic_purple"
+    "back_right__atomic_purple"
    ]
   },
   "back_left": {
@@ -207,7 +215,7 @@
     -66.412
    ],
    "nodes": [
-    "back_left__m_atomic_purple"
+    "back_left__atomic_purple"
    ]
   }
  }

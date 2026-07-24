@@ -21,6 +21,7 @@ Node/mesh count drops from ~270 to ~30. The full 24 MB asm stays untouched as
 the download / fidelity master; this is the interactive web master (pre-compress).
 """
 import os
+import re
 import collections
 import numpy as np
 import trimesh
@@ -59,12 +60,21 @@ def mover_of(node):
     return None
 
 
-def gkey(g):
-    """Bucket key so meshes that share a material/appearance merge together."""
+def suffix_of(mv, node, g):
+    """Mesh-name suffix (also the merge bucket). The four KiCad board layers are
+    kept SEPARATE — body / copper / soldermask / silkscreen — so the web viewer
+    can depth-bias them (polygonOffset) instead of letting their coplanar
+    surfaces z-fight. Everything else merges by material/appearance."""
+    if mv in ("pcb_right", "pcb_left"):
+        if "/board/" in node:
+            lbl = re.sub(r"_\d+$", "", node.rsplit("/board/", 1)[1])
+            return "body" if lbl == "board_body" else lbl  # copper|soldermask|silkscreen
+        if "/components/" in node:
+            return "components"
     v = g.visual
     if isinstance(v, trimesh.visual.TextureVisuals):
-        return "m_" + (getattr(v.material, "name", "pbr") or "pbr")
-    return "vc"   # vertex-coloured (boards, components, loose bodies)
+        return getattr(v.material, "name", "pbr") or "pbr"
+    return "vc"   # loose vertex-coloured bodies (battery, flex, ring)
 
 
 def main():
@@ -100,7 +110,7 @@ def main():
             continue
         buckets = collections.defaultdict(list)
         for node, g in items:
-            buckets[gkey(g)].append(g)
+            buckets[suffix_of(mv, node, g)].append(g)
         for key, gs in buckets.items():
             if len(gs) == 1:
                 add(gs[0], f"{mv}__{key}")
