@@ -22,7 +22,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.21"
+VERSION = "v0.22"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the
@@ -336,10 +336,13 @@ def _features(geo: dict, c: Config) -> list:
         # of the left D-pad centre (x = W - 32.3 = 32.3), acting as the mouse
         # (X/Y wipers -> AIN3/AIN4 on the repurposed TP6/TP7 nets; centre-push =
         # a matrix key). PgUp/PgDn keep the mouse-button pair's exact y-heights
-        # (cy_lo +/- 5.5) and 11mm spacing, but the TRUE MB mirror x (W - 17.75
-        # = 57.25) sits ON the E73 body — the right outer-top belongs to the
-        # antenna since v0.17 — so the pair lands inboard of the module at
-        # x = 45.5, between stick and radio (the closest legal mirror).
+        # (cy_lo +/- 5.5) and 11mm spacing at the TRUE MB mirror x (W - 17.75
+        # = 57.25, the F10|DEL gap — mirroring the left pair's ESC|F1 gap).
+        # v0.22: 57.25 IS reachable even though it overlaps the E73's x-band —
+        # domes are FRONT-side, the module is BACK-side; only PGUP's back-side
+        # diode and the module's escape vias need care (the dome's r3.6
+        # all-layer via keep-out clears the antenna zone by ~4mm). v0.21 had
+        # parked the pair at 45.7 ("above F9") assuming the module blocked it.
         jx = 32.3                                     # exact D-pad mirror: 32.3 from the
         #                                               inner edge on BOTH grips (left D-pad
         #                                               sits at left-local W-32.3; right
@@ -354,7 +357,7 @@ def _features(geo: dict, c: Config) -> list:
         # click (ThinkPad grammar: clicks are the left grip's MB_L/MB_R).
         feats.append({"type": "hall_nub", "label": "NUB", "x": round(jx, 2), "y": round(cy_lo, 2),
                       "aperture_d": 10.0})
-        px = 45.7
+        px = 57.25
         feats.append({"type": "key", "label": "PGUP", "x": round(px, 2), "y": round(cy_lo + 5.5, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "PGDN", "x": round(px, 2), "y": round(cy_lo - 5.5, 2), "d": c.feat_key_d})
     else:

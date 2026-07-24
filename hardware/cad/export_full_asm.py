@@ -75,6 +75,10 @@ SHELL_MAT = trimesh.visual.material.PBRMaterial(
 KEYMAT_MAT = trimesh.visual.material.PBRMaterial(
     name="gbc_button_gray", baseColorFactor=[0.042, 0.042, 0.048, 1.0],
     metallicFactor=0.0, roughnessFactor=0.65)
+# v0.22: the nub cap is a classic ThinkPad soft-dome replica — signature red
+NUBCAP_MAT = trimesh.visual.material.PBRMaterial(
+    name="trackpoint_red", baseColorFactor=[0.55, 0.008, 0.012, 1.0],
+    metallicFactor=0.0, roughnessFactor=0.8)
 COL = {
     "battery": [199, 184, 148, 255], # tan pouch (sketch battery)
     "flex":   [230, 140, 51, 255],   # amber ribbon (sketch wiring)
@@ -220,9 +224,9 @@ def main():
 
     # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
     for n in ("back_left", "back_right", "center_panel",
-              "grip_lid_left", "grip_lid_right",
-              "nub_spring", "nub_cap"):
+              "grip_lid_left", "grip_lid_right", "nub_spring"):
         _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
+    _add(scene, _stl("nub_cap"), "nub_cap", "shells", material=NUBCAP_MAT)
     for n in ("keymat_left", "keymat_right"):
         _add(scene, _stl(n), n, "keymats", material=KEYMAT_MAT)
 

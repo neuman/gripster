@@ -64,7 +64,13 @@ KNOB = (3.0, 1.5, 2.0)      # MSK12C02 slide knob (w, protrusion toward the near
 # TMAG5273; architecture adapted from the Ploopy Bean, CERN-OHL-S v2):
 NUB_MAGNET_D, NUB_MAGNET_H = 4.0, 2.0    # N42/N52 disc, press-fit N-up (Bean spec)
 NUB_HUB_D = 7.0                          # flexure hub / post through the aperture
-NUB_CAP_D, NUB_CAP_H = 8.5, 2.5          # TPU friction cap, 4.25mm proud of the face
+# v0.22 TrackPoint-compatible mount: the hub tops out in a 4.4mm-square x 2.5
+# platform (genuine classic full-size TrackPoint caps have a ~4.5mm square
+# socket — soft dome / soft rim / classic dome all fit), plus a printed
+# classic-soft-dome replica cap in RED TPU (dot grid, mushroom skirt).
+NUB_POST_SQ, NUB_POST_H = 4.4, 2.5       # square platform (genuine-cap socket: 4.5 sq x 2.5)
+NUB_CAP_D, NUB_CAP_H = 7.8, 5.0          # classic soft-dome replica: OD x height (cap top 4.3mm proud)
+NUB_HUB_TOP = 14.0                       # hub/platform base z (0.7 below the 14.7 face)
 NUB_SPRING_FLANGE_D = 14.8               # flange captured in the lid's counterbore
 NUB_ARM_T = 0.8                          # flexure arm thickness (print-tune = feel)
 
@@ -1074,10 +1080,14 @@ def _nub_spring_build():
     # hub: magnet stub down toward the PCB, post up through the aperture,
     # O5 cap spigot on top
     hub = (cq.Workplane("XY").workplane(offset=10.4).center(x, y)
-           .circle(NUB_HUB_D/2).extrude(16.4 - 10.4))
-    spigot = (cq.Workplane("XY").workplane(offset=16.4).center(x, y)
-              .circle(2.5).extrude(1.0))
-    spring = spring.union(hub).union(spigot)
+           .circle(NUB_HUB_D/2).extrude(NUB_HUB_TOP - 10.4))
+    # v0.22: genuine-TrackPoint-cap mount — 4.4mm square platform, 2.5 tall
+    # (classic caps' socket is ~4.5 sq x 2.5; both genuine caps and the printed
+    # replica push-fit). Top edges get a 0.4 chamfer for blind insertion.
+    post = (cq.Workplane("XY").workplane(offset=NUB_HUB_TOP).center(x, y)
+            .rect(NUB_POST_SQ, NUB_POST_SQ).extrude(NUB_POST_H)
+            .edges("|Z or >Z").chamfer(0.4))
+    spring = spring.union(hub).union(post)
     # 3 legs from the flange underside to the PCB front face (z 9.5): the axial
     # datum for the whole nub. The lid counterbore ceiling (13.3) presses the
     # flange (top 13.35) 0.05 onto them when the lid screws go home — without
@@ -1099,28 +1109,43 @@ def nub_cap():
     return _memo("nub_cap", _nub_cap_build)
 
 def _nub_cap_build():
-    """TPU friction cap for the nub: O8.5 with a shallow finger dish, press-fit
-    on the spring's O5 spigot. One revolved profile (boolean sphere cuts
-    tessellate non-watertight); the revolve's dish-apex seam edge is welded
-    after export."""
+    """v0.22: CLASSIC ThinkPad soft-dome replica in RED TPU — mushroom profile
+    (flared skirt, waist, dotted dome top) with the standard ~4.5mm-square cap
+    socket, so this printed cap and any GENUINE classic TrackPoint cap
+    interchange on the spring's 4.4mm square platform. The socket corners are
+    r0.6-rounded (diagonal reach 3.00) and the waist is O6.8 (r3.4): together
+    they leave a 0.40mm corner wall — one extrusion width — where the socket's
+    top 0.5mm overlaps the waist band (r3.1 left an unprintable 0.10mm wall;
+    caught by the v0.22 adversarial STL review). The platform's chamfered
+    corners (~2.84 reach) clear the socket with 0.16.
+    Revolved profile + bump-grid union; welded after export if needed."""
     nz = _nub_zone("right")
     assert nz, "nub_cap needs the right grip's hall_nub feature"
     x, y = nz["x"], nz["y"]
     import math as _m
-    z0 = 16.45                                   # cap base (0.05 over spigot base)
-    CAP_R_, CAP_H = NUB_CAP_D/2, NUB_CAP_H
-    SOCK_R, SOCK_DEPTH = 2.6, 1.6
-    DISH_R, DISH_SINK = 9.0, 0.6
-    zc = CAP_H - DISH_SINK + DISH_R
-    rm = _m.sqrt(DISH_R**2 - (DISH_R - DISH_SINK)**2)
-    rmid = rm / 2.0
-    zmid = zc - _m.sqrt(DISH_R**2 - rmid**2)
+    z0 = NUB_HUB_TOP                             # cap skirt bottom = platform base
+    # mushroom silhouette (r, h): skirt -> waist -> dome, top flat for the dots
     prof = (cq.Workplane("XZ")
-            .moveTo(0.0, SOCK_DEPTH).lineTo(SOCK_R, SOCK_DEPTH).lineTo(SOCK_R, 0.0)
-            .lineTo(CAP_R_, 0.0).lineTo(CAP_R_, CAP_H).lineTo(rm, CAP_H)
-            .threePointArc((rmid, zmid), (0.0, CAP_H - DISH_SINK))
+            .moveTo(0.0, 0.0).lineTo(3.9, 0.0)   # skirt bottom OD 7.8
+            .lineTo(3.55, 1.5).lineTo(3.4, 2.1)  # skirt taper
+            .lineTo(3.4, 3.0)                    # waist O6.8 (corner-wall printability)
+            .lineTo(3.85, 3.9)                   # dome underside flare
+            .lineTo(3.9, 4.5)                    # dome OD 7.8
+            .lineTo(3.4, 4.9).lineTo(0.0, 4.9)   # rounded-ish rim to flat top
             .close())
-    cap = prof.revolve(360, (0, 0), (0, 1)).translate((x, y, z0))
+    cap = prof.revolve(360, (0, 0), (0, 1))
+    # classic soft-dome dot grid: ~0.8mm studs on the top face
+    for gx in range(-2, 3):
+        for gy in range(-2, 3):
+            bx, by = gx * 1.2, gy * 1.2
+            if _m.hypot(bx, by) > 3.0:
+                continue
+            cap = cap.union(cq.Workplane("XY").workplane(offset=4.8)
+                            .center(bx, by).circle(0.4).extrude(0.45))
+    # standard cap socket: 4.6 square x 2.6 deep, corners r0.6
+    cap = cap.cut(cq.Workplane("XY").workplane(offset=-0.1)
+                  .rect(4.6, 4.6).extrude(2.7).edges("|Z").fillet(0.6))
+    cap = cap.translate((x, y, z0))
     m = _to_trimesh(cap, "nub_cap")
     if not m.is_watertight:
         m.merge_vertices(merge_tex=True, merge_norm=True)
@@ -1333,7 +1358,8 @@ def _asm_col(k):
     if k == "center_panel": return [0.48,0.35,0.65,0.55]
     if k.startswith("grip_lid"): return [0.48,0.35,0.65,0.55]
     if k.startswith("keymat"): return [0.23,0.23,0.24,1]
-    if k in ("nub_spring", "nub_cap"): return [0.23,0.23,0.24,1]  # keymat gray
+    if k == "nub_spring":   return [0.23,0.23,0.24,1]  # keymat gray
+    if k == "nub_cap":      return [0.78,0.09,0.11,1]  # ThinkPad red (classic soft dome)
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
     if k == "magsafe":      return [0.72,0.72,0.74,1]
@@ -1351,7 +1377,7 @@ def _render_parts(A):
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
               "center_panel": "center panel (sunken flush-screen well + MagSafe recess + 4 screws + scallop)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
-              "nub_cap": "nub friction cap (O8.5 TPU, press-fits the spring spigot)",
+              "nub_cap": "nub cap — classic ThinkPad soft-dome replica (RED TPU, dot grid; genuine caps also fit)",
               "keymat_right": "right keymat (plungers + hinge web)"}
     for nm, title in titles.items():
         render_iso([(A[nm], [0.4, 0.45, 0.5, 1])], os.path.join(RENDERS, f"part_{nm}.png"),

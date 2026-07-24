@@ -277,7 +277,17 @@ def build_matrix(bd):
         for p in sw.Pads():
             p.SetNet(bd.net(f"COL{c}") if p.GetNumber() == "1" else dn)
         d = pcbnew.FootprintLoad(STOCK + "/Diode_SMD.pretty", "D_SOD-323")
-        d.SetReference(f"D{i+1}"); d.SetValue("1N4148WS"); d.SetPosition(vec(x, y - 3.0)); bd.b.Add(d)
+        # v0.22: the true-mirror PGUP/PGDN (x 57.25) break the default +3mm
+        # diode rule — PGUP's spot (deck 87.5) is under the E73 belly
+        # (castellations solder the module flush; zero height there) and
+        # PGDN's (deck 76.5) is on the TP1-5 SWD row (y 75.7, x 50.5-62.5).
+        # Both diodes drop to deck y 73.2, just under the TP row: PGUP's at
+        # x 52.5, PGDN's behind its own dome (57.25 — domes are front-side,
+        # 'pads allowed' inside the dome keep-outs).
+        DIODE_DECK = {"PGUP": (52.5, 73.2), "PGDN": (57.25, 73.2)}
+        ov = DIODE_DECK.get(k.get("label")) if bd.side == "right" else None
+        dx_, dy_ = (ov[0], _fy(ov[1], H)) if ov else (x, y - 3.0)
+        d.SetReference(f"D{i+1}"); d.SetValue("1N4148WS"); d.SetPosition(vec(dx_, dy_)); bd.b.Add(d)
         d.Flip(d.GetPosition(), False)   # to B.Cu
         for pad in d.Pads():
             pad.SetNet(bd.net(f"ROW{r}") if pad.GetNumber() == "1" else dn)  # K->row, A->node
@@ -452,9 +462,16 @@ def place_components(bd):
 
     # reset tact (top actuator -> pinhole in the shell floor), between module and USB-C
     # v0.21: SW91 moved from rev-A (27.5,9.0) — that deck spot (45.0,88.0) is
-    # inside the relocated PGUP dome's via keep-out. Now at deck (53.5, 71.5),
+    # inside the relocated PGUP dome's via keep-out. v0.22: moved again, deck
+    # (53.5,71.5) -> (46.0,80.5) — the true-mirror PGDN (57.25,73.5) put its
+    # dome ring 4.25mm from the old spot; candidates (46.5,71.5) and (41,73)
+    # hit TP6/TP7 and R1/R2 (the R-row + TP1-5 row BOTH live at deck y 75.7,
+    # and SW91's 7.6x5.7 courtyard fits NO gap in the y 66-77 band). The only
+    # rectangle that fits is the vacated old-PGUP zone: deck (46.0, 80.5) —
+    # north of the TP row, south of the USB In2 lane resurfaces (y >= 83.9),
+    # east of U4, west of the C1/C2 charger caps,
     # the strip below the module.
-    P(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 18.993, 25.5,
+    P(bd.load("SW", "SW_Push_1P1T_XKB_TS-1187A"), "SW91", "TS-1187A", 26.493, 16.5,
       {"1": "RESET", "2": "GND"})
     S("RST", 18.993, 29.0)
 

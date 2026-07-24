@@ -3,7 +3,52 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.21 (first entry).
+current design is rev-A / v0.22 (first entry).
+
+## v0.22 — true-mirror page keys + genuine-TrackPoint-cap mount (2026-07-24, branch feature/right-joystick)
+
+Two user-feedback items on the v0.21 print/renders.
+
+- **PgUp/PgDn move to the TRUE mouse-button mirror x = 57.25** (the F10|DEL
+  gap, mirroring the left pair's ESC|F1 gap; y unchanged at cy_lo ± 5.5). The
+  user caught them sitting "above F9" (x 45.7). v0.21 had dodged 57.25 with
+  the note "the true mirror is ON the E73 body" — which conflated the two
+  board FACES: domes are front-side copper, the module is a back-side part,
+  and they coexist at the same x/y. What actually needed care: (1) BOTH
+  feature diodes — PGUP's default spot (deck 57.25, 87.5) is under the module
+  belly and PGDN's (57.25, 76.5) is on the TP1-5 SWD row (y 75.7), so they
+  drop to deck (52.5, 73.2) and (57.25, 73.2), just under the TP row; (2)
+  SW91 moved (53.5, 71.5) → (46.0, 80.5) — the vacated old-PGUP zone; its
+  first two candidates hit TP6/TP7 and the R-row (the reset's 7.6×5.7
+  courtyard fits no gap in the crowded y 66–77 band); (3) the
+  module's south-castellation escape vias must clear the PGUP dome's r3.6
+  all-layer via keep-out — the autorouter re-fans them (tracks stay legal
+  through the keep-out; only vias are banned). The dome courtyard clears the
+  antenna keep-out band (module-top 5.5 mm) by ~4 mm.
+- **The nub mount becomes GENUINE-TrackPoint-cap compatible.** v0.21's Ø5
+  round spigot + smooth-top printed dish cap (TPU, but no dot texture — a
+  slick surface that wears with no replacement path but a reprint); the user
+  asked for the classic cap look ("people who love the nub
+  will respond to it visually"). The spring's post is now the **standard
+  classic TrackPoint square platform: 4.4 mm sq × 2.5** (genuine classic
+  full-size caps — soft dome / soft rim / classic dome, the ones sold in
+  10-packs everywhere — have a ~4.5 mm square socket ~2.5 deep; dimension
+  cross-checked against the navcaps project's cap-mount sources, which print
+  against genuine caps: mount side 4.5, height 2.5, classic cap adds ~5 mm
+  height, and 6 mm-tall variants "tend to come off" as thumbsticks). The
+  printed cap is now a **classic soft-dome replica in ThinkPad-red TPU**:
+  mushroom profile (Ø7.8 flared skirt, Ø6.8 waist, Ø7.8 dotted dome, 5.25
+  tall), the same 4.6 sq × 2.6 socket (corners r0.6, waist Ø6.8 — the r0.6 corner
+  reaches r3.00, so a Ø6.2 waist left a 0.10 mm unprintable corner wall,
+  caught in STL review; Ø6.8 leaves 0.40 mm ≈ one extrusion width), so
+  printed and genuine caps interchange on the same post.
+  Hub top drops 16.4 → **14.0** (0.7 below the face): the cap skirt nestles
+  INTO the Ø10 aperture exactly like a TrackPoint between keycaps; dome top
+  z 18.9 (+0.35 dot grid) ≈ 4.2 mm proud of the face. First tilt-stop is now the rubber skirt
+  against the aperture wall (1.2 mm) instead of plastic-on-plastic — gentler
+  on the flexure (peak arm strain drops below ~3.5%). Sensor gap, magnet,
+  arms, legs and clamp are untouched; the GLB paints the cap
+  `trackpoint_red`.
 
 ## v0.21 — right-grip pointing nub: Bean-style TMAG5273 hall sensor (2026-07-23, branch feature/right-joystick)
 

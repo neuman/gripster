@@ -1,4 +1,4 @@
-# Assembly, first flash, charge, pair & test — rev-A (v0.21)
+# Assembly, first flash, charge, pair & test — rev-A (v0.22)
 
 > **This device has never been physically built.** The boards are routed and
 > DRC-clean and the shells are fit-checked in CAD, but no first article exists —
@@ -42,9 +42,11 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
    `nub_spring` (Ø14.8 flexure; **its 3 spiral arms are the compliance coupon**
    — print one, flex it by hand, and if it feels dead-stiff or floppy retune
    `NUB_ARM_T` ±0.2 in `deck3d.py` before printing the final) and `nub_cap`
-   (**TPU 95A** like the keymats — the grippy dome IS the point; tune its
-   Ø5.2 socket ±0.1 to press snug on the spring's spigot) — and the two
-   keymats (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
+   (**RED TPU 95A**, prints with the keymats — a classic ThinkPad soft-dome
+   replica; tune its 4.6 mm square socket ±0.1 to press snug on the spring's
+   4.4 mm square platform — or skip it and push on any **genuine classic
+   full-size TrackPoint cap**, which shares the same socket standard) — and
+   the two keymats (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
    `hardware/cad/build/`, STEP alongside). Every part fits a 220 × 220 bed
    (Ender 3 V2) flat; orientations + slicer notes in
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
@@ -126,14 +128,16 @@ serviced through the left grip, not the panel).
    and the offset range is wrong). It's a press fit; a drop of CA if loose.
    **(b) Spring:** stand the spring on the bare PCB zone under the aperture —
    its 3 legs on the board's front face, magnet down over the sensor — then
-   lower the lid over it so the spigot rises through the Ø10 aperture and the
-   underside counterbore captures the flange. Driving the lid screws presses
+   lower the lid over it so the square cap platform rises through the Ø10
+   aperture and the underside counterbore captures the flange. Driving the lid screws presses
    the counterbore ceiling onto the flange (0.05 mm preload against the legs):
    the spring is clamped rigid, no adhesive. If it can rattle after screwing
    down, a print tolerance ate the preload — shim the counterbore with a strip
    of tape rather than glue.
-   **(c) Cap:** with the lid screwed down, press the `nub_cap` onto the Ø5
-   spigot. It pulls off for lid removal — pull straight up, don't lever.
+   **(c) Cap:** with the lid screwed down, press the cap — the printed red
+   replica or a genuine classic TrackPoint cap — onto the 4.4 mm square
+   platform, exactly like re-capping a ThinkPad. It pulls off for lid
+   removal — pull straight up, don't lever.
    First power-up: leave the nub untouched for the first ~2 s (32-sample zero
    calibration); axis flips/swaps are DT properties in `thumbdeck.dts`, not
    code.

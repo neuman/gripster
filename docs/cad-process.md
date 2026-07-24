@@ -1,4 +1,4 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.21
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.22
 
 **v0.21 right-grip pointing nub (2026-07-23, branch feature/right-joystick).**
 Bean-style hall nub at the left-D-pad mirror: the right lid gains a plain
@@ -7,10 +7,12 @@ prints **8 and 9** join the set — the **`nub_spring`** (Ø14.8 flange + 3 spir
 flexure arms + Ø7 magnet hub; 3 underside legs bear on the PCB front face and
 the counterbore ceiling clamps the flange onto them with 0.05 mm preload — no
 axial float; arm thickness `NUB_ARM_T` = 0.8 is the compliance coupon-tune)
-and the **`nub_cap`** (Ø8.5 × 2.5 TPU friction dome with an r9 concave dish,
-press-fit 0.95 mm onto the spring's Ø5 spigot). Only ~1.7 mm of hub and the
-cap emerge — the cap tops out 4.25 mm proud of the face, ThinkPad-flat vs the
-ALPS gimbal's ~12 mm
+and the **`nub_cap`** — since v0.22 a **classic ThinkPad soft-dome replica in
+red TPU** (Ø7.8 mushroom, dot grid, 5.25 tall incl. the 0.35 dot studs) on a
+**4.4 mm-square × 2.5 TrackPoint-standard platform** (hub top at z 14.0, 0.7
+below the face), so genuine classic caps interchange with the print. The cap
+skirt nestles into the Ø10 aperture; the dome top sits 4.2 mm (dot tips
+4.55 mm) proud of the face, ThinkPad-flat vs the ALPS gimbal's ~12 mm
 (that variant was implemented and reverted; see design-decisions.md). The
 TMAG5273 sensor is back-side SMT under the aperture: nothing electronic
 penetrates the face. Both nub parts are in the fit-check and bed-gate.
@@ -218,7 +220,7 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 | `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |
 | `nub_spring` | flange down (PETG) | legs + hub up; brim; NO supports (arms self-support); `NUB_ARM_T` is the stiffness coupon |
-| `nub_cap` | base down (TPU 95A) | dish up; print with the keymats |
+| `nub_cap` | skirt down (**red** TPU 95A) | dot-grid top up; print with the keymats; genuine classic TrackPoint caps are a no-print alternative |
 
 Slicer: ~0.12 mm elephant-foot compensation keeps the printed seam faces true;
 the modeled 0.25–0.3 mm joint clearances assume roughly that. Solid infill on the

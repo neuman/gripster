@@ -79,9 +79,15 @@ for side in ("right", "left"):
         sx, sy = sw.GetPosition().x/1e6, H - sw.GetPosition().y/1e6
         worst_sw = max(worst_sw, math.hypot(sx - k["x"], sy - k["y"]))
         dx_, dy_ = d.GetPosition().x/1e6, H - d.GetPosition().y/1e6
-        worst_d = max(worst_d, math.hypot(dx_ - k["x"], dy_ - (k["y"] + 3.0)))
+        # v0.22: the true-mirror PGUP/PGDN carry explicit diode overrides in
+        # gen_board.py (DIODE_DECK) — the default +3.0 spot is under the E73
+        # belly / on the TP row. Mirror the same override table here.
+        DIODE_DECK = {"PGUP": (52.5, 73.2), "PGDN": (57.25, 73.2)}
+        ov = DIODE_DECK.get(k.get("label")) if side == "right" else None
+        ex, ey = ov if ov else (k["x"], k["y"] + 3.0)
+        worst_d = max(worst_d, math.hypot(dx_ - ex, dy_ - ey))
     check("all domes at model key centres", worst_sw < 0.01, f"worst dev {worst_sw:.4f} mm")
-    check("all diodes at key+(0,+3.0)", worst_d < 0.01, f"worst dev {worst_d:.4f} mm")
+    check("all diodes at key+(0,+3.0) or DIODE_DECK override", worst_d < 0.01, f"worst dev {worst_d:.4f} mm")
 
     # 3. dome courtyard spacing (r3.9 -> min 7.8 centre distance)
     md = min(math.hypot(a["x"]-b2["x"], a["y"]-b2["y"])
@@ -139,6 +145,12 @@ for side in ("right", "left"):
         mind = 99.0; near = ""
         for f in b.GetFootprints():
             if f.GetValue() in ("SNAP7", "1N4148WS") or f.GetReference() in ("J2",):
+                continue
+            # v0.22: PGUP/PGDN sit at the true MB mirror, over the E73's x-band.
+            # Domes are FRONT-side copper; back-side parts (the module, TP pads,
+            # charger caps) legally coexist under them — only FRONT-side bodies
+            # can physically conflict with a dome. DRC still owns copper rules.
+            if f.IsFlipped():
                 continue
             fb = f.GetBoundingBox(False)
             fr = (fb.GetLeft()/1e6, H - fb.GetBottom()/1e6, fb.GetRight()/1e6, H - fb.GetTop()/1e6)
