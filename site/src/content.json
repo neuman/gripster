@@ -97,8 +97,8 @@
           "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this"
         },
         {
-          "label": "Honest status: designed, not built",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#project-status--roadmap"
+          "label": "Design decisions",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md"
         },
         {
           "label": "The parametric model (deck.py)",
@@ -146,7 +146,7 @@
       "paragraphs": [
         "It's a single 9×10 matrix — 78 keys — scanned by the E73 (nRF52840) module in the right grip. The left grip has no brain of its own, just domes and one diode per key so chords don't ghost. Half the columns are local to the right grip; the rest, and every row, cross over on a 16-way ribbon. A small simulator walks about 68,500 multi-key combinations and turns up zero ghosts or misses.",
         "Power is one 403040 LiPo (~450–500 mAh) tucked into the left grip, its leads crossing to a charger and slide switch on the right. The switch only cuts the load, so the cell keeps charging over USB-C even with the deck off. The module spends 19 pins on the matrix and one on battery sensing, with a spare I²C bus parked on test pads in case a trackpad ever happens.",
-        "It pairs as a single Bluetooth keyboard — no second half to drop. The antenna sits at the top edge, as far from the phone and battery as the board allows, with a clear-out in the copper and a notch in the shell to match. Whether that's enough with a phone right up against it and a hand around the grip is the kind of thing you only find out by building one."
+        "It pairs as a single Bluetooth keyboard — no second half to drop. The antenna sits at the top edge, as far from the phone and battery as the board allows, with a clear-out in the copper and a notch in the shell to match."
       ],
       "links": [
         {
@@ -196,30 +196,29 @@
       ]
     },
     {
-      "key": "status",
-      "heading": "Where it stands",
-      "dek": "Designed and checked, not yet built. Make one and you'll be the first.",
+      "key": "build",
+      "heading": "Build one",
+      "dek": "It's open hardware — the boards, the shells, the firmware, and the model that generates them all.",
       "paragraphs": [
-        "The design is done and machine-checked. Both boards route clean in KiCad 9 and export a JLCPCB-ready package; every printed part is watertight and fits a stock Ender 3 V2 bed. Every image here is a render or a generated layout — the only photos in the repo are of the little Rii keyboard I studied first.",
-        "What I haven't done is order a board, print a shell, press a dome, or flash the firmware — so the things software can't check are still open: how it feels in the hand, how the domes wear, real battery life, and how Bluetooth copes with a phone pressed against the antenna. \"Zero DRC violations\" means no rule was broken, not that the circuit is right.",
-        "Next is a small first run — five sets — then a bring-up pass to flash it, prove the matrix, and measure the current and range, and a rev-B shaped by whatever that teaches. It's all open hardware under Apache-2.0, so if you'd like to beat me to the first working one, everything you'd need is in the repo."
+        "Everything's on GitHub under Apache-2.0: the two KiCad boards with a JLCPCB-ready fab package, the printable shells sized for a stock Ender 3 V2, the ZMK firmware, and the deck.py model that spits all of it out. Order the boards turnkey, print the shells, press in the snap domes, and flash the firmware over USB-C.",
+        "Want a different layout, grip shape, or keymap? Edit the model and regenerate — the boards, shells, and firmware all follow. Pull requests and build reports welcome."
       ],
       "links": [
         {
-          "label": "Honest status (README)",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#-honest-status-designed-not-built"
+          "label": "Build guide",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#build-guide"
         },
         {
-          "label": "Project status & roadmap",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#project-status--roadmap"
+          "label": "Bill of materials",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/bill-of-materials.md"
         },
         {
-          "label": "Fab-readiness evaluation",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/evaluation.md"
+          "label": "Firmware",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/tree/main/firmware"
         },
         {
-          "label": "8-dimension design review",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-review.md"
+          "label": "deck.py — the parametric model",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
         }
       ]
     }
@@ -242,6 +241,6 @@
     "interesting",
     "how",
     "parametric",
-    "status"
+    "build"
   ]
 }

@@ -205,7 +205,7 @@ const footer = el(
   el(
     'p',
     { class: 'footer-note' },
-    'Open hardware under Apache-2.0. If you build one, you’ll be the first. ',
+    'Open hardware under Apache-2.0. ',
     el('a', { href: LINKS.license, target: '_blank', rel: 'noopener' }, 'License'),
   ),
 )
