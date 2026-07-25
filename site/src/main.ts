@@ -171,12 +171,8 @@ for (const key of content.sectionOrder) {
 const gallery = el(
   'section',
   { class: 'section gallery' },
-  el('h2', {}, 'Renders, not photographs'),
-  el(
-    'p',
-    { class: 'dek' },
-    'Every image here is generated from the model — the device has never been physically built.',
-  ),
+  el('h2', {}, 'A closer look'),
+  el('p', { class: 'dek' }, 'Straight from the model and the KiCad layout.'),
 )
 const grid = el('div', { class: 'render-grid' })
 for (const [src, cap] of [
@@ -209,7 +205,7 @@ const footer = el(
   el(
     'p',
     { class: 'footer-note' },
-    'Gripster is open hardware under Apache-2.0. Designed, not built — if you make one, you make the first. ',
+    'Open hardware under Apache-2.0. If you build one, you’ll be the first. ',
     el('a', { href: LINKS.license, target: '_blank', rel: 'noopener' }, 'License'),
   ),
 )

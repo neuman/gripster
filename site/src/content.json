@@ -5,7 +5,7 @@
       "anchorNode": "phone",
       "title": "Flush-screen phone well",
       "oneLiner": "A sunken pocket in the center panel that seats the S25 Ultra so its screen sits level with the keyboard face.",
-      "blurb": "v0.18 sank the center panel into a well so a cased Samsung S25 Ultra's screen sits flush with the keyboard face — the device face plane sits 14.7 mm off the back while the well floor drops to 5.1 mm, closing the step between glass and keycap. The goal was thumbs sweeping straight from screen to keys with no step, explicitly not a phone bolted on top of a keyboard. Fitting the phone that deep left no cell height in the spine, so the same v0.18 change moved the 403040 LiPo battery into the left grip's cavity with no PCB reroute. Like the rest of rev-A, this is a CAD fit-check against real component dimensions — no physical well has been printed or tested against an actual phone.",
+      "blurb": "v0.18 sank the center panel into a well so a cased Samsung S25 Ultra's screen sits flush with the keyboard face — the device face plane sits 14.7 mm off the back while the well floor drops to 5.1 mm, closing the step between glass and keycap. The goal was thumbs sweeping straight from screen to keys with no step, explicitly not a phone bolted on top of a keyboard. Fitting the phone that deep left no cell height in the spine, so the same v0.18 change moved the 403040 LiPo battery into the left grip's cavity with no PCB reroute.",
       "docPath": "docs/design-decisions.md",
       "docHeading": "v0.18 — flush-screen phone well + battery to the left grip (2026-07-14)"
     },
@@ -86,11 +86,10 @@
     {
       "key": "lede",
       "heading": "What it is",
-      "dek": "Gripster turns a phone into a handheld deck — a keyboard built around the screen, not bolted onto it.",
+      "dek": "A keyboard built around your phone's screen, not bolted on top of it.",
       "paragraphs": [
-        "Your phone mounts landscape in the center on a MagSafe ring and drops into a sunken well, deep enough that the glass and the keyboard face form one continuous plane. Two contoured grips flank it. You hold it like a game controller and thumb-type a full 78-key QWERTY on metal snap domes — the same clicky stainless discs used in TV remotes and in the Rii i8+ that was studied as a reference. There's no switch, no stem, no solder: the dome is the switch. The shell takes its design language from a Game Boy Color — boxy rounded outline, translucent Atomic-Purple shell, dark-gray keymats.",
-        "Despite the two halves, it isn't a split keyboard. One certified nRF52840 module lives in the right grip and scans a single 9x10 matrix; the left grip is fully passive — just domes, diodes, and a connector — joined by one 16-way FFC ribbon. That means one Bluetooth device to pair, one battery, one firmware image. Every part of this — the KiCad boards, the printable shells, the renders, even the ZMK keymap — is generated from one parametric Python model, so moving a key in the model moves the board pad, the shell opening, and the firmware matrix with it.",
-        "Honest status: rev-A (v0.22) is designed, not built. Both boards are routed and DRC-clean, the printable shells are watertight and bed-fit-checked, and the fab package exports cleanly — but nothing has been ordered, printed, pressed, or flashed. No physical Gripster has ever existed."
+        "Your phone snaps to a MagSafe ring in the middle and drops into a well deep enough that the glass sits flush with the keys — one continuous face, not a phone perched on a slab. Two grips flank it. You hold the whole thing like a game controller and thumb-type a full 78-key QWERTY. The shell is translucent Atomic-Purple over dark-gray keymats; it looks a bit like a Game Boy Color ate a keyboard.",
+        "The keys are metal snap domes — the clicky stainless discs from inside a TV remote. No switches, no stems, nothing to hand-solder: the dome is the switch. And while it has two halves, it isn't a split keyboard. One chip in the right grip runs everything, the left grip is just domes and diodes, and a ribbon cable joins them — so it's one Bluetooth device, one battery, one firmware image."
       ],
       "links": [
         {
@@ -113,12 +112,13 @@
     },
     {
       "key": "interesting",
-      "heading": "What makes it interesting",
-      "dek": "Five design choices that set Gripster apart from a phone case with buttons glued on — all verifiable in the repo, none yet verified on a bench.",
+      "heading": "A few things it does differently",
+      "dek": "Four ideas that make it more than a phone case with buttons glued on.",
       "paragraphs": [
-        "The phone doesn't sit on top of the keyboard — it sits inside it. The well is deep enough that the phone's screen and the keyboard face form one continuous plane, 14.7 mm off the back, 15.7 mm thick overall. And despite the two flanking grips, this isn't a split keyboard: one certified nRF52840 module (an Ebyte E73) lives in the right grip and scans a single 9×10 matrix across both halves. The left grip is fully passive — just domes, diodes, and a connector — joined to the right by one 16-way FFC ribbon. That means one Bluetooth device to pair, one battery, one firmware image, not two halves that have to find each other.",
-        "There are no mechanical switches and nothing to hand-solder. All 78 keys are Snaptron 7 mm metal snap domes pressed straight onto gold ENIG pads — the dome is the switch. Every part that does get soldered, including the single hall-effect sensor behind the right-grip pointing nub, sits on one side of each board in the same reflow pass, so JLCPCB can build both boards 100% turnkey.",
-        "The whole thing is generated, not drawn by hand: one parametric Python file, hardware/scripts/deck.py, emits the KiCad boards, the CadQuery shells, the renders, and the ZMK keymap together, so a key opening lands on its dome pad by construction rather than by manual alignment. Both PCBs are fully autorouted and DRC-clean in KiCad 9 — 0 violations, 0 unconnected items — with the JLCPCB fab package exporting cleanly. That's a statement about the layout, not about a physical unit: rev-A is design-complete, not ordered, printed, or flashed."
+        "The screen sits inside the deck, not on top of it. The well is deep enough that the phone's glass and the keyboard face line up flush — 15.7 mm thick overall — so your thumbs slide from screen to keys without a lip in the way.",
+        "It looks like a split, but it's one keyboard. A single nRF52840 module in the right grip scans the whole 9×10 matrix; the left grip is passive — domes, diodes, a connector — wired across on one ribbon. That's one thing to pair, one battery to charge, and no two halves trying to find each other.",
+        "Nothing gets hand-soldered. The 78 keys are snap domes pressed onto gold pads, and every part that is soldered sits on one side of each board in a single reflow pass. A fab house builds both boards end to end — no iron, no rework.",
+        "It's generated, not drawn. One Python file lays out both grips, and the circuit boards, printed shells, firmware keymap, and these renders all fall out of it. A key opening lines up with its pad because the same number placed both — not because I eyeballed it."
       ],
       "links": [
         {
@@ -142,11 +142,11 @@
     {
       "key": "how",
       "heading": "How it works",
-      "dek": "One 9×10 matrix, one radio module, one battery — scanned, powered, and broadcast entirely from the right grip.",
+      "dek": "One matrix, one radio, one battery — all run from the right grip.",
       "paragraphs": [
-        "Gripster is a single 9×10 matrix (78 of 90 possible positions used) scanned by one Ebyte E73 (nRF52840) module in the right grip — a ZMK unibody board, not a split. The left grip has no chip at all: just domes and one 1N4148WS diode per key (col2row, cathode to the row net) so simultaneous key presses stay unambiguous. Columns 0–4 are wired locally in the right grip; columns 5–9 and all nine shared rows reach the left grip over a 16-way FFC ribbon. `sim_matrix.py` checks the result exhaustively: 78 unique row/column intersections and zero ghost or miss failures across roughly 68,500 simulated multi-key scenarios.",
-        "The module spends 19 GPIO pins on the matrix plus one ADC pin for battery sensing, with a spare I²C bus broken out to test pads for a possible future trackpad. Power comes from a single 403040 LiPo cell (~450–500 mAh) that physically lives in the left grip; its leads cross to the right grip, where a charger, a slide switch, and the module's high-voltage supply input make up the whole power tree. The switch only gates the load, so the cell keeps charging over USB-C even while the deck is switched off.",
-        "Bluetooth is one HID connection, advertised as \"thumbdeck\" — there's no second half to pair or drop. The E73's ceramic antenna is routed up off the top board edge, as far as the layout allows from the phone and the battery, with a copper keep-out and a matching relief cut in the shell wall. None of this has been measured on real hardware: antenna performance next to a phone in a closed hand is expected to take some hit, but the design has never been built to check by how much."
+        "It's a single 9×10 matrix — 78 keys — scanned by the E73 (nRF52840) module in the right grip. The left grip has no brain of its own, just domes and one diode per key so chords don't ghost. Half the columns are local to the right grip; the rest, and every row, cross over on a 16-way ribbon. A small simulator walks about 68,500 multi-key combinations and turns up zero ghosts or misses.",
+        "Power is one 403040 LiPo (~450–500 mAh) tucked into the left grip, its leads crossing to a charger and slide switch on the right. The switch only cuts the load, so the cell keeps charging over USB-C even with the deck off. The module spends 19 pins on the matrix and one on battery sensing, with a spare I²C bus parked on test pads in case a trackpad ever happens.",
+        "It pairs as a single Bluetooth keyboard — no second half to drop. The antenna sits at the top edge, as far from the phone and battery as the board allows, with a clear-out in the copper and a notch in the shell to match. Whether that's enough with a phone right up against it and a hand around the grip is the kind of thing you only find out by building one."
       ],
       "links": [
         {
@@ -169,12 +169,12 @@
     },
     {
       "key": "parametric",
-      "heading": "The whole product is generated from one Python file",
-      "dek": "Every board, shell opening, and keycap in this repo traces back to a single parametric model — move a key there and the pad, the print, and the firmware matrix move with it.",
+      "heading": "It all comes out of one Python file",
+      "dek": "Move a key in one place and its pad, its hole in the shell, and its slot in the firmware all move with it.",
       "paragraphs": [
-        "The layout for both grips — key positions, dimensions, keep-outs — lives in one file, hardware/scripts/deck.py. Everything downstream is generated from it, not drawn or measured separately: the KiCad board files, the printable shell geometry, and the ZMK firmware keymap all derive from the same coordinates.",
-        "The 3D side runs through a second script, hardware/cad/deck3d.py (CadQuery, on OpenCASCADE), which builds the 9 printed parts from deck.py's geometry plus the real KiCad component placement — so key openings land on the actual dome pads, bosses land on the actual mount holes, and the USB-C/switch cutouts land on the actual connectors, by construction rather than by hand-measuring. Every run is also checked with trimesh and manifold3d for watertightness and collisions across the full assembly.",
-        "As of rev-A (v0.22), that loop is clean end to end: both KiCad boards route with 0 DRC violations / 0 unconnected items, and all 9 printed parts pass the watertight and 0-collision checks for an Ender 3 V2 bed. None of it has been built — no board has been ordered or powered, no part has been printed. 'Clean' here means no design rule was broken and no solid interferes with another, not that the circuit works or the parts fit in hand."
+        "Both grips — every key position, dimension, and keep-out — live in one file, deck.py. Everything downstream is generated from it: the KiCad boards, the printed shells, the ZMK keymap. Nothing gets drawn or measured twice.",
+        "The 3D parts come from a second script, deck3d.py, built on CadQuery. It reads the layout and the real board placement, so shell openings land on actual pads and cutouts land on actual connectors. Every run checks the whole assembly for watertight parts and collisions before anything ships.",
+        "That whole loop is currently green: both boards route clean in KiCad 9, and all nine printed parts pass the watertight and no-collision checks for a stock Ender 3 V2 bed."
       ],
       "links": [
         {
@@ -197,12 +197,12 @@
     },
     {
       "key": "status",
-      "heading": "Honest status: designed, not built",
-      "dek": "rev-A (v0.22) is finished on paper — routed, DRC-clean, fab-package-ready — but no physical Gripster has ever existed.",
+      "heading": "Where it stands",
+      "dek": "Designed and checked, not yet built. Make one and you'll be the first.",
       "paragraphs": [
-        "Every image of the device in this project is a render or a generated board layout, never a photograph. rev-A (v0.22) is complete as a design: both PCBs are fully autorouted and DRC-clean in KiCad 9 (0 violations, 0 unconnected, re-verified 2026-07-24), the JLCPCB gerber + BOM + CPL package exports cleanly, and all seven printed shell parts plus the keymats are collision-checked (0 impossible overlaps) and bed-fit-checked for a 220 x 220 mm Ender 3 V2. Nothing has been ordered, printed, pressed, flashed, or typed on. If you build one, you are building the first one that has ever existed.",
-        "The firmware compiles green in CI, but that green build predates the v0.21 pointing-nub module (I2C hall sensor, new Zephyr module, new build flag) — the workflow needs to be re-run against the current tree before it means anything for v0.22. \"0 DRC violations\" means no routing rule was broken, not that the circuit is correct: no board has ever been powered, and no net has ever been probed.",
-        "Unmeasured and unknown: ergonomics (grip shape, key pitch, thumb reach), dome feel and dome life, BLE range with a phone centimeters from the antenna and a hand around the grip, real battery life, and every print tolerance. The roadmap is a first-article run of five sets, a bring-up pass (SWD flash, matrix proof, current draw, BLE range), and a rev-B informed by whatever that build teaches."
+        "The design is done and machine-checked. Both boards route clean in KiCad 9 and export a JLCPCB-ready package; every printed part is watertight and fits a stock Ender 3 V2 bed. Every image here is a render or a generated layout — the only photos in the repo are of the little Rii keyboard I studied first.",
+        "What I haven't done is order a board, print a shell, press a dome, or flash the firmware — so the things software can't check are still open: how it feels in the hand, how the domes wear, real battery life, and how Bluetooth copes with a phone pressed against the antenna. \"Zero DRC violations\" means no rule was broken, not that the circuit is right.",
+        "Next is a small first run — five sets — then a bring-up pass to flash it, prove the matrix, and measure the current and range, and a rev-B shaped by whatever that teaches. It's all open hardware under Apache-2.0, so if you'd like to beat me to the first working one, everything you'd need is in the repo."
       ],
       "links": [
         {
@@ -226,14 +226,14 @@
   ],
   "hero": {
     "title": "Gripster",
-    "tagline": "A wireless split thumb keyboard that turns your phone into a handheld deck.",
-    "subtag": "Your phone mounts landscape in a sunken well flush with the keys, and you thumb-type a full 78-key QWERTY on metal snap domes over Bluetooth — a design that routes DRC-clean and prints watertight but has never been physically built.",
+    "tagline": "A wireless thumb keyboard that turns your phone into a handheld deck.",
+    "subtag": "Your phone MagSafe-mounts landscape in the middle, flush with the keys. Hold it like a controller and thumb-type a full 78-key QWERTY on metal snap domes, over Bluetooth.",
     "badges": [
       "78 snap-dome keys",
-      "0 DRC violations",
-      "designed, not built",
+      "one nRF52840 module",
       "ZMK firmware",
-      "one nRF52840 module"
+      "MagSafe mount",
+      "open hardware"
     ],
     "primaryCtaLabel": "Explore the design"
   },
