@@ -7,20 +7,20 @@
  "extent": [
   325.5,
   103.8,
-  19.25
+  24.75
  ],
  "center": [
   0,
   48,
-  9.625
+  6.875
  ],
- "step": 22.137,
+ "step": 28.462,
  "movers": {
   "phone": {
    "offset": [
     0,
     0,
-    88.55
+    113.85
    ],
    "nodes": [
     "phone__0",
@@ -61,7 +61,7 @@
    "offset": [
     0,
     0,
-    66.412
+    85.387
    ],
    "nodes": [
     "magsafe_ring__vc"
@@ -71,7 +71,7 @@
    "offset": [
     0,
     0,
-    -39.847
+    -51.233
    ],
    "nodes": [
     "flex__vc"
@@ -81,7 +81,7 @@
    "offset": [
     0,
     0,
-    -53.13
+    -68.31
    ],
    "nodes": [
     "battery__vc"
@@ -91,7 +91,7 @@
    "offset": [
     0,
     0,
-    -44.275
+    -56.925
    ],
    "nodes": [
     "screws__vc"
@@ -101,7 +101,7 @@
    "offset": [
     -45.57,
     0,
-    -22.137
+    -28.462
    ],
    "nodes": [
     "pcb_left__body",
@@ -115,7 +115,7 @@
    "offset": [
     45.57,
     0,
-    -22.137
+    -28.462
    ],
    "nodes": [
     "pcb_right__J1",
@@ -132,7 +132,7 @@
    "offset": [
     45.57,
     0,
-    44.275
+    56.925
    ],
    "nodes": [
     "keymat_right__gbc_button_gray"
@@ -142,7 +142,7 @@
    "offset": [
     -45.57,
     0,
-    44.275
+    56.925
    ],
    "nodes": [
     "keymat_left__gbc_button_gray"
@@ -152,7 +152,7 @@
    "offset": [
     45.57,
     0,
-    57.557
+    74.002
    ],
    "nodes": [
     "nub_cap__trackpoint_red"
@@ -162,7 +162,7 @@
    "offset": [
     45.57,
     0,
-    28.779
+    37.001
    ],
    "nodes": [
     "nub_spring__atomic_purple"
@@ -172,7 +172,7 @@
    "offset": [
     45.57,
     0,
-    22.137
+    28.462
    ],
    "nodes": [
     "grip_lid_right__atomic_purple"
@@ -182,7 +182,7 @@
    "offset": [
     -45.57,
     0,
-    22.137
+    28.462
    ],
    "nodes": [
     "grip_lid_left__atomic_purple"
@@ -202,7 +202,7 @@
    "offset": [
     45.57,
     0,
-    -66.412
+    -85.387
    ],
    "nodes": [
     "back_right__atomic_purple"
@@ -212,7 +212,7 @@
    "offset": [
     -45.57,
     0,
-    -66.412
+    -85.387
    ],
    "nodes": [
     "back_left__atomic_purple"

@@ -340,6 +340,91 @@ PCB_CLR = 0.4          # clearance between PCB edge and the shell cavity wall
 POST_R = 1.5           # mid-field PCB support post radius (Ø3)
 POST_CLR = 2.2         # required clear radius (post centre -> nearest back-side bbox)
 
+# ==== v0.23 faceted ergonomic back crown ===========================================
+# The dead-flat back becomes a FACETED palm crown: a hard-industrial 90s read
+# (Sega/Nokia cut-block facets, crisp shadow-line seams) delivering Rii-8+ grip-
+# swell ergonomics — the back fills the palm instead of pressing a flat slab into
+# it. The crown is PURELY ADDITIVE below z=0 (the outer back plane), so the
+# validated electronics cavity (everything at z>=FLOOR), the 221-body collision
+# result and the bed-fit XY are all unchanged BY CONSTRUCTION — the crown never
+# meets a component. Each grip carries a cut-corner faceted plateau (one steep
+# chamfer band + three scored grip grooves, apex biased toward the outer edge
+# where the thenar/fingers wrap); a lower faceted spine panel links them so the
+# whole back reads as one milled block.
+#
+# This FLIPS the back-half print orientation from floor-down to CAVITY-DOWN: the
+# crown then prints apex-UP as a strictly-narrowing faceted peak (every layer
+# insets over the one below -> self-supporting cosmetic face at any facet angle),
+# and the internal bosses/posts become the only downward faces -> they take the
+# (cosmetically hidden) supports. See docs/cad-process.md printing table.
+CROWN_PEAK  = 5.5     # grip-plateau depth below z=0 (device grows +5.5mm at the palms)
+CROWN_SPINE = 2.2     # central spine-panel depth (links the two grip mounds)
+CROWN_GROOVE = 0.7    # shadow-line V-groove depth scored along the primary facet seams
+
+def _octa(cx, cy, hw, hh, c):
+    """Cut-corner rectangle (chamfered octagon) — the faceted section primitive.
+    Winding + vertex count are constant across a mound's sections so the ruled
+    loft pairs edges cleanly into flat facets."""
+    return [(cx-hw+c, cy-hh), (cx+hw-c, cy-hh), (cx+hw, cy-hh+c), (cx+hw, cy+hh-c),
+            (cx+hw-c, cy+hh), (cx-hw+c, cy+hh), (cx-hw, cy+hh-c), (cx-hw, cy-hh+c)]
+
+def _facet_loft(sections):
+    """Ruled (faceted, NOT smooth) loft through [(pts, z), ...]; caps both ends
+    into a closed solid, returned as a Workplane so it composes with .union().
+    Ruled=True keeps every band a set of PLANAR facets."""
+    wires = [cq.Wire.makePolygon([cq.Vector(x, y, z) for (x, y) in pts], close=True)
+             for (pts, z) in sections]
+    return cq.Workplane("XY").add(cq.Solid.makeLoft(wires, True))
+
+def _grip_mound(cx, sx):
+    """One grip's faceted palm swell (product frame). A crisp beveled PLATEAU, not
+    a lump: a big flat plateau top ringed by ONE steep chamfer band (single facet
+    per side -> the hard-industrial cut-block read). sx = +1 right / -1 left; the
+    plateau biases toward the OUTER edge (where the thenar heel and curled fingers
+    bear) so the swell is hand-filling. Base flush at z=0 (a thin land survives
+    around it = tapered edge), plateau at -CROWN_PEAK."""
+    cy = 48.5                                            # grip centre (board_h/2)
+    ax = sx * 5.0                                        # apex shift toward the outer edge
+    base = _octa(cx,      cy,       34.0, 45.0, 13.0)     # z=0
+    top  = _octa(cx+ax,   cy+1.0,   26.0, 36.0, 10.0)     # -CROWN_PEAK plateau (big + flat)
+    return _facet_loft([(base, 0.0), (top, -CROWN_PEAK)])
+
+def _spine_ridge():
+    """Low faceted panel tying the two mounds into ONE milled block: a wide flat-
+    topped cut-corner section that laps ~10mm into each grip mound (so they fuse
+    with no notch) and gives the fingers a centre purchase behind the phone well.
+    Its top sits CROWN_PEAK-CROWN_SPINE above the grip plateaus -> a crisp panel
+    step between centre and grips."""
+    base = _octa(0.0, 48.5, 100.0, 44.0, 26.0)   # z=0 (laps both grip mounds, ~full height)
+    top  = _octa(0.0, 48.5,  95.0, 38.0, 22.0)   # -CROWN_SPINE (broad flat panel)
+    return _facet_loft([(base, 0.0), (top, -CROWN_SPINE)])
+
+def _crown_solid():
+    """Union of both faceted grip mounds + the spine ridge: one solid below z=0."""
+    prod = _product()
+    gx = _seam_frame()                                  # right grip inner edge (84.85)
+    cxr = gx + prod["right"]["board_w"]/2               # right grip centre x
+    crown = _grip_mound(cxr, +1).union(_grip_mound(-cxr, -1)).union(_spine_ridge())
+    return crown
+
+def _crown_grooves():
+    """Crisp shadow-line grooves scored into the flat grip plateaus (constant
+    z = -CROWN_PEAK): three longitudinal channels per grip — the machined 90s
+    panel-line / grip-rib read, and a little extra thumb-cradle purchase. Cut as
+    boxes in the plateau's z-band (they only bite where the crown reaches the
+    plateau depth, so they never touch the bevels or the surrounding land).
+    Returned as a cutter list; applied to the shell after the crown union."""
+    prod = _product(); gx = _seam_frame()
+    cxr = gx + prod["right"]["board_w"]/2
+    z1 = -CROWN_PEAK                                     # plateau face; cut upward CROWN_GROOVE
+    cutters = []
+    for cx, sx in ((cxr, +1), (-cxr, -1)):
+        pcx = cx + sx*5.0                               # plateau centre (apex-biased)
+        for dy in (-8.5, 0.0, 8.5):
+            cutters.append(cq.Workplane("XY").workplane(offset=z1)
+                           .center(pcx, 49.5+dy).box(36.0, 1.4, CROWN_GROOVE, centered=(True, True, False)))
+    return cutters
+
 def _find_fp(side, key, anchor=False):
     """Product-frame (x, y) of the first footprint whose name contains key.
     anchor=True returns the raw anchor (for anchor-centred bodies), else bbox centre."""
@@ -407,6 +492,11 @@ def _back_solid():
     outer = _cq_from_poly(fp.buffer(WALL_T+PCB_CLR), 0, FLOOR+WALL)
     inner = _cq_from_poly(fp.buffer(PCB_CLR), FLOOR, WALL+1)
     shell = outer.cut(inner)
+    # v0.23: faceted ergonomic crown, added below z=0 (never touches the cavity),
+    # then the shadow-line grip grooves scored into the plateaus
+    shell = shell.union(_crown_solid())
+    for gc in _crown_grooves():
+        shell = shell.cut(gc)
     # (v0.14: the old MagSafe "ring pocket" cut here extruded BELOW z=0 — outside the
     #  solid, a no-op — the ring seats in the center panel's phone pocket since v0.16.)
     # PCB standoff bosses + M3 heat-set bores at each grip's mount holes (v0.19:
@@ -446,9 +536,9 @@ def _back_solid():
                       .center(sx, bh_r + 1.5).box(8.0, 3.4, 2.8, centered=(True, True, False)))
     # reset tact pinhole (actuator faces the floor) + charge-LED light pipe hole
     rx, ry = _find_fp("right", "TS-1187A", anchor=True)
-    shell = shell.cut(cq.Workplane("XY").workplane(offset=-0.5).center(rx, ry).circle(0.8).extrude(FLOOR+1))
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+1)).center(rx, ry).circle(0.8).extrude(CROWN_PEAK+FLOOR+2))
     lx, ly = _find_fp("right", "LED_0603")
-    shell = shell.cut(cq.Workplane("XY").workplane(offset=-0.5).center(lx, ly).circle(0.75).extrude(FLOOR+1))
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+1)).center(lx, ly).circle(0.75).extrude(CROWN_PEAK+FLOOR+2))
     # antenna wall relief: the E73 physically overhangs the TOP board edge by 0.5mm and
     # the cavity wall face is only PCB_CLR=0.4 out — relieve the inner wall face 0.6mm
     # over the antenna keep-out span so the module tip has >=0.5mm clearance. The wall
@@ -542,7 +632,9 @@ def _back_half_build(side):
     for shear/torsion continuity; the screwed-on center panel is the bolted splice."""
     prod = _product(); bh = prod["right"]["board_h"]
     s = 1 if side == "right" else -1
-    half = cq.Workplane("XY").workplane(offset=-2).center(s*250, bh/2).box(500, 500, 30, centered=(True, True, False))
+    # v0.23: clip box lowered to -(CROWN_PEAK+2) so the faceted crown (down to
+    # -CROWN_PEAK) survives the seam split instead of being sheared off at z=-2
+    half = cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+2)).center(s*250, bh/2).box(500, 500, 30+CROWN_PEAK+2, centered=(True, True, False))
     # v0.18: lower tab moved 30-38 -> 36-44 so it clears the FFC floor channel
     # (lane y 15..34) — a channel-thinned tab would be a weak splice
     tabs = [(36.0, 44.0), (78.0, 86.0)]

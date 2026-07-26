@@ -22,7 +22,7 @@ from dataclasses import dataclass, asdict
 import json
 import math
 
-VERSION = "v0.22"
+VERSION = "v0.23"
 
 # --- key legends (i8+-inspired QWERTY, split L/R, arrow cluster on right) -----
 # v0.6: grown to 6 cols x 6 rows/half (~36/half) to match the sketch + the

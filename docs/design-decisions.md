@@ -3,7 +3,43 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.22 (first entry).
+current design is rev-A / v0.23 (first entry).
+
+## v0.23 — faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics)
+
+User feedback: "the design is great but flat — use more sophisticated geometry for
+better ergonomics, especially the back contours; take inspiration from the Rii 8+
+back and 90s electronics." The back was a dead-flat extruded tray (outer face a
+single z=0 plane), so the device pressed a flat slab into the palm.
+
+- **A faceted palm crown, added BELOW z=0.** Two cut-corner **grip plateaus** rise
+  **5.5 mm** below the back plane (apex biased to the outer edge where the thenar
+  heel and curled fingers bear), each scored with three **shadow-line grip
+  grooves**; a lower faceted **spine panel** (−2.2 mm) laps into both so the whole
+  back reads as one milled 90s-industrial block (Sega/Nokia cut-block facets, crisp
+  panel lines), tapering to a thin land at the perimeter. Generated with CadQuery
+  **ruled lofts** of cut-corner octagon sections — planar-facet B-rep, exact and
+  STEP-clean, the right tool for the *faceted* (not smooth-organic) look the user
+  chose. scipy thin-plate-RBF + scikit-image marching-cubes were installed for a
+  future SDF/organic pass but are unused here by design.
+- **Why additive-below-z=0 is the whole trick.** The crown never enters the
+  electronics cavity (everything at z ≥ FLOOR), so the validated PCB fit, the
+  221-body collision result (still **0 clashes**), the joinery and the bed-fit are
+  unchanged by construction — the change is provably local to the cosmetic back.
+  The reset pinhole + charge-LED holes are the only cavity features it touches, and
+  they are just lengthened to pierce the crown to daylight.
+- **Print orientation flips floor-down → CAVITY-DOWN** (the one real cost). A
+  convex crown can't print floor-down (a convex-down face droops near its apex), so
+  the halves now print cavity-opening-down: the crown prints **apex-up as a
+  strictly-narrowing faceted peak** — self-supporting at any facet angle, clean
+  cosmetic face. The internal PCB bosses/posts become the only downward faces and
+  take **tree supports inside the cavity**, where the scars are hidden (the user
+  explicitly chose "cavity-down with supports so the support scars are internal"
+  over a bolt-on cover or an outer-face-down print with visible palm-side scars).
+- **Thickness.** Device stays 14.7 mm at the flush front plane and ~15.7 mm at the
+  thin edges; the grips swell to ~20 mm back-to-face (~24.8 mm incl. keycaps) —
+  the Rii-8+ hand-filling target. The PCB is unchanged from v0.22 rev-A (the crown
+  is shell-only; boards were not re-fabbed, so their silkscreen still reads v0.22).
 
 ## v0.22 — true-mirror page keys + genuine-TrackPoint-cap mount (2026-07-24, branch feature/right-joystick)
 

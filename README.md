@@ -24,8 +24,11 @@ thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 **What makes this interesting:**
 
 - **The screen sits flush with the keys.** The phone drops into a sunken well so its glass and the
-  keyboard face form one continuous plane 14.7 mm off the back — 15.7 mm thick overall. It is not a
+  keyboard face form one continuous plane 14.7 mm off the back — ~15.7 mm at the thin edges. It is not a
   phone bolted on top of a keyboard.
+- **The back is contoured to the hand.** A faceted 90s-industrial crown (Rii-8+ grip swells) rises up
+  to 5.5 mm below the back plane at each grip so the device fills the palm instead of pressing a flat
+  slab into it — thin at the edges, ~20 mm at the grips. (v0.23; the back halves print crown-up.)
 - **No switches, no hand-soldering.** 78 Snaptron 7 mm metal snap domes press directly onto gold
   ENIG pads. Every soldered part is SMT on one side of each board — v0.21's pointing nub is a
   single SOT-23-6 hall sensor on the same reflow pass — so JLCPCB builds it 100 % turnkey,
@@ -355,7 +358,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 
 | | value |
 |---|---|
-| Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.7 mm front plane, 15.7 mm max thickness); two dome-key grips, **fixed shell in 5 printed parts** in **Game-Boy-Color design language** (v0.19: boxy rounded-corner outline, translucent Atomic-Purple shells, dark-gray keymats; every part fits an Ender 3 V2 bed) |
+| Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.7 mm front plane, ~15.7 mm thin edges, **faceted ergonomic back crown swelling to ~20 mm at the grips** — v0.23); two dome-key grips, **fixed shell in 5 printed parts** in **Game-Boy-Color design language** (v0.19: boxy rounded-corner outline, translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |

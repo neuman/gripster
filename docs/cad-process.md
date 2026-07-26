@@ -1,4 +1,23 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.22
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.23
+
+**v0.23 faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics).**
+The dead-flat back is replaced by a **faceted palm crown** — a hard-industrial 90s
+read (Sega/Nokia cut-block facets, crisp shadow-line grip grooves) delivering
+Rii-8+ grip-swell ergonomics: two cut-corner **grip plateaus** (apex biased to the
+outer edge where the thenar heel and curled fingers bear, three scored grip
+grooves each) rise **5.5 mm** below the z=0 back plane, linked by a lower faceted
+**spine panel** so the whole back reads as one milled block; a thin land survives
+at the perimeter (tapered edge). The crown is **purely additive below z=0**, so the
+electronics cavity, the 221-body collision result and the bed-fit are unchanged by
+construction — the crown never meets a component. Generated with CadQuery **ruled
+lofts** of cut-corner sections (planar-facet B-rep; scipy/scikit-image available
+for future SDF/organic passes). **Consequence: the back halves now print
+CAVITY-DOWN** (was floor-down) so the crown prints apex-up as a strictly-narrowing
+peak = a self-supporting cosmetic face; the internal PCB bosses/posts become the
+only downward faces and take supports whose scars sit hidden inside the shell.
+Device max thickness at the grips ~**20 mm** back / **24.8 mm** incl. keycaps; the
+edges and the 14.7 mm flush front plane are unchanged. `--all --check`: all 9 parts
+watertight + bed-fit, **0 collisions**.
 
 **v0.21 right-grip pointing nub (2026-07-23, branch feature/right-joystick).**
 Bean-style hall nub at the left-D-pad mirror: the right lid gains a plain
@@ -100,8 +119,11 @@ connector** (6.0 mm) + 0.24 mm margin. In the spine (v0.19): FFC duct 1.1..1.6 |
 well slab 2.5..5.1 (2.6 mm thick; ring recess floor 3.3, 0.8 mm web) | N52 ring
 3.3..5.3 (0.2 proud of the 5.1 well floor) | **cased phone 5.3..14.7 — screen
 flush with the lids** (5.3 + 9.4 mm cased phone = 14.7). The whole
-device is **15.7 mm** thick (keycap tops); there is no plateau above the front
-plane any more.
+device is **15.7 mm** thick at the edges (keycap tops); there is no plateau above
+the front plane any more. **v0.23** adds the faceted back crown BELOW z=0: the
+grip plateaus reach **z −5.5** (grips ~20 mm back-to-face, ~24.8 mm incl. keycaps),
+the spine panel −2.2, tapering to the unchanged thin z=0 edge — all additive, the
+cavity stack above is untouched.
 
 ## Parts, all from `deck.py` + the placed board
 
@@ -117,7 +139,14 @@ plane any more.
   (mid-spine), each half = one grip bay + half the spine (170.5/162.8 × 103.8 mm):
   walls, 6.3 mm PCB standoffs + **M3 heat-set bosses (Ø7.5, 4.0 mm bores, 5/grip)** at
   the mount coords, and **3 support posts per grip under the key field** so the
-  PCB no longer flexes between perimeter bosses under thumb load.
+  PCB no longer flexes between perimeter bosses under thumb load. **v0.23: a
+  faceted ergonomic crown is fused onto the outside below z=0** — two cut-corner
+  **grip plateaus** (−5.5 mm, apex biased to the outer edge, three scored grip
+  grooves each) rising from a lower faceted **spine panel** (−2.2 mm), tapering to
+  a thin land at the perimeter. Built with CadQuery ruled lofts of cut-corner
+  sections (planar B-rep). The reset pinhole + charge-LED holes are lengthened to
+  pierce the crown to daylight. Purely additive: the cavity, bosses, joinery and
+  the collision result are unchanged.
   Through-features cut from the **real part placement**: a **13.5 × 7.0 mm USB-C
   wall opening** centred on the connector with a stepped outer relief for the
   plug overmold (both in the TOP wall since v0.17), an **8 × 2.8 mm slide-switch
@@ -215,7 +244,7 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 
 | Part | Orientation | Notes |
 |---|---|---|
-| `back_left`, `back_right` | floor down | 6 mm brim (long parts warp at the seam corners); no supports |
+| `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim (long parts warp at the seam corners) |
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
 | `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |

@@ -115,7 +115,7 @@
       "heading": "A few things it does differently",
       "dek": "Four ideas that make it more than a phone case with buttons glued on.",
       "paragraphs": [
-        "The screen sits inside the deck, not on top of it. The well is deep enough that the phone's glass and the keyboard face line up flush — 15.7 mm thick overall — so your thumbs slide from screen to keys without a lip in the way.",
+        "The screen sits inside the deck, not on top of it. The well is deep enough that the phone's glass and the keyboard face line up flush — 15.7 mm at the thin edges — so your thumbs slide from screen to keys without a lip in the way. The back is contoured, not flat: a faceted crown swells into your palms where you hold it.",
         "It looks like a split, but it's one keyboard. A single nRF52840 module in the right grip scans the whole 9×10 matrix; the left grip is passive — domes, diodes, a connector — wired across on one ribbon. That's one thing to pair, one battery to charge, and no two halves trying to find each other.",
         "Nothing gets hand-soldered. The 78 keys are snap domes pressed onto gold pads, and every part that is soldered sits on one side of each board in a single reflow pass. A fab house builds both boards end to end — no iron, no rework.",
         "It's generated, not drawn. One Python file lays out both grips, and the circuit boards, printed shells, firmware keymap, and these renders all fall out of it. A key opening lines up with its pad because the same number placed both — not because I eyeballed it."
