@@ -67,6 +67,16 @@
     "springs__vc"
    ]
   },
+  "power": {
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "nodes": [
+    "power__vc"
+   ]
+  },
   "flex": {
    "offset": [
     0,

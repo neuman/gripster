@@ -260,9 +260,9 @@ def main():
     # loose bodies
     bt = deck3d.battery_body(); bt.apply_translation((0, 0, deck3d.BATT_Z))
     _add(scene, bt, "battery", root, COL["battery"])
-    fx = deck3d.flex_body(); fx.apply_translation((0, 0, deck3d.FLEX_Z))
-    _add(scene, fx, "flex", root, COL["flex"])
-    for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs
+    _add(scene, deck3d.flex_body(), "flex", root, COL["flex"])          # FFC (enclosed)
+    _add(scene, deck3d.power_body(), "power", root, [217, 51, 40, 255]) # battery power cable (enclosed)
+    for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs (enclosed)
         _add(scene, sp, f"spring_{i}", root, COL["ring"])
     _add_phone(scene, root, prod)
 

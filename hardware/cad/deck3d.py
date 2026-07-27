@@ -288,25 +288,28 @@ WELL_TOP = FACE_Z                            # back-compat alias (lid/screw coun
 PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — nominal cased thickness (back-of-case -> screen)
 RECESS_TOP = FACE_Z - PHONE_TC - 0.2         # 5.1 — bridge recess floor top (nominal screen ~flush)
 LAP_CLR = 0.25        # printed-joint / rail-slide in-plane clearance (FDM: elephant foot + warp)
-# --- v0.24 expanding spring-clamp bridge geometry (product frame) ---
-BR_PLATE_T = 1.6                             # recess-floor plate thickness
-BR_Y0, BR_Y1 = 6.0, 91.0                     # bridge plate y-extent (just outside the phone y 8.5..88.5)
-RAIL_W, RAIL_H = 6.0, 3.2                    # rail tongue section (hangs below the plate)
-RAIL_Y = (8.0, 86.0)                         # two rails, Y-separated + OUTSIDE the left battery band (y13..53)
-BR_X_RIGHT = 82.6                            # bridge right end = nominal phone right edge (bolts to R grip)
-BR_X_LEFT = -96.0                            # rails' left end (past the -89.65 max left-jaw + rail margin)
-BR_PLATE_LEFT = -60.0                        # recess-FLOOR left end: covers the phone centre; the edges are
-#                                              carried by the grip cradle ledges + the spring clamp, and this
-#                                              keeps the floor clear of the collapsed left grip's battery.
-CRADLE_WALL_T = 2.0                          # cradle x-wall thickness (phone short-edge backstop)
-CRADLE_LIP = 1.6                             # lip overhanging the screen edge (z-retention)
-SLIDER_LEN = 44.0                            # left-grip slider engagement length on the rails
-SLIDER_WALL = 2.2                            # slider C-channel wall around a rail
-YWALL_H = 1.4                                # bridge y-retention wall height (stays below the PCB back)
+# --- v0.24 expanding spring-clamp bridge, ENCLOSED (product frame) ---
+# The clamp mechanism (springs + FFC + battery power cable) is housed in a
+# TELESCOPING enclosure that stays closed at every extension: a fixed OUTER shroud
+# (bolted to the right grip) and a moving INNER shroud (on the left jaw) that slides
+# inside it. The two always overlap, so nothing is ever exposed in the gap. The
+# phone rests on the outer shroud's top (the recess floor) + the grip cradle ledges;
+# the low inner-shroud top just closes the enclosure under the phone.
+BR_PLATE_T = 1.6                             # recess-floor / shroud top-plate thickness
+BR_X_RIGHT = 82.6                            # outer shroud right end = nominal phone right edge (bolts to R grip)
+SHROUD_Y0, SHROUD_Y1 = 7.0, 90.0             # enclosure y-extent (front/back walls, spans the phone y)
+SHROUD_ZBOT = -4.5                           # enclosure bottom (center back; above the -5.5 grip crown)
+SHROUD_ZTOP = RECESS_TOP                     # 5.1 — top plate top = recess floor (phone rests here)
+SHROUD_WALL = 1.4                            # shroud wall thickness
+SHROUD_CLR = 0.35                            # inner<->outer nesting slide clearance (coupon-tune)
+OUTER_LEFT = -45.0                           # fixed outer-shroud left end (right of the -49.65 min left-jaw)
+INNER_LEN = 62.0                             # moving inner-shroud length (overlap >=17mm at max span)
+CRADLE_LIP = 1.6                             # cradle lip overhanging the screen edge (z-retention)
 BOLT_Y = (46.0, 62.0)                        # bridge->right-grip bolt line (clear of J2 at y 12.5..33.5)
 BOLT_X = 83.3                                # bolt column: behind the right cradle wall (outboard of the phone edge)
-SPRING_Y = (26.0, 71.0)                      # 2 extension springs, flanking, under the plate
-SPRING_D = 5.0                               # extension-spring OD (fit model)
+SPRING_Y = (24.0, 73.0)                      # 2 extension springs, flanking, inside the outer shroud
+SPRING_D = 4.0                               # extension-spring OD (fit model)
+SPRING_ANCHOR_X = 22.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
 # M3 flush-countersunk face hardware (v0.19, feedback: proud pan heads were
 # uncomfortable). DIN 965 90-degree head, dk<=6.0: cone face Ø6.2 with the head
 # nominally 0.1-0.3 sub-flush (FDM droop/elephant-foot budget); panel cones cut
@@ -572,17 +575,16 @@ def _memo(name, builder):
     return _BUILT[name].copy()
 
 def _grip_bridge_iface(part, side):
-    """v0.24 telescoping-clamp interface added to a grip's back half. Both grips get
-    a phone-edge CRADLE (backstop wall from the recess floor to the face + a
-    screen-edge lip; TPU pad seats on the wall). The RIGHT grip (GROUND) adds the
-    bridge-bolt bosses; the LEFT grip (moving jaw) adds the SLIDER that captures the
-    two bridge rails + the spring anchors. Built in the nominal frame; the left grip
-    (and its slider) translate as one when assembled at a different clamp_pos."""
+    """v0.24 ENCLOSED telescoping-clamp interface on a grip's back half. Both grips
+    get a phone-edge CRADLE (backstop wall + screen-edge lip + rest ledge; TPU pad
+    seats on the wall). The RIGHT grip (GROUND) adds the bridge-bolt bosses. The LEFT
+    grip (moving jaw) grows the moving INNER SHROUD — a closed box that telescopes
+    inside the fixed outer shroud, carrying the cable run and the spring hooks — so
+    the springs/FFC/power are enclosed at every extension. Built in the nominal
+    frame; the whole left grip (shroud included) translates by the jaw slide."""
     prod = _product()
     ph = prod["phone"]; py0, py1 = ph["y"] - 0.5, ph["y"] + ph["h"] + 0.5
     gx = _seam_frame(); zt = RECESS_TOP
-    zr1 = zt - BR_PLATE_T                          # rail top (plate bottom)
-    zr0 = zr1 - RAIL_H                             # rail bottom
     if side == "right":
         xw0, xw1 = BR_X_RIGHT, gx - 0.9           # 82.6 .. 83.95 (stops shy of J2's courtyard @84.8)
         part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))
@@ -595,25 +597,25 @@ def _grip_bridge_iface(part, side):
                             .center(BOLT_X, by).circle(1.7).extrude(-6.0))
     else:
         gxl = -gx                                  # left grip inner edge (-84.85)
-        xw0, xw1 = gxl + 0.9, -BR_X_RIGHT         # -83.95 .. -82.6 (stops shy of J2's courtyard)
+        xw0, xw1 = gxl + 0.9, -BR_X_RIGHT         # -83.95 .. -82.6 cradle (stops shy of J2's courtyard)
         part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))
         part = part.union(_cq_from_poly(shp_box(xw1, py0, xw1 + CRADLE_LIP, py1), FACE_Z - 1.2, 1.2))
         part = part.union(_cq_from_poly(shp_box(xw1, py0, xw1 + 4.0, py1), zt - 1.2, 1.2))  # ledge: phone edge rests here
-        # slider: a block per rail from the grip inner edge toward centre, grooved to
-        # ride the rail (+LAP_CLR); wraps bottom + both sides (assembled by sliding on
-        # from the bridge's left end). Spring anchor posts on the slider's inner face.
-        sx0, sx1 = gxl, gxl + SLIDER_LEN           # -84.85 .. -40.85
-        for ry in RAIL_Y:
-            block = (cq.Workplane("XY").workplane(offset=zr0 - SLIDER_WALL)
-                     .center((sx0 + sx1) / 2, ry)
-                     .box(SLIDER_LEN, RAIL_W + 2 * SLIDER_WALL, RAIL_H + SLIDER_WALL, centered=(True, True, False)))
-            groove = (cq.Workplane("XY").workplane(offset=zr0 - LAP_CLR)
-                      .center((sx0 + sx1) / 2, ry)
-                      .box(SLIDER_LEN + 2, RAIL_W + 2 * LAP_CLR, RAIL_H + 2 * LAP_CLR, centered=(True, True, False)))
-            part = part.union(block.cut(groove))
-        for sy in SPRING_Y:                        # left ends of the 2 extension springs
-            part = part.union(cq.Workplane("XY").workplane(offset=zr0)
-                              .center(sx0 + 5.0, sy).box(4.0, 3.0, RAIL_H, centered=(True, True, False)))
+        # moving INNER SHROUD: a closed box from the grip inner edge inward INNER_LEN,
+        # sized to nest inside the outer shroud (walls/floor/top inset by
+        # SHROUD_WALL+SHROUD_CLR), OPEN on its right (inboard) end. Houses the cable
+        # run; its right end carries the spring hooks the outer springs pull on.
+        iy0, iy1 = SHROUD_Y0 + SHROUD_WALL + SHROUD_CLR, SHROUD_Y1 - SHROUD_WALL - SHROUD_CLR
+        izb = SHROUD_ZBOT + SHROUD_WALL + SHROUD_CLR         # nested bottom
+        izt = (zt - BR_PLATE_T) - SHROUD_CLR                 # nested top (below the outer top plate)
+        sx_in = gxl + INNER_LEN                              # inner shroud right (open) end
+        outer = _cq_from_poly(shp_box(gxl, iy0, sx_in, iy1), izb, izt - izb)
+        inner = _cq_from_poly(shp_box(gxl + SHROUD_WALL, iy0 + SHROUD_WALL, sx_in + 2, iy1 - SHROUD_WALL),
+                              izb + SHROUD_WALL, (izt - SHROUD_WALL) - (izb + SHROUD_WALL))
+        part = part.union(outer.cut(inner))                 # closed box, open right end
+        for sy in SPRING_Y:                                 # spring hooks at the inner shroud's right end
+            part = part.union(cq.Workplane("XY").workplane(offset=izb + SHROUD_WALL)
+                              .center(sx_in - 3.0, sy).box(3.0, 3.0, 4.0, centered=(True, True, False)))
     return part
 
 def back_half(side):
@@ -744,61 +746,51 @@ def _grip_lid_build(side):
     plate = plate.cut(_edge_wedge(s*gx, z0+TOP_T, bh=bh))
     return _to_trimesh(plate, f"grip_lid_{side}")
 
-def _rail_engagement(clamp_pos=None):
-    """Smaller of the two rail end-margins for the left slider at this clamp state:
-    how much rail remains beyond each end of the slider before it could run off.
-    The min occurs at max span (left end); asserted >= 6mm by --check."""
+def _inner_right(clamp_pos=None):
+    """x of the moving inner shroud's right (open) end at this clamp state."""
     prod = _prod_at(clamp_pos)
-    ldx = prod["left_origin"][0] - _product()["left_origin"][0]
-    s_left = -_seam_frame() + ldx                 # slider outboard (left) end
-    s_right = s_left + SLIDER_LEN                  # slider inboard (right) end
-    return min(s_left - BR_X_LEFT, BR_X_RIGHT - s_right)
+    return prod["left_origin"][0] + prod["left"]["board_w"] + INNER_LEN   # left inner edge + INNER_LEN
+
+def _shroud_overlap(clamp_pos=None):
+    """Telescoping overlap = how far the inner shroud's right end reaches PAST the
+    fixed outer shroud's open left end (OUTER_LEFT). While this stays positive the
+    enclosure is closed (inner plugs the outer's opening); the min is at max span,
+    asserted >= 12mm by --check so the internals are never exposed."""
+    return _inner_right(clamp_pos) - OUTER_LEFT
 
 def bridge():
     return _memo("bridge", _bridge_build)
 
 def _bridge_build():
-    """v0.24 telescoping spring-clamp bridge — the GROUND member (bolts to the
-    right grip, cantilevers left). Carries: the near-flush RECESS FLOOR (phone rests
-    on top at RECESS_TOP so the nominal screen lands ~flush), two Y-separated RAILS
-    the left grip's slider rides, Y-retention walls, spring anchor posts (fixed
-    ends), bolt tabs into the right grip, rail end-stops, and an FFC service-loop
-    channel. ~177mm long -> fits the Ender 3 bed."""
-    zt = RECESS_TOP; zp0 = zt - BR_PLATE_T
-    pxc = (BR_PLATE_LEFT + BR_X_RIGHT) / 2; pxlen = BR_X_RIGHT - BR_PLATE_LEFT     # plate x
-    rxc = (BR_X_LEFT + BR_X_RIGHT) / 2; rxlen = BR_X_RIGHT - BR_X_LEFT             # rail x
-    # (1) recess-floor plate (phone back rests on the top face at zt) — centre span only
-    br = _cq_from_poly(shp_box(BR_PLATE_LEFT, BR_Y0, BR_X_RIGHT, BR_Y1), zp0, BR_PLATE_T)
-    # (2) two rails hanging below = the slide surface; run the FULL rail length,
-    #     kept OUTSIDE the battery y-band so the collapsed left grip clears them
-    for ry in RAIL_Y:
-        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
-                      .center(rxc, ry).box(rxlen, RAIL_W, RAIL_H, centered=(True, True, False)))
-        # a spine web ties each rail up to the plate over the plate span (torsion)
-        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
-                      .center(pxc, ry).box(pxlen, 1.6, RAIL_H + BR_PLATE_T, centered=(True, True, False)))
-    # (3) y-retention walls just outside the phone's long edges (over the plate span)
-    for yw in (BR_Y0 + 1.0, BR_Y1 - 1.0):
-        br = br.union(cq.Workplane("XY").workplane(offset=zt)
-                      .center(pxc, yw).box(pxlen, 2.0, YWALL_H, centered=(True, True, False)))
-    # (4) rail END-STOP at the LEFT end so the slider can't run off (bar across the rails)
-    br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
-                  .center(BR_X_LEFT + 1.5, (RAIL_Y[0] + RAIL_Y[1]) / 2)
-                  .box(3.0, RAIL_Y[1] - RAIL_Y[0] + RAIL_W, RAIL_H, centered=(True, True, False)))
-    # (5) spring anchor posts at the fixed (right) end, under the plate
+    """v0.24 ENCLOSED telescoping bridge — the fixed OUTER SHROUD (bolts to the right
+    grip, cantilevers left to OUTER_LEFT). A closed box — recess-floor top (= phone
+    rest), bottom cover, front/back y-walls, right end wall — that is OPEN on its LEFT
+    end so the moving inner shroud telescopes in. Houses the 2 extension springs
+    (anchored at SPRING_ANCHOR_X, pulling the inner shroud's hook) and the right run
+    of the FFC + battery power cable, so nothing is exposed at any extension."""
+    zb, zt = SHROUD_ZBOT, SHROUD_ZTOP
+    zpi = zt - BR_PLATE_T                          # top-plate underside
+    # (1) solid box hollowed to a closed shell OPEN on the left end (cavity runs off
+    #     the left face; keeps bottom, top plate, both y-walls, and the right wall)
+    box = _cq_from_poly(shp_box(OUTER_LEFT, SHROUD_Y0, BR_X_RIGHT, SHROUD_Y1), zb, zt - zb)
+    cav = _cq_from_poly(shp_box(OUTER_LEFT - 2, SHROUD_Y0 + SHROUD_WALL,
+                                BR_X_RIGHT - SHROUD_WALL, SHROUD_Y1 - SHROUD_WALL),
+                        zb + SHROUD_WALL, zpi - (zb + SHROUD_WALL))
+    br = box.cut(cav)
+    # (2) fixed spring anchor posts inside the cavity (the springs hook the inner shroud)
     for sy in SPRING_Y:
-        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
-                      .center(BR_X_RIGHT - 8.0, sy).box(4.0, 3.0, RAIL_H, centered=(True, True, False)))
-    # (6) bolt bosses into the right grip: a round boss past the plate edge at BOLT_X
-    #     (outboard of the phone), each with a Ø3.4 clearance hole over the grip boss
+        br = br.union(cq.Workplane("XY").workplane(offset=zb + SHROUD_WALL)
+                      .center(SPRING_ANCHOR_X, sy).box(3.0, 3.0, 4.0, centered=(True, True, False)))
+    # (3) bolt bosses into the right grip (round, past the plate edge at BOLT_X)
     for by in BOLT_Y:
-        br = br.union(cq.Workplane("XY").workplane(offset=zp0)
+        br = br.union(cq.Workplane("XY").workplane(offset=zpi)
                       .center(BOLT_X, by).circle(2.7).extrude(BR_PLATE_T))
         br = br.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
                     .center(BOLT_X, by).circle(SCREW_HOLE_R).extrude(-(BR_PLATE_T + 0.2)))
-    # (7) FFC service-loop channel: a shallow lane under the plate for the rolling fold
-    br = br.cut(cq.Workplane("XY").workplane(offset=zp0 - 0.8)
-                .center(pxc, 48.5).box(pxlen - 8, 16.0, 0.85, centered=(True, True, False)))
+    # (4) cable window in the RIGHT end wall (FFC to J2 + battery leads to J3)
+    br = br.cut(cq.Workplane("XY").workplane(offset=zb + SHROUD_WALL + 0.4)
+                .center(BR_X_RIGHT - SHROUD_WALL / 2, 24.0)
+                .box(SHROUD_WALL + 1, 18.0, 3.2, centered=(True, True, False)))
     return _to_trimesh(br, "bridge")
 
 # ==== keycap legends (Rii i8+ print style; ANSI US per the ZMK keymap) =============
@@ -960,14 +952,13 @@ def battery_body():
     return _place(m, sb["x"]+sb["w"]/2, sb["y"]+sb["h"]/2, 0)
 
 def spring_bodies(clamp_pos=None):
-    """v0.24: the 2 extension springs (fit models) spanning the fixed bridge anchor
-    to the moving left-jaw anchor at the current clamp position — they pull the left
-    grip toward centre. Modeled as cylinders in the rail z-band."""
-    prod = _prod_at(clamp_pos)
-    gxl = -_seam_frame(); ldx = prod["left_origin"][0] - _product()["left_origin"][0]
-    zc = (RECESS_TOP - BR_PLATE_T - RAIL_H) + RAIL_H/2
-    x_fixed = BR_X_RIGHT - 8.0                     # bridge anchor (ground)
-    x_move = gxl + 5.0 + ldx                        # left-jaw anchor (slides with clamp_pos)
+    """v0.24: the 2 extension springs (fit models), INSIDE the outer shroud — each
+    runs from the fixed anchor (SPRING_ANCHOR_X) to the moving inner shroud's hook
+    (near its right/open end). They stretch as the jaw pulls out and are fully
+    enclosed by the outer shroud at every extension."""
+    zc = SHROUD_ZBOT + SHROUD_WALL + SPRING_D / 2 + 0.6      # low in the cavity
+    x_fixed = SPRING_ANCHOR_X
+    x_move = _inner_right(clamp_pos) - 3.0                    # the inner shroud's spring hook
     out = []
     for sy in SPRING_Y:
         c = trimesh.creation.cylinder(radius=SPRING_D/2, height=abs(x_fixed - x_move), sections=16)
@@ -976,20 +967,28 @@ def spring_bodies(clamp_pos=None):
         out.append(c)
     return out
 
-def flex_body(clamp_pos=None):
-    """Bridge FFC: flat ribbon from the right J2 to the left J2. v0.24 the span is
-    VARIABLE (the clamp expands/collapses), so the physical ribbon carries a service
-    loop; modeled here as the straight run at the current clamp position (the loop
-    slack folds in the bridge's under-plate channel)."""
+def _cable_run(clamp_pos, y, w, h, z):
+    """A cable/ribbon fit body spanning the enclosure from the left grip through the
+    shrouds to the right end wall — the part that must stay ENCLOSED. x from the
+    left grip inner edge to the outer shroud's right end; the service-loop slack
+    folds inside as the span changes (modeled as the straight enclosed run)."""
     prod = _prod_at(clamp_pos)
-    def j2(side):
-        geo = prod[side]; ox, oy = prod[f"{side}_origin"]
-        bx, by, bw, bh = geo["keepouts"]["bridge"]
-        return (bx+ox+bw/2, by+oy+bh/2)
-    rx, ry = j2("right"); lx, ly = j2("left")
-    length = abs(rx-lx); midx = (rx+lx)/2; midy = (ry+ly)/2
-    m = _box(length, 10.0, 0.3)
-    return _place(m, midx, midy, 0)
+    lx = prod["left_origin"][0] + prod["left"]["board_w"]     # left grip inner edge
+    rx = BR_X_RIGHT - SHROUD_WALL
+    m = _box(rx - lx, w, h)
+    return _place(m, (lx + rx) / 2, y, z)
+
+def flex_body(clamp_pos=None):
+    """Bridge FFC (16-way ribbon, matrix): runs ENCLOSED through the shrouds at
+    y~24, low in the cavity. The variable span is taken up by a rolling service loop
+    that folds inside the enclosure; modeled as the straight enclosed run."""
+    return _cable_run(clamp_pos, 24.0, 12.0, 0.3, SHROUD_ZBOT + SHROUD_WALL + 0.9)
+
+def power_body(clamp_pos=None):
+    """Battery POWER cable (2-wire, left-grip 403040 -> J3 on the right board) — the
+    piece that was missing. Routed ENCLOSED through the shrouds alongside the FFC (a
+    separate y-lane / z-lane), with its own service-loop slack folding inside."""
+    return _cable_run(clamp_pos, 40.0, 3.0, 2.2, SHROUD_ZBOT + SHROUD_WALL + 0.5)
 
 # ---- the 14 shell screws (5 per grip + 4 panel, v0.19) -----------------------------
 # M3 x 10 COUNTERSUNK (DIN 965, 90-degree, dk<=6.0), dropped in from the TOP: the
@@ -1222,9 +1221,10 @@ def assemble(clamp_pos=None):
             A[f"{side}:{k}"] = mm
     ph = phone_body(clamp_pos); ph.apply_translation((0, 0, PHONE_Z)); A["phone"] = ph
     bt = battery_body(); bt.apply_translation((0, 0, BATT_Z)); A["battery"] = L(bt)
-    for i, s in enumerate(spring_bodies(clamp_pos)):
+    for i, s in enumerate(spring_bodies(clamp_pos)):   # enclosed in the outer shroud
         A[f"spring_{i}"] = s
-    fx = flex_body(clamp_pos); fx.apply_translation((0, 0, FLEX_Z)); A["flex"] = fx
+    A["flex"] = flex_body(clamp_pos)                    # FFC, enclosed (z set in the body)
+    A["power"] = power_body(clamp_pos)                  # battery power cable, enclosed
     for k, m in screw_bodies().items():   # left grip's screws ride the moving jaw
         A[k] = L(m) if k.startswith("screw_left") else m
     return A
@@ -1251,7 +1251,8 @@ def _allowed(a, b):
     # the FFC is an APPROXIMATE floppy ribbon (straight-run fit model): it threads
     # J2 -> the bridge service-loop channel -> J2, so overlaps with the walls/bridge
     # it routes through are modeled contacts, not clashes.
-    if "flex" in s and any(x.startswith(("back_", "bridge")) or ":J" in x for x in s): return True
+    if any(x in ("flex", "power") for x in s) and any(x.startswith(("back_", "bridge")) or ":J" in x for x in s): return True
+    if "power" in s and "battery" in s: return True         # the power cable plugs the battery
     # a collapsed grip's inner mount screw grazes the fixed recess floor by <0.5mm;
     # the printed plate carries a local clearance dimple there.
     if any(x.startswith("screw_") for x in s) and "bridge" in s: return True
@@ -1357,16 +1358,16 @@ def main():
         for name, cp in states:
             A = assemble(cp)
             clashes, contacts, checked = collide(A)
-            eng = _rail_engagement(cp)
+            ov = _shroud_overlap(cp)
             tag = "❌" if clashes else "✅"
             print(f"[{name} span {cp or 'nominal'}] {len(A)} bodies, checked {checked}; "
-                  f"{len(clashes)} CLASHES; rail engagement {eng:.1f}mm {tag}")
+                  f"{len(clashes)} CLASHES; shroud overlap {ov:.1f}mm {tag}")
             for a, b, v in clashes[:15]:
                 print(f"  CLASH   {a:22} <-> {b:22}  overlap {v} mm^3")
             if name == "nominal":
                 for a, b, v in sorted(contacts, key=lambda t: -t[2])[:6]:
                     print(f"  contact {a:22} <-> {b:22}  overlap {v} mm^3 (intended mating)")
-            assert eng >= 6.0, f"[{name}] rail engagement {eng:.1f}mm < 6mm — slider could disengage"
+            assert ov >= 12.0, f"[{name}] shroud overlap {ov:.1f}mm < 12mm — enclosure could open"
             anyclash = anyclash or bool(clashes)
         if not anyclash:
             print("  ✅ no impossible overlaps across the whole clamp travel")
@@ -1396,6 +1397,7 @@ def _explode_offset(k):
     if k.startswith("back_"): return -35
     if k == "battery":      return -18
     if k == "flex":         return -10
+    if k == "power":        return -14
     if ":" in k:            return 0        # PCB stack (board + components)
     if k.startswith("keymat"): return 22
     if k.startswith("grip_lid"): return 40
@@ -1431,6 +1433,7 @@ def _asm_col(k):
     if k.startswith("spring"): return [0.6,0.6,0.63,1]
     if k.startswith("screw_"): return [0.73,0.74,0.77,1]
     if k == "flex":         return [0.75,0.55,0.2,1]
+    if k == "power":        return [0.85,0.2,0.15,1]  # red battery power cable
     if ":pcb" in k:         return [0.16,0.35,0.24,1]
     if ":SW" in k:          return [0.9,0.72,0.2,1]
     if any(x in k for x in (":U",":J")): return [0.2,0.2,0.24,1]
@@ -1438,8 +1441,8 @@ def _asm_col(k):
 
 def _render_parts(A):
     titles = {"back_right": "right back grip (GROUND — bridge-mount bosses + right cradle)",
-              "back_left": "left back grip (moving jaw — slider groove + left cradle + spring anchor)",
-              "bridge": "telescoping bridge (dual rails + near-flush recess + spring anchors + FFC loop)",
+              "back_left": "left back grip (moving jaw — inner shroud + left cradle + spring hook)",
+              "bridge": "telescoping bridge — fixed OUTER SHROUD (encloses springs + FFC + power cable)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",

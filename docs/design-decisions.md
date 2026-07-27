@@ -26,28 +26,38 @@ springs**, **preserve near-flush at the nominal phone**, phone long-edge range
   rails on a printed slider, and 2 extension springs pull it inward. Symmetric two-
   sided (centred, stiffer) is the noted fallback if the ~180 mm cantilever proves
   floppy; the clamped phone triangulates the jaw and mitigates that.
-- **The `bridge` part** (new, ~182 mm, fits the bed): near-flush recess floor (nominal
-  S25U screen ≈ flush at 14.7; recess floor 5.1), two Y-separated rails run the full
-  travel but are routed at y 8/86 **outside the left battery band (y 13–53)** so the
-  collapsed grip clears them, Y-retention walls, spring anchors, a left **rail
-  end-stop**, bridge→right-grip bolt bosses, and the FFC service-loop channel.
+- **Fully ENCLOSED telescoping bridge (feedback: the springs/flex/power must never be
+  exposed).** The mechanism is housed in two nested shrouds, Backbone-style: a fixed
+  **outer shroud** (the `bridge` part — a closed box, recess-floor top / bottom cover /
+  y-walls / right end wall, open only on its left end, bolted to the right grip) and a
+  moving **inner shroud** grown onto `back_left` that telescopes inside it. They always
+  overlap (`_shroud_overlap` asserted ≥12 mm; actual 57 mm at min → 17 mm at max), so
+  the enclosure never opens. The **2 extension springs live inside the outer shroud**
+  (fixed anchor at x=22, pulling the inner shroud's hook), and both cables run enclosed
+  through the shrouds. The phone rests on the outer shroud's top + the cradle ledges;
+  the low nested inner-shroud top just closes the cavity under the phone.
+- **The missing power cable, added + enclosed.** The battery leads (left-grip 403040 →
+  J3 on the right board) were never modeled; they're now a `power_body` routed enclosed
+  through the shrouds in its own y/z lane beside the FFC, each with a rolling service
+  loop. Collision shows both cables as intended contacts with the shrouds (threaded
+  through, inside the cavity), not clashes.
 - **Packing conflicts solved during collision bring-up** (validated at min/nominal/max):
   the left grip's mount screws had to be shifted with the moving jaw (they were pinned
   at nominal); the recess floor was shortened to x −60 so it clears the **collapsed
   grip's battery** (the phone is edge-clamped, so it only needs central + cradle-edge
   support, not full-back support); the cradle walls were pulled 0.9 mm shy of J2's
-  courtyard; and the bolt column was moved off J2's y-band. `--check` asserts ≥6 mm
-  rail engagement (6.3 mm at full 170 mm extension).
+  courtyard; and the bolt column was moved off J2's y-band. `--check` asserts the
+  shrouds stay overlapped (≥12 mm) so the enclosure can't open at full extension.
 - **Retention & near-flush trade-offs (accepted).** X = spring clamp on the short
   edges via TPU-padded cradles; Z = screen-edge lips + the recess; Y = bridge walls.
   Near-flush holds exactly only at the nominal cased thickness (9.4 mm) — thinner
   phones sit slightly low, thicker slightly proud — and the smallest phones are
   right-justified (right edge pinned) rather than centred.
-- **Electrical / battery.** The 16-way FFC now needs a **rolling service loop** (fold
-  in the under-bridge channel; jumper grows to ≈240 mm) because the span is variable.
-  The 403040 battery stays in the left grip and rides the moving jaw; the FFC is the
-  only cross-grip link. No PCB changes — this is shell-only; the boards remain v0.22
-  rev-A.
+- **Electrical / battery.** Both cross-grip cables — the 16-way FFC (matrix) and the
+  battery power leads — now need a **rolling service loop** (fold inside the shroud;
+  FFC grows to ≈240 mm) because the span is variable. The 403040 battery stays in the
+  left grip and rides the moving jaw. No PCB changes — this is shell-only; the boards
+  remain v0.22 rev-A.
 
 ## v0.23 — faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics)
 

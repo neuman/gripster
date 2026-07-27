@@ -34,7 +34,7 @@ OUT = os.path.join(MODELS, "thumbdeck_web_raw.glb")
 # leaf nodes that ARE their own mover (single printed/loose part)
 SINGLE = ("back_left", "back_right", "bridge", "grip_lid_left",
           "grip_lid_right", "nub_spring", "nub_cap", "keymat_left",
-          "keymat_right", "battery", "flex")
+          "keymat_right", "battery", "flex", "power")
 
 # component nodes kept UN-merged (slash-free rename) so hotspot pins can anchor
 # to them precisely; they still ride the pcb_right mover during explode.
