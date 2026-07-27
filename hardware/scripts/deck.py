@@ -156,7 +156,15 @@ class Config:
     phone_h: float = 162.8        # phone LONG dimension (S25 Ultra 162.8mm, bare) — spans the grips in landscape
     phone_t: float = 8.2          # phone THICKNESS (S25 Ultra 8.2mm, bare)
     case_t: float = 1.2           # typical thin case: added per side AND behind the back
-    magsafe_d: float = 56.0       # MagSafe magnet ring outer diameter (N52 arc array)
+    magsafe_d: float = 56.0       # DEAD since v0.24 (MagSafe dropped for the spring clamp); kept for history
+    # v0.24: the rigid flush-screen well is replaced by an EXPANDING SPRING CLAMP
+    # (Kishi 2 / Backbone style) — the two grips slide on a printed dual-rail bridge
+    # and 2 extension springs pull them together to clasp the phone by its short
+    # edges. The clamp spans a RANGE of phone long-edges (cased). The nominal cased
+    # long edge (phone_h + 2*case_t = 165.2) keeps the right grip's ground position;
+    # smaller phones collapse the left grip inward. See deck.product() + deck3d bridge().
+    phone_span_min: float = 130.0  # smallest cased long-edge the clamp closes onto (iPhone-mini class)
+    phone_span_max: float = 170.0  # largest cased long-edge the rails reach (S25U-plus class)
     # v0.11: trackpad = a PCB-INTEGRATED capacitive pad (copper on the front, ~34x26mm
     # so it fits the grip's upper zone with no overhang) driven by an Azoteq IQS7211E
     # controller on the BACK. Unlike a Cirque FFC module this is turnkey-friendly (just
@@ -420,41 +428,51 @@ def build(c: Config) -> dict:
     return geo
 
 
-def product(c: Config) -> dict:
+EDGE_CLR = 2.25   # grip inner edge -> phone short edge (cradle x-wall + TPU pad land)
+
+def product(c: Config, clamp_pos: float = None) -> dict:
     """Whole-assembly geometry for the product view: both grips placed with the
-    phone + MagSafe ring between them. Right grip inner edge at x=0; left grip
-    mirrored to the left of the phone. Returns a single scene in product mm."""
+    phone clamped between them. v0.24 EXPANDING CLAMP — the RIGHT grip is GROUND
+    (its inner edge fixed at the nominal half-gap); the LEFT grip is the moving jaw
+    that slides on the bridge rails, its position set by `clamp_pos` (the CASED
+    phone long-edge currently clasped). At the nominal phone the assembly is
+    symmetric/centred; smaller phones collapse the left grip inward (right-
+    justified). Returns a single scene in product mm."""
     right = build(Config(**{**c.__dict__, "side": "right"}))
     left = build(Config(**{**c.__dict__, "side": "left"}))
     # LANDSCAPE: the phone's LONG side spans horizontally between the grips; its
-    # SHORT side is vertical (centred on the grip midline). Portrait swaps these.
-    # v0.18: all phone geometry is the CASED envelope (bare + 2*case_t per axis) —
-    # the pocket/gap must fit the phone as worn, and the flush-screen z-stack is
-    # computed from the cased thickness (deck3d).
+    # SHORT side is vertical. All phone geometry is the CASED envelope. The long
+    # edge is the CLAMP span (variable); the short edge sizes the fixed y-cradle.
     if c.orientation == "landscape":
-        span_x, span_y = max(c.phone_w, c.phone_h), min(c.phone_w, c.phone_h)
+        nominal_long, span_y = max(c.phone_w, c.phone_h), min(c.phone_w, c.phone_h)
     else:
-        span_x, span_y = min(c.phone_w, c.phone_h), max(c.phone_w, c.phone_h)
-    span_x += 2 * c.case_t
+        nominal_long, span_y = min(c.phone_w, c.phone_h), max(c.phone_w, c.phone_h)
+    nominal_long += 2 * c.case_t                 # 165.2 cased S25U long edge (right-grip anchor)
     span_y += 2 * c.case_t
-    # v0.19: gap = cased phone + 0.35/side well x-clearance + well_end_wall/side +
-    # 0.3/side panel-lid reveal — the extra material closes the well's x-ends
-    # (feedback item 2: the old span_x+0.6 put the phone ends exactly AT the panel
-    # edges, leaving open slots into the grip cavities)
-    gap = span_x + 2 * (0.35 + c.well_end_wall + 0.3)
-    rx = gap / 2.0
-    lx = -gap / 2.0 - left["board_w"]
+    if clamp_pos is None:
+        clamp_pos = nominal_long                 # default build = nominal phone clasped
+    span_x = clamp_pos                            # current cased long-edge span
+    # Right grip inner edge = GROUND, fixed at the NOMINAL half-gap regardless of
+    # clamp_pos, so the fixed bridge (bolted to the right grip) never moves.
+    nominal_gap = nominal_long + 2 * EDGE_CLR     # 169.7 — unchanged from the v0.23 gap
+    rx = nominal_gap / 2.0                         # 84.85 — right grip inner edge (constant)
+    gap = span_x + 2 * EDGE_CLR                    # current inner-edge separation (left jaw position)
+    left_inner = rx - gap                          # left grip inner edge (moves with clamp_pos)
+    lx = left_inner - left["board_w"]              # left grip origin (board extends -x from inner edge)
     cy = right["board_h"] / 2.0
+    phone_right = rx - EDGE_CLR                     # +82.6 — phone right edge, PINNED to the ground grip
+    phone_left = phone_right - span_x              # phone left edge (in the moving jaw)
     return {
         "right": right, "left": left,
-        # origins rounded to 3 decimals to MATCH build()'s board_w precision —
-        # at 2 decimals a 3rd-decimal board_w (v0.17: 79.493) shifts the left
-        # grip's inner edge 0.003mm off the seam and deck3d's frame assert trips
+        # right origin CONSTANT (ground); left origin tracks clamp_pos
         "right_origin": [round(rx, 3), 0.0],
         "left_origin": [round(lx, 3), 0.0],
         "phone": {"w": span_x, "h": span_y,
-                  "x": round(-span_x / 2, 2), "y": round(cy - span_y / 2, 2)},
-        "magsafe": {"cx": 0.0, "cy": round(cy, 2), "d": c.magsafe_d},
+                  "x": round(phone_left, 2), "y": round(cy - span_y / 2, 2)},
+        # clamp state — consumed by deck3d for the bridge/rail/travel geometry
+        "clamp": {"pos": round(clamp_pos, 2), "min": c.phone_span_min, "max": c.phone_span_max,
+                  "nominal": round(nominal_long, 2), "gap": round(gap, 3), "edge_clr": EDGE_CLR,
+                  "right_inner": round(rx, 3), "left_inner": round(left_inner, 3)},
         # v0.18: the LiPo moved OUT of the spine — the sunken phone well (screen
         # flush with the lids) leaves only ~0.5mm under its floor slab, so no
         # standard cell fits behind the ring any more. The cell is now a 403040

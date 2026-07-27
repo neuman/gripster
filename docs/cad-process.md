@@ -1,4 +1,24 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.23
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24
+
+**v0.24 expanding spring-clamp back (2026-07-26, branch feature/expanding-clamp).**
+The rigid center — the bolted **center panel** and its **sunken flush-screen well +
+MagSafe ring** — is replaced by a **Kishi-2/Backbone-style expanding clamp** that
+clasps different-size phones (cased long edge **130–170 mm**). The two grips are no
+longer joined at x=0; the **right grip is fixed ground**, the **left grip is a moving
+jaw** that slides on a printed **dual-rail bridge**, and **two extension springs** pull
+them together to grip the phone by its short edges. The `bridge` (a new printed part,
+~182 mm, fits the bed) carries the **near-flush recess floor** (nominal S25U screen
+still ≈ flush at 14.7 mm), the Y-separated rails (routed clear of the left battery
+band), Y-retention walls, spring anchors, a rail **end-stop**, and the **FFC
+service-loop channel** (the 16-way ribbon gains a rolling fold since the span is now
+variable). Both grips carry a **phone-edge cradle** (backstop wall + screen-edge lip +
+ledge; soft TPU pad). `deck.product(clamp_pos)` is parametric on the clamped span;
+`deck3d --check` validates at **min / nominal / max** and asserts rail engagement — all
+9 parts watertight + bed-fit, **0 collisions across the whole travel** (rail engagement
+46→6 mm). MagSafe is dropped; the 403040 battery stays in the (now sliding) left grip.
+The near-flush option means non-nominal phone thicknesses sit slightly proud/low, and
+the largest phones' extreme edges are carried by the cradle (edge-clamp) rather than
+the central recess floor.
 
 **v0.23 faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics).**
 The dead-flat back is replaced by a **faceted palm crown** — a hard-industrial 90s
@@ -244,7 +264,8 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 
 | Part | Orientation | Notes |
 |---|---|---|
-| `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim (long parts warp at the seam corners) |
+| `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim. v0.24: `back_left` is the sliding jaw (slider groove); `back_right` is ground (cradle + bridge bosses) |
+| `bridge` (v0.24) | **recess floor down** | dual rails + spring anchors face up; light supports under the rail overhangs; the FFC service-loop channel prints as a shallow pocket |
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
 | `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |

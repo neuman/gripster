@@ -3,7 +3,51 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.23 (first entry).
+current design is rev-A / v0.24 (first entry).
+
+## v0.24 — expanding spring-clamp back (2026-07-26, branch feature/expanding-clamp)
+
+User request: make the back **expand and collapse like a Razer Kishi 2 / Backbone** so
+it clasps different-size phones with a spring — a drastic rework of the rigid center.
+Chosen after four decisions: **printed dual-rail slide** (no metal rods), **2 extension
+springs**, **preserve near-flush at the nominal phone**, phone long-edge range
+**130–170 mm**.
+
+- **The rigid center is gone.** Deleted the bolted `center_panel`, the sunken
+  flush-screen well, the MagSafe ring, the x=0 back seam + tabs/shiplap, the panel
+  screws, and the central spine slab. The two grips are now separate bodies. This was
+  a deliberate reversal of the v0.8 "fixed shell vs telescoping" call and the v0.18
+  flush-well — logged there as trade-offs, now revisited because the user wants
+  multi-phone fit over a single-phone flush mount.
+- **One-sided telescoping clamp.** `deck.product()` is parametric on `clamp_pos` (the
+  cased phone long edge). The **right grip is ground** — its inner edge is pinned at
+  the nominal half-gap (84.85) so the fixed `bridge` bolted to it never moves. The
+  **left grip is the moving jaw**: its origin tracks `clamp_pos`, it rides the bridge
+  rails on a printed slider, and 2 extension springs pull it inward. Symmetric two-
+  sided (centred, stiffer) is the noted fallback if the ~180 mm cantilever proves
+  floppy; the clamped phone triangulates the jaw and mitigates that.
+- **The `bridge` part** (new, ~182 mm, fits the bed): near-flush recess floor (nominal
+  S25U screen ≈ flush at 14.7; recess floor 5.1), two Y-separated rails run the full
+  travel but are routed at y 8/86 **outside the left battery band (y 13–53)** so the
+  collapsed grip clears them, Y-retention walls, spring anchors, a left **rail
+  end-stop**, bridge→right-grip bolt bosses, and the FFC service-loop channel.
+- **Packing conflicts solved during collision bring-up** (validated at min/nominal/max):
+  the left grip's mount screws had to be shifted with the moving jaw (they were pinned
+  at nominal); the recess floor was shortened to x −60 so it clears the **collapsed
+  grip's battery** (the phone is edge-clamped, so it only needs central + cradle-edge
+  support, not full-back support); the cradle walls were pulled 0.9 mm shy of J2's
+  courtyard; and the bolt column was moved off J2's y-band. `--check` asserts ≥6 mm
+  rail engagement (6.3 mm at full 170 mm extension).
+- **Retention & near-flush trade-offs (accepted).** X = spring clamp on the short
+  edges via TPU-padded cradles; Z = screen-edge lips + the recess; Y = bridge walls.
+  Near-flush holds exactly only at the nominal cased thickness (9.4 mm) — thinner
+  phones sit slightly low, thicker slightly proud — and the smallest phones are
+  right-justified (right edge pinned) rather than centred.
+- **Electrical / battery.** The 16-way FFC now needs a **rolling service loop** (fold
+  in the under-bridge channel; jumper grows to ≈240 mm) because the span is variable.
+  The 403040 battery stays in the left grip and rides the moving jaw; the FFC is the
+  only cross-grip link. No PCB changes — this is shell-only; the boards remain v0.22
+  rev-A.
 
 ## v0.23 — faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics)
 

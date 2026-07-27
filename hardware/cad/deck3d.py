@@ -249,16 +249,13 @@ def _seam_frame():
     return gx
 
 def full_footprint():
-    """Union of both grips + a central spine slab under the phone: the shared 2D
-    footprint every shell part is derived from (split into 5 parts since v0.16)."""
-    prod = _product()
+    """v0.24: just the two grip polygons — NO central spine slab. The rigid spine
+    (that the bolted center panel bridged) is gone; the two grips are now separate
+    bodies joined only by the telescoping bridge (deck3d.bridge()), so each back
+    half is its own grip and the center is the expanding clamp mechanism."""
     rp, _, _ = _grip_poly_product("right")
     lp, _, _ = _grip_poly_product("left")
-    # central slab spans between the grips' inner edges, over the phone/spine, full grip height
-    rx = prod["right_origin"][0]; lxr = prod["left_origin"][0] + prod["left"]["board_w"]
-    bh = prod["right"]["board_h"]
-    spine = Polygon([(lxr-1, 0), (rx+1, 0), (rx+1, bh), (lxr-1, bh)])
-    return rp.union(lp).union(spine).buffer(0)
+    return rp.union(lp).buffer(0)
 
 # ==== printable parts (CadQuery) ====================================================
 import cadquery as cq
@@ -270,8 +267,6 @@ TOP_T = 2.4           # grip-lid plate thickness (v0.19: 2.0 -> 2.4 so the M3 fl
                       #   countersink cone leaves >=1.0mm of land under it)
 STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH (J3) + 0.24 margin
 PHONE_CLR = 0.6       # phone pocket clearance (total, both sides)
-RING_REC_D = 1.8      # MagSafe ring recess depth inside the phone-well floor
-RING_REC_R = 28.5     # recess radius (Ø57 for the Ø56 N52 ring)
 GAP = 0.5
 KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.9, 6.2   # keymat web / plunger height / plunger dia
                                            # (v0.19: 3.5 -> 3.9 keeps caps 1.0 proud of
@@ -282,33 +277,36 @@ KM_Z0 = DOME_TOP + 1.0                       # keymat web bottom (nub reaches th
 TOP_Z = KM_Z0 + KM_WEB + GAP                 # front parts sit above the cavity
 WALL = TOP_Z - FLOOR                         # cavity height (derived)
 
-# --- 5-part split (grip lids + center panel + back halves), Ender 3 V2 bed ---
+# --- printable parts (grip lids + 2 back-grip halves + telescoping bridge), Ender 3 V2 bed ---
 BED_XY = 204.0        # printable footprint per part: 220mm bed minus 2x8mm brim
-PANEL_T = 2.6         # well-floor slab thickness (0.8 web under the 1.8 ring recess)
-# v0.18 SUNKEN WELL: the phone (S25 Ultra in a typical thin case) sits in a deep
-# well in the center panel so its SCREEN SURFACE lands FLUSH with the grip lids'
-# keyboard face (WELL_TOP). Everything below is derived from the cased thickness:
-#   screen @ WELL_TOP -> cased back rests at WELL_TOP - PHONE_TC (on the 0.2-proud
-#   ring) -> well floor 0.2 lower -> slab hangs PANEL_T below that.
-WELL_TOP = TOP_Z + TOP_T                     # 14.7 (v0.19 TOP_T 2.4) — panel border top = lid top = device face
-PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — cased thickness, back-of-case -> screen
-WELL_FLOOR = WELL_TOP - PHONE_TC - 0.2       # 5.1 — well/pocket floor (ring sits 0.2 proud)
-SLAB_BOT = WELL_FLOOR - PANEL_T              # 2.5 — slab bottom (0.9 above the back floor)
-WELL_WALL = 2.0                              # well y-wall band thickness
-SEAM_GAP = 0.3        # front reveal gap between panel edge and lid edge (deliberate V)
-LAP_CLR = 0.25        # printed-joint in-plane clearance (FDM: elephant foot + warp)
-XWALL_T = 2.5         # transverse spine wall (closes each half's torsion box, seats panel)
-# 4 seam-splice screws straddling the x=0 back seam, DERIVED from the phone pocket
-# span (v0.17: hardcoded y=10/105 broke when the board shrank to 97mm — 105 was off
-# the shell and 10 clipped the new pocket rim). v0.18: 6.3mm outside each pocket
-# edge so the Ø7 floor bosses clear the well's 2.0mm wall band by >=0.5mm.
-_PH0 = deck.product(deck.Config())["phone"]
-_PY0, _PY1 = _PH0["y"] - PHONE_CLR / 2, _PH0["y"] + _PH0["h"] + PHONE_CLR / 2
-# v0.19: offsets grew 6.3 -> 6.8 (Ø8 M3 bosses vs the well band) and the TOP row
-# moved to |x|=13 to clear the thumb-scallop dish wall (R10.6 half-annulus at
-# (0, _PY1-2.3)) plus its Ø8 boss by >=0.8mm
-PANEL_SCREWS = [(-10.0, _PY0 - 6.8), (10.0, _PY0 - 6.8),
-                (-13.0, _PY1 + 6.8), (13.0, _PY1 + 6.8)]
+# v0.24 device face + near-flush clamp recess. The grip-lid keyboard face is still
+# the device face plane FACE_Z (=14.7); the phone is no longer sunk in a rigid
+# well but clamped in a RECESS on the telescoping bridge whose floor sits so the
+# NOMINAL cased phone's screen lands ~flush with FACE_Z.
+FACE_Z = TOP_Z + TOP_T                       # 14.7 — grip-lid keyboard face = device face plane
+WELL_TOP = FACE_Z                            # back-compat alias (lid/screw countersinks reference it)
+PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — nominal cased thickness (back-of-case -> screen)
+RECESS_TOP = FACE_Z - PHONE_TC - 0.2         # 5.1 — bridge recess floor top (nominal screen ~flush)
+LAP_CLR = 0.25        # printed-joint / rail-slide in-plane clearance (FDM: elephant foot + warp)
+# --- v0.24 expanding spring-clamp bridge geometry (product frame) ---
+BR_PLATE_T = 1.6                             # recess-floor plate thickness
+BR_Y0, BR_Y1 = 6.0, 91.0                     # bridge plate y-extent (just outside the phone y 8.5..88.5)
+RAIL_W, RAIL_H = 6.0, 3.2                    # rail tongue section (hangs below the plate)
+RAIL_Y = (8.0, 86.0)                         # two rails, Y-separated + OUTSIDE the left battery band (y13..53)
+BR_X_RIGHT = 82.6                            # bridge right end = nominal phone right edge (bolts to R grip)
+BR_X_LEFT = -96.0                            # rails' left end (past the -89.65 max left-jaw + rail margin)
+BR_PLATE_LEFT = -60.0                        # recess-FLOOR left end: covers the phone centre; the edges are
+#                                              carried by the grip cradle ledges + the spring clamp, and this
+#                                              keeps the floor clear of the collapsed left grip's battery.
+CRADLE_WALL_T = 2.0                          # cradle x-wall thickness (phone short-edge backstop)
+CRADLE_LIP = 1.6                             # lip overhanging the screen edge (z-retention)
+SLIDER_LEN = 44.0                            # left-grip slider engagement length on the rails
+SLIDER_WALL = 2.2                            # slider C-channel wall around a rail
+YWALL_H = 1.4                                # bridge y-retention wall height (stays below the PCB back)
+BOLT_Y = (46.0, 62.0)                        # bridge->right-grip bolt line (clear of J2 at y 12.5..33.5)
+BOLT_X = 83.3                                # bolt column: behind the right cradle wall (outboard of the phone edge)
+SPRING_Y = (26.0, 71.0)                      # 2 extension springs, flanking, under the plate
+SPRING_D = 5.0                               # extension-spring OD (fit model)
 # M3 flush-countersunk face hardware (v0.19, feedback: proud pan heads were
 # uncomfortable). DIN 965 90-degree head, dk<=6.0: cone face Ø6.2 with the head
 # nominally 0.1-0.3 sub-flush (FDM droop/elephant-foot budget); panel cones cut
@@ -400,12 +398,13 @@ def _spine_ridge():
     return _facet_loft([(base, 0.0), (top, -CROWN_SPINE)])
 
 def _crown_solid():
-    """Union of both faceted grip mounds + the spine ridge: one solid below z=0."""
+    """v0.24: both faceted grip mounds only — the spine ridge is GONE (there is no
+    back half in the center any more; the telescoping bridge carries its own
+    faceted underside). One solid below z=0, split per grip by back_half()."""
     prod = _product()
     gx = _seam_frame()                                  # right grip inner edge (84.85)
     cxr = gx + prod["right"]["board_w"]/2               # right grip centre x
-    crown = _grip_mound(cxr, +1).union(_grip_mound(-cxr, -1)).union(_spine_ridge())
-    return crown
+    return _grip_mound(cxr, +1).union(_grip_mound(-cxr, -1))
 
 def _crown_grooves():
     """Crisp shadow-line grooves scored into the flat grip plateaus (constant
@@ -547,60 +546,11 @@ def _back_solid():
     shell = shell.cut(cq.Workplane("XY").workplane(offset=4.0)
                       .center(ax_ + ox + aw/2, bh_r + 0.65).box(aw, 0.7, PCB_Z - 3.9, centered=(True, True, False)))
 
-    # ---- transverse spine walls at each grip boundary (v0.16 split): close each
-    # half's torsion box where the front seam breaks the top plate and seat the
-    # panel border. v0.18: over the phone-well y-span the wall is CUT DOWN to a
-    # sill at SLAB_BOT-0.15 — the sunken phone (bottom at WELL_FLOOR+0.2) and the
-    # panel's well-floor slab both pass over it; outside the well span the wall
-    # keeps full height and seats the border flange. The old ring-height Ø8
-    # anchors are GONE (the panel floor is 8mm below their bores now): MagSafe
-    # detach is resisted by the 4 border screws + the slab's own stiffness
-    # (<0.3mm flex at the ring), down-press by the slab's floor nubs.
-    gx = _seam_frame()
-    bh = prod["right"]["board_h"]
-    ms = prod["magsafe"]
-    for s in (1, -1):
-        x1 = s * (gx - SEAM_GAP); x0 = x1 - s * XWALL_T
-        xw = (cq.Workplane("XY").workplane(offset=FLOOR)
-              .center((x0+x1)/2, (-PCB_CLR + bh + PCB_CLR)/2)
-              .box(XWALL_T, bh + 2*PCB_CLR, WALL, centered=(True, True, False)))
-        # cut down to the sill over the well span PLUS the panel's 2.0mm wall band
-        # (the band's y-side strips run the full panel width, so the sill must
-        # clear them at the x-ends too — a well-span-only cut left 59mm^3 of
-        # wall/band interference per side)
-        xw = xw.cut(cq.Workplane("XY").workplane(offset=SLAB_BOT - 0.15)
-                    .center((x0+x1)/2, (_PY0 + _PY1)/2)
-                    .box(XWALL_T+2, (_PY1 - _PY0) + 2*(WELL_WALL + LAP_CLR), WALL, centered=(True, True, False)))
-        # battery-lead pass-through at the bottom border lane (y~5, below the
-        # well): the 403040's leads run LEFT cavity -> spine floor -> J3 (right).
-        # The FFC no longer needs a wall window — it crosses in the under-slab
-        # floor channel, BELOW the wall base (see the channel cut below).
-        xw = xw.cut(cq.Workplane("XY").workplane(offset=FLOOR)
-                    .center((x0+x1)/2, 5.0).box(XWALL_T+2, 8.0, 9.0-FLOOR, centered=(True, True, False)))
-        shell = shell.union(xw)
-    # ---- FFC floor channel: the bridge ribbon used to cross at z~5.4, which now
-    # lands INSIDE the phone well — it must run UNDER the panel slab (bottom at
-    # SLAB_BOT). A 0.5mm-deep recess in the back floor (1.6 -> 1.1) over a 19mm
-    # lane centred on the J2 contact band gives the 0.3mm ribbon a 1.1..1.6 duct
-    # with ~0.5mm headroom to the slab; it passes beneath the transverse-wall
-    # bases (the walls sit on the 1.6 floor plane and don't fill the recess).
-    # The ribbon S-bends from each ZIF (z~5.5) down to the duct inside the grip
-    # cavities. Lane y 15..34 clears the relocated floor tabs (36..44).
-    _, jch = _find_fp("right", "ffc_afa07")
-    shell = shell.cut(cq.Workplane("XY").workplane(offset=1.1)
-                      .center(0.0, jch).box(2*gx + 8.0, 19.0, FLOOR, centered=(True, True, False)))
-    # ---- 4 panel bosses straddling the x=0 back seam (2 per half): the screwed-on
-    # panel border is the seam's splice plate (v0.19: Ø8 for the M3 insert)
-    for (px, py) in PANEL_SCREWS:
-        shell = shell.union(cq.Workplane("XY").workplane(offset=FLOOR)
-                            .center(px, py).circle(4.0).extrude(WALL))
-    # bores are cut from the FINISHED shell, not the boss primitives — a pre-bored
-    # boss unioned into overlapping material gets its bore silently re-filled.
-    # Ø4.0 x 9.0 (M3 insert at the top): floor at 3.3, >=1.0mm below the M3x10
-    # tip (head flush at WELL_TOP -> tip at WELL_TOP-10 = 4.7).
-    for (px, py) in PANEL_SCREWS:
-        shell = shell.cut(cq.Workplane("XY").workplane(offset=FLOOR+WALL)
-                          .center(px, py).circle(2.0).extrude(-9.0))
+    # ---- v0.24: the rigid center is GONE. No transverse spine walls / panel
+    # bosses / FFC floor channel here any more — each grip's own perimeter wall
+    # (from fp.buffer) already closes its inner edge, and the two grips are joined
+    # only by the telescoping bridge. The right grip's bridge-mount bosses and the
+    # left grip's slider groove are added per-side in _back_half_build().
     return shell
 
 
@@ -621,52 +571,67 @@ def _memo(name, builder):
         _BUILT[name] = builder()
     return _BUILT[name].copy()
 
+def _grip_bridge_iface(part, side):
+    """v0.24 telescoping-clamp interface added to a grip's back half. Both grips get
+    a phone-edge CRADLE (backstop wall from the recess floor to the face + a
+    screen-edge lip; TPU pad seats on the wall). The RIGHT grip (GROUND) adds the
+    bridge-bolt bosses; the LEFT grip (moving jaw) adds the SLIDER that captures the
+    two bridge rails + the spring anchors. Built in the nominal frame; the left grip
+    (and its slider) translate as one when assembled at a different clamp_pos."""
+    prod = _product()
+    ph = prod["phone"]; py0, py1 = ph["y"] - 0.5, ph["y"] + ph["h"] + 0.5
+    gx = _seam_frame(); zt = RECESS_TOP
+    zr1 = zt - BR_PLATE_T                          # rail top (plate bottom)
+    zr0 = zr1 - RAIL_H                             # rail bottom
+    if side == "right":
+        xw0, xw1 = BR_X_RIGHT, gx - 0.9           # 82.6 .. 83.95 (stops shy of J2's courtyard @84.8)
+        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))
+        part = part.union(_cq_from_poly(shp_box(xw0 - CRADLE_LIP, py0, xw0, py1), FACE_Z - 1.2, 1.2))
+        part = part.union(_cq_from_poly(shp_box(xw0 - 4.0, py0, xw0, py1), zt - 1.2, 1.2))  # ledge: phone edge rests here
+        for by in BOLT_Y:                          # bridge-bolt bosses (M3 insert) behind the cradle wall
+            part = part.union(cq.Workplane("XY").workplane(offset=FLOOR)
+                              .center(BOLT_X, by).circle(2.8).extrude(zt - FLOOR))
+            part = part.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
+                            .center(BOLT_X, by).circle(1.7).extrude(-6.0))
+    else:
+        gxl = -gx                                  # left grip inner edge (-84.85)
+        xw0, xw1 = gxl + 0.9, -BR_X_RIGHT         # -83.95 .. -82.6 (stops shy of J2's courtyard)
+        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))
+        part = part.union(_cq_from_poly(shp_box(xw1, py0, xw1 + CRADLE_LIP, py1), FACE_Z - 1.2, 1.2))
+        part = part.union(_cq_from_poly(shp_box(xw1, py0, xw1 + 4.0, py1), zt - 1.2, 1.2))  # ledge: phone edge rests here
+        # slider: a block per rail from the grip inner edge toward centre, grooved to
+        # ride the rail (+LAP_CLR); wraps bottom + both sides (assembled by sliding on
+        # from the bridge's left end). Spring anchor posts on the slider's inner face.
+        sx0, sx1 = gxl, gxl + SLIDER_LEN           # -84.85 .. -40.85
+        for ry in RAIL_Y:
+            block = (cq.Workplane("XY").workplane(offset=zr0 - SLIDER_WALL)
+                     .center((sx0 + sx1) / 2, ry)
+                     .box(SLIDER_LEN, RAIL_W + 2 * SLIDER_WALL, RAIL_H + SLIDER_WALL, centered=(True, True, False)))
+            groove = (cq.Workplane("XY").workplane(offset=zr0 - LAP_CLR)
+                      .center((sx0 + sx1) / 2, ry)
+                      .box(SLIDER_LEN + 2, RAIL_W + 2 * LAP_CLR, RAIL_H + 2 * LAP_CLR, centered=(True, True, False)))
+            part = part.union(block.cut(groove))
+        for sy in SPRING_Y:                        # left ends of the 2 extension springs
+            part = part.union(cq.Workplane("XY").workplane(offset=zr0)
+                              .center(sx0 + 5.0, sy).box(4.0, 3.0, RAIL_H, centered=(True, True, False)))
+    return part
+
 def back_half(side):
     return _memo(f"back_{side}", lambda: _back_half_build(side))
 
 def _back_half_build(side):
-    """One printable back-shell half (splits the tray at x=0 so each half fits an
-    Ender 3 V2 bed). Joinery is printed + screwless: two full-thickness floor tabs
-    (right) into cleared notches (left) register the halves in-plane, and each
-    perimeter wall gets an 8mm vertical shiplap (vertical faces — prints clean flat)
-    for shear/torsion continuity; the screwed-on center panel is the bolted splice."""
+    """v0.24: one printable back-shell half = ONE GRIP. The two grips are separate
+    bodies (no x=0 seam, no tabs/shiplap) joined only by the telescoping bridge, so
+    a half is just its grip clipped out of _back_full(). The right grip carries the
+    bridge-mount bosses; the left grip carries the slider groove (added by
+    _grip_bridge_iface). The faceted crown (down to -CROWN_PEAK) is kept by the low
+    clip box."""
     prod = _product(); bh = prod["right"]["board_h"]
     s = 1 if side == "right" else -1
-    # v0.23: clip box lowered to -(CROWN_PEAK+2) so the faceted crown (down to
-    # -CROWN_PEAK) survives the seam split instead of being sheared off at z=-2
-    half = cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+2)).center(s*250, bh/2).box(500, 500, 30+CROWN_PEAK+2, centered=(True, True, False))
-    # v0.18: lower tab moved 30-38 -> 36-44 so it clears the FFC floor channel
-    # (lane y 15..34) — a channel-thinned tab would be a weak splice
-    tabs = [(36.0, 44.0), (78.0, 86.0)]
-    # front/back perimeter walls: outer faces at y=-2.9 / bh+2.9; split each wall's
-    # thickness for the shiplap (right keeps the outer layer over x in [-7.75, 0])
-    wo0, wi0 = -(WALL_T + PCB_CLR), -PCB_CLR              # front wall y-faces
-    wo1, wi1 = bh + WALL_T + PCB_CLR, bh + PCB_CLR        # back wall y-faces
-    t_split = 1.125                                        # tongue = outer 1.125 of the 2.5 wall
-    if side == "right":
-        for (y0, y1) in tabs:   # floor tabs, flush top and bottom (z 0..FLOOR)
-            half = half.union(cq.Workplane("XY").workplane(offset=0)
-                              .center(-5.0/2, (y0+y1)/2).box(5.0, y1-y0, FLOOR, centered=(True, True, False)))
-        for (yo, sgn) in ((wo0, 1), (wo1, -1)):  # wall tongues: outer layer, 7.75 long
-            half = half.union(cq.Workplane("XY").workplane(offset=0)
-                              .center(-7.75/2, yo + sgn*t_split/2).box(7.75, t_split, FLOOR+WALL, centered=(True, True, False)))
-    else:
-        for (y0, y1) in tabs:   # tab notches, LAP_CLR clearance on x and y
-            half = half.cut(cq.Workplane("XY").workplane(offset=-1)
-                            .center((-(5.0+LAP_CLR) + 1.0)/2, (y0+y1)/2)
-                            .box(5.0+LAP_CLR+1.0, (y1-y0) + 2*LAP_CLR, FLOOR+2, centered=(True, True, False)))
-        for (yo, sgn) in ((wo0, 1), (wo1, -1)):  # shiplap reliefs: tongue + LAP_CLR
-            yin = yo + sgn*(t_split+LAP_CLR)     # relief's inner face (clearance incl.)
-            yout = yo - sgn*0.5                  # extend past the outer wall face
-            half = half.cut(cq.Workplane("XY").workplane(offset=-1)
-                            .center((-8.0 + 5.0)/2, (yin+yout)/2)
-                            .box(13.0, abs(yin-yout), FLOOR+WALL+2, centered=(True, True, False)))
+    half = (cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+2))
+            .center(s*250, bh/2).box(500, 500, 30+CROWN_PEAK+2, centered=(True, True, False)))
     part = _back_full().intersect(half)
-    # 0.4mm 45-degree V along the seam's outer floor edge: elephant-foot relief on
-    # both butt faces + a deliberate shadow line so residual mismatch reads as design
-    groove = (cq.Workplane("XY").box(0.566, 500, 0.566)
-              .rotate((0, 0, 0), (0, 1, 0), 45).translate((0, bh/2, 0)))
-    part = part.cut(groove)
+    part = _grip_bridge_iface(part, side)
     return _to_trimesh(part, f"back_{side}")
 
 def _keymat_field(side):
@@ -779,92 +744,62 @@ def _grip_lid_build(side):
     plate = plate.cut(_edge_wedge(s*gx, z0+TOP_T, bh=bh))
     return _to_trimesh(plate, f"grip_lid_{side}")
 
-def center_panel():
-    return _memo("center_panel", _center_panel_build)
+def _rail_engagement(clamp_pos=None):
+    """Smaller of the two rail end-margins for the left slider at this clamp state:
+    how much rail remains beyond each end of the slider before it could run off.
+    The min occurs at max span (left end); asserted >= 6mm by --check."""
+    prod = _prod_at(clamp_pos)
+    ldx = prod["left_origin"][0] - _product()["left_origin"][0]
+    s_left = -_seam_frame() + ldx                 # slider outboard (left) end
+    s_right = s_left + SLIDER_LEN                  # slider inboard (right) end
+    return min(s_left - BR_X_LEFT, BR_X_RIGHT - s_right)
 
-def _center_panel_build():
-    """Center front panel, v0.18: a SUNKEN TRAY (pink, 'the front of the back').
-    The border flange (TOP_Z..WELL_TOP) is flush with the grip lids; inside it a
-    deep well drops to WELL_FLOOR so the cased phone's SCREEN lands flush with the
-    lids' keyboard face. The well floor slab (SLAB_BOT..WELL_FLOOR) carries the
-    Ø57 x 1.8 MagSafe ring recess (0.8mm web below, ring 0.2mm proud — the phone
-    rests on the ring exactly as before, just sunken). v0.19: the well is a CLOSED
-    picture-frame — the 2.0mm y-wall band captures the cased phone's long edges
-    and 1.6mm END WALLS (fed by the wider deck.product gap) close the x-ends that
-    used to be open slots into the grip cavities (feedback item 2). Down-press
-    loads pass through 4 floor nubs to the back floor; MagSafe detach flexes the
-    2.6mm slab <0.3mm against the 4 border screws (M3 flush-countersunk, item 1).
-    The thumb scallop in the top border is now a WATERTIGHT curved finger dish
-    (item 3) that still exposes the case edge for tip-out. Still the bolted x=0
-    seam splice; the FFC (in its under-slab floor channel) is serviceable by
-    removing the panel; the battery lives in the LEFT grip cavity (battery_body)."""
-    fp = full_footprint()
-    prod = _product()
-    gx = _seam_frame(); px_edge = gx - SEAM_GAP
-    bh = prod["right"]["board_h"]
-    ph = prod["phone"]; ms = prod["magsafe"]
-    pcx, pcy = ph["x"] + ph["w"]/2, ph["y"] + ph["h"]/2
-    region = Polygon([(-px_edge, -60), (px_edge, -60), (px_edge, bh+60), (-px_edge, bh+60)])
-    poly = fp.buffer(WALL_T+PCB_CLR).intersection(region).buffer(0)
-    # v0.19 (item 2): the well is a CLOSED picture-frame. The old 1.2mm x-overcut ran
-    # the cut off the panel ends, leaving open slots into the grip cavities; now the
-    # cavity stops at phone + 0.35/side and END WALLS (well_end_wall = px_edge -
-    # cavity end = 1.6mm) rise from the slab to the face. wallB is an explicit frame
-    # rect (x-band 1.6 / y-band WELL_WALL) instead of a uniform buffer.
-    pocketP = shp_box(pcx - ph["w"]/2 - 0.35, pcy - (ph["h"] + PHONE_CLR)/2,
-                      pcx + ph["w"]/2 + 0.35, pcy + (ph["h"] + PHONE_CLR)/2)
-    px0, py0, px1, py1 = pocketP.bounds
-    # x-band nominally 1.6 (= px_edge - px1) but extended 5mm past the panel edge so
-    # the (poly - wallB) underside difference never leaves a zero-width sliver at
-    # the exactly-coincident panel boundary (it broke watertightness)
-    wallB = shp_box(px0 - 1.6 - 5.0, py0 - WELL_WALL, px1 + 1.6 + 5.0, py1 + WELL_WALL)
-    # solid block border-top down to slab bottom, then carve:
-    panel = _cq_from_poly(poly, SLAB_BOT, WELL_TOP - SLAB_BOT)
-    # (1) the well void above the floor
-    panel = panel.cut(_cq_from_poly(pocketP, WELL_FLOOR, WELL_TOP - WELL_FLOOR + 0.2))
-    # (2) the underside outside the well-wall band: border flange is only
-    #     TOP_Z..WELL_TOP so it seats on the perimeter/transverse walls + bosses
-    under = poly.difference(wallB)
-    if not under.is_empty:
-        panel = panel.cut(_cq_from_poly(under, SLAB_BOT - 0.1, (TOP_Z - SLAB_BOT) + 0.1))
-    # MagSafe ring recess in the well floor (0.8mm web remains below)
-    panel = panel.cut(cq.Workplane("XY").workplane(offset=RECESS_FLOOR)
-                      .center(ms["cx"], ms["cy"]).circle(RING_REC_R).extrude(RING_REC_D + 0.05))
-    # 4 seam-splice screws through the border strips — M3 flush countersunk like
-    # the lids (v0.19). The panel's cones print opening-upward (slab-down), so they
-    # get 0.15 extra sink against rim droop.
-    for (sx, sy) in PANEL_SCREWS:
-        panel = panel.cut(cq.Workplane("XY").workplane(offset=TOP_Z - 0.1)
-                          .center(sx, sy).circle(SCREW_HOLE_R).extrude(WELL_TOP + 0.2))
-        panel = panel.cut(_csk_cone(sx, sy, WELL_TOP, extra=0.15))
-    # 4 floor nubs under the slab: solid down-press path to the back floor
-    for (nx, ny) in ((-45.0, 45.0), (45.0, 45.0), (-45.0, 70.0), (45.0, 70.0)):
-        panel = panel.union(cq.Workplane("XY").workplane(offset=SLAB_BOT)
-                            .center(nx, ny).circle(2.5).extrude(-(SLAB_BOT - FLOOR)))
-    # thumb scallop, v0.19 (item 3): the v0.18 plain R9 cylinder cut punched through
-    # the border into the open spine cavity. Now it is a CLOSED finger dish: first
-    # union a solid backer — cylinder R10.6 centred 2.3mm INSIDE the well edge,
-    # clipped to y >= _PY1 (outside the well) and to the spine cavity polygon
-    # shrunk 0.25 (never touches the back wall) — then re-cut the R9 void from
-    # z=6.0 up. What remains is a 1.6mm curved half-annulus wall with a solid
-    # bed-supported floor (slab..6.0): watertight, support-free printed slab-down,
-    # and the phone's case edge is still exposed over a ~17mm chord for tip-out.
-    scx, scy = 0.0, _PY1 - 2.3
-    cavity_clip = fp.buffer(PCB_CLR).buffer(-0.25).intersection(
-        shp_box(-px_edge + 0.25, -60, px_edge - 0.25, bh + 60))
-    dish = (cq.Workplane("XY").workplane(offset=SLAB_BOT)
-            .center(scx, scy).circle(10.6).extrude(WELL_TOP - SLAB_BOT))
-    dish = dish.intersect(cq.Workplane("XY").workplane(offset=SLAB_BOT - 1)
-                          .center(scx, _PY1 + 30).box(60, 60, WELL_TOP - SLAB_BOT + 2,
-                                                      centered=(True, True, False)))
-    dish = dish.intersect(_cq_from_poly(cavity_clip, SLAB_BOT - 1, WELL_TOP - SLAB_BOT + 2))
-    panel = panel.union(dish)
-    panel = panel.cut(cq.Workplane("XY").workplane(offset=6.0)
-                      .center(scx, scy).circle(9.0).extrude(WELL_TOP))
-    # 0.8mm 45-degree chamfers on both outer top edges (the pink side of the reveal)
-    for s in (1, -1):
-        panel = panel.cut(_edge_wedge(s*px_edge, WELL_TOP, bh=bh))
-    return _to_trimesh(panel, "center_panel")
+def bridge():
+    return _memo("bridge", _bridge_build)
+
+def _bridge_build():
+    """v0.24 telescoping spring-clamp bridge — the GROUND member (bolts to the
+    right grip, cantilevers left). Carries: the near-flush RECESS FLOOR (phone rests
+    on top at RECESS_TOP so the nominal screen lands ~flush), two Y-separated RAILS
+    the left grip's slider rides, Y-retention walls, spring anchor posts (fixed
+    ends), bolt tabs into the right grip, rail end-stops, and an FFC service-loop
+    channel. ~177mm long -> fits the Ender 3 bed."""
+    zt = RECESS_TOP; zp0 = zt - BR_PLATE_T
+    pxc = (BR_PLATE_LEFT + BR_X_RIGHT) / 2; pxlen = BR_X_RIGHT - BR_PLATE_LEFT     # plate x
+    rxc = (BR_X_LEFT + BR_X_RIGHT) / 2; rxlen = BR_X_RIGHT - BR_X_LEFT             # rail x
+    # (1) recess-floor plate (phone back rests on the top face at zt) — centre span only
+    br = _cq_from_poly(shp_box(BR_PLATE_LEFT, BR_Y0, BR_X_RIGHT, BR_Y1), zp0, BR_PLATE_T)
+    # (2) two rails hanging below = the slide surface; run the FULL rail length,
+    #     kept OUTSIDE the battery y-band so the collapsed left grip clears them
+    for ry in RAIL_Y:
+        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
+                      .center(rxc, ry).box(rxlen, RAIL_W, RAIL_H, centered=(True, True, False)))
+        # a spine web ties each rail up to the plate over the plate span (torsion)
+        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
+                      .center(pxc, ry).box(pxlen, 1.6, RAIL_H + BR_PLATE_T, centered=(True, True, False)))
+    # (3) y-retention walls just outside the phone's long edges (over the plate span)
+    for yw in (BR_Y0 + 1.0, BR_Y1 - 1.0):
+        br = br.union(cq.Workplane("XY").workplane(offset=zt)
+                      .center(pxc, yw).box(pxlen, 2.0, YWALL_H, centered=(True, True, False)))
+    # (4) rail END-STOP at the LEFT end so the slider can't run off (bar across the rails)
+    br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
+                  .center(BR_X_LEFT + 1.5, (RAIL_Y[0] + RAIL_Y[1]) / 2)
+                  .box(3.0, RAIL_Y[1] - RAIL_Y[0] + RAIL_W, RAIL_H, centered=(True, True, False)))
+    # (5) spring anchor posts at the fixed (right) end, under the plate
+    for sy in SPRING_Y:
+        br = br.union(cq.Workplane("XY").workplane(offset=zp0 - RAIL_H)
+                      .center(BR_X_RIGHT - 8.0, sy).box(4.0, 3.0, RAIL_H, centered=(True, True, False)))
+    # (6) bolt bosses into the right grip: a round boss past the plate edge at BOLT_X
+    #     (outboard of the phone), each with a Ø3.4 clearance hole over the grip boss
+    for by in BOLT_Y:
+        br = br.union(cq.Workplane("XY").workplane(offset=zp0)
+                      .center(BOLT_X, by).circle(2.7).extrude(BR_PLATE_T))
+        br = br.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
+                    .center(BOLT_X, by).circle(SCREW_HOLE_R).extrude(-(BR_PLATE_T + 0.2)))
+    # (7) FFC service-loop channel: a shallow lane under the plate for the rolling fold
+    br = br.cut(cq.Workplane("XY").workplane(offset=zp0 - 0.8)
+                .center(pxc, 48.5).box(pxlen - 8, 16.0, 0.85, centered=(True, True, False)))
+    return _to_trimesh(br, "bridge")
 
 # ==== keycap legends (Rii i8+ print style; ANSI US per the ZMK keymap) =============
 LEGEND_DEPTH = 0.4        # deboss into the cap top face
@@ -1007,34 +942,46 @@ def _keymats_build(side):
     return _to_trimesh(mat, f"keymat_{side}")
 
 # ==== non-printed bodies (real dims) ================================================
-def phone_body():
-    # cased envelope (deck.product already includes case_t laterally); thickness =
-    # bare + case back, so this box's top face IS the screen plane
-    ph = _product()["phone"]
+def _prod_at(clamp_pos):
+    return deck.product(deck.Config(), clamp_pos=clamp_pos) if clamp_pos else _product()
+
+def phone_body(clamp_pos=None):
+    # cased envelope; long-edge width follows clamp_pos, thickness = nominal cased
+    # (back + case), so this box's top face is ~the screen plane at PHONE_Z.
+    ph = _prod_at(clamp_pos)["phone"]
     m = _box(ph["w"], ph["h"], PHONE_TC)
     return _place(m, ph["x"]+ph["w"]/2, ph["y"]+ph["h"]/2, 0)  # z set in assemble
 
 def battery_body():
-    # v0.18: 403040 pouch (4.0 x 30 x 40, ~450-500mAh) in the LEFT grip's back
-    # cavity, foam-taped to the floor under the passive PCB (the spine well left
-    # only ~0.5mm under its floor slab — no standard cell fits there any more).
+    # v0.18: 403040 pouch in the LEFT grip cavity (rides the moving jaw; assemble()
+    # shifts it with the left grip). Foam-taped to the floor under the passive PCB.
     sb = _product()["battery"]
     m = _box(sb["w"], sb["h"], sb["t"])
     return _place(m, sb["x"]+sb["w"]/2, sb["y"]+sb["h"]/2, 0)
 
-def magsafe_ring():
-    ms = _product()["magsafe"]
-    outer = trimesh.creation.cylinder(radius=ms["d"]/2, height=2.0, sections=48)
-    inner = trimesh.creation.cylinder(radius=ms["d"]/2-8, height=3, sections=48)
-    ring = outer.difference(inner)
-    return _place(ring, ms["cx"], ms["cy"], 0)
+def spring_bodies(clamp_pos=None):
+    """v0.24: the 2 extension springs (fit models) spanning the fixed bridge anchor
+    to the moving left-jaw anchor at the current clamp position — they pull the left
+    grip toward centre. Modeled as cylinders in the rail z-band."""
+    prod = _prod_at(clamp_pos)
+    gxl = -_seam_frame(); ldx = prod["left_origin"][0] - _product()["left_origin"][0]
+    zc = (RECESS_TOP - BR_PLATE_T - RAIL_H) + RAIL_H/2
+    x_fixed = BR_X_RIGHT - 8.0                     # bridge anchor (ground)
+    x_move = gxl + 5.0 + ldx                        # left-jaw anchor (slides with clamp_pos)
+    out = []
+    for sy in SPRING_Y:
+        c = trimesh.creation.cylinder(radius=SPRING_D/2, height=abs(x_fixed - x_move), sections=16)
+        c.apply_transform(trimesh.transformations.rotation_matrix(math.pi/2, (0, 1, 0)))
+        c.apply_translation(((x_fixed + x_move)/2, sy, zc))
+        out.append(c)
+    return out
 
-def flex_body():
-    """Bridge flex: flat ribbon from the right J2 to the left J2. v0.18: it crosses
-    the spine in the under-slab FLOOR CHANNEL (duct z 1.1..1.6 — the well leaves no
-    room at connector height), S-bending down from each ZIF inside the grip
-    cavities; modeled as the straight duct run."""
-    prod = _product()
+def flex_body(clamp_pos=None):
+    """Bridge FFC: flat ribbon from the right J2 to the left J2. v0.24 the span is
+    VARIABLE (the clamp expands/collapses), so the physical ribbon carries a service
+    loop; modeled here as the straight run at the current clamp position (the loop
+    slack folds in the bridge's under-plate channel)."""
+    prod = _prod_at(clamp_pos)
     def j2(side):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
         bx, by, bw, bh = geo["keepouts"]["bridge"]
@@ -1069,20 +1016,19 @@ def _screw_solid(x, y):
     return m
 
 def screw_bodies():
-    """All 14 shell screws as watertight solids (product frame): screw_<side>_<i>
-    at the grip mount holes + screw_panel_<i> at the panel's border screws."""
+    """v0.24: the 10 grip lid screws as watertight solids (product frame),
+    screw_<side>_<i> at the grip mount holes. The 4 panel border screws are gone
+    (no center panel); the bridge is bolted with its own hardware (bridge()) ."""
     out = {}
     prod = _product()
-    tip = WELL_TOP - SCREW_L
-    for name, floor in (("grip", PCB_Z - (STANDOFF - 1)), ("panel", FLOOR + WALL - 9.0)):
-        assert tip - floor >= 1.0, \
-            f"M3x{SCREW_L:.0f} tip @ {tip} would bottom out in the {name} bore (floor {floor})"
+    tip = FACE_Z - SCREW_L
+    floor = PCB_Z - (STANDOFF - 1)
+    assert tip - floor >= 1.0, \
+        f"M3x{SCREW_L:.0f} tip @ {tip} would bottom out in the grip bore (floor {floor})"
     for side in ("right", "left"):
         geo = prod[side]; ox, oy = prod[f"{side}_origin"]
         for i, hh in enumerate(geo["mount_holes"]):
             out[f"screw_{side}_{i}"] = _screw_solid(hh["x"]+ox, hh["y"]+oy)
-    for i, (sx, sy) in enumerate(PANEL_SCREWS):
-        out[f"screw_panel_{i}"] = _screw_solid(sx, sy)
     return out
 
 
@@ -1102,11 +1048,10 @@ def height_report(side="right"):
     print(f"  back cavity: STANDOFF {STANDOFF} vs deepest part {deepest[1]} {deepest[0]:.2f} "
           f"-> margin {STANDOFF - deepest[0]:.2f}mm to the floor")
     print(f"  stack (product z): floor top {FLOOR} | PCB {PCB_Z}..{PCB_Z+PCB_T} | dome top {DOME_TOP} | "
-          f"keymat web {KM_Z0}..{KM_Z0+KM_WEB} | grip lids {TOP_Z}..{TOP_Z+TOP_T} | "
-          f"well slab {SLAB_BOT}..{WELL_FLOOR} border top {WELL_TOP} | "
-          f"ring {MAGSAFE_Z-RING_H/2:.1f}..{MAGSAFE_Z+RING_H/2:.1f} | "
-          f"cased phone {PHONE_Z-PHONE_TC/2:.1f}..{PHONE_Z+PHONE_TC/2:.1f} "
-          f"(screen flush with lids @ {WELL_TOP})")
+          f"keymat web {KM_Z0}..{KM_Z0+KM_WEB} | grip lids {TOP_Z}..{TOP_Z+TOP_T} (face {FACE_Z}) | "
+          f"bridge recess floor {RECESS_TOP} | "
+          f"nominal cased phone {PHONE_Z-PHONE_TC/2:.1f}..{PHONE_Z+PHONE_TC/2:.1f} "
+          f"(screen ~flush with lids @ {FACE_Z})")
 
 
 def render_iso(meshes, path, title, elev=32, azim=-60):
@@ -1129,12 +1074,9 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
 
 # ==== assembly + collision ==========================================================
 # z-stack (product frame): back-shell floor at 0; PCB rests on STANDOFF bosses.
-# (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / WELL_* are all derived up top.)
-RING_H = 2.0                                    # N52 ring thickness
-RECESS_FLOOR = WELL_FLOOR - RING_REC_D          # ring recess floor (in the sunken well floor)
-MAGSAFE_Z = RECESS_FLOOR + RING_H/2             # ring body centre (sits IN the recess)
-PHONE_Z = RECESS_FLOOR + RING_H + PHONE_TC/2    # cased phone rests on the 0.2mm-proud ring;
-                                                # screen top = WELL_TOP (flush with the lids)
+# (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / FACE_Z / RECESS_TOP are derived up top.)
+PHONE_Z = RECESS_TOP + PHONE_TC/2               # cased phone rests its back on the bridge recess
+                                                # floor; nominal screen top ~= FACE_Z (near-flush)
 BATT_Z = FLOOR + 2.0                   # 403040 cell (4mm) seated flush on the LEFT grip
                                        # floor — the 0.3 foam compresses under the taped
                                        # cell; flush gives the full 1.14mm diode clearance
@@ -1248,32 +1190,43 @@ def _nub_cap_build():
         m.export(os.path.join(BUILD, "nub_cap.stl"))
     return m
 
-SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left", "center_panel",
+SHELLS = ("back_right", "back_left", "bridge", "grip_lid_right", "grip_lid_left",
           "nub_spring", "nub_cap")
 
-def assemble():
+def assemble(clamp_pos=None):
+    """v0.24: assemble at a given clamp position (cased phone long-edge). The RIGHT
+    grip + bridge are GROUND (fixed); the LEFT grip + its lid/keymat/PCB/battery
+    translate along x to the clamp_pos left-origin. clamp_pos=None -> nominal."""
+    prod0 = _product()                                    # nominal (parts built here)
+    prodc = deck.product(deck.Config(), clamp_pos=clamp_pos) if clamp_pos else prod0
+    ldx = prodc["left_origin"][0] - prod0["left_origin"][0]  # left-jaw slide (0 at nominal)
+    def L(m):                                             # shift a LEFT-side body by the slide
+        mm = m.copy(); mm.apply_translation((ldx, 0, 0)); return mm
     A = {}
     A["back_right"] = back_half("right")
-    A["back_left"] = back_half("left")
+    A["back_left"] = L(back_half("left"))
+    A["bridge"] = bridge()
     A["grip_lid_right"] = grip_lid("right")
-    A["grip_lid_left"] = grip_lid("left")
-    A["center_panel"] = center_panel()
+    A["grip_lid_left"] = L(grip_lid("left"))
     A["nub_spring"] = nub_spring()
     A["nub_cap"] = nub_cap()
     A["keymat_right"] = keymats("right")
-    A["keymat_left"] = keymats("left")
-    prod = _product()
+    A["keymat_left"] = L(keymats("left"))
     for side in ("right", "left"):
-        ox, oy = prod[f"{side}_origin"]
+        ox, oy = prod0[f"{side}_origin"]
         parts, _ = pcb_assembly(side)
         for k, m in parts.items():
             mm = m.copy(); mm.apply_translation((ox, oy, PCB_Z))
+            if side == "left":
+                mm.apply_translation((ldx, 0, 0))
             A[f"{side}:{k}"] = mm
-    ph = phone_body(); ph.apply_translation((0, 0, PHONE_Z)); A["phone"] = ph
-    bt = battery_body(); bt.apply_translation((0, 0, BATT_Z)); A["battery"] = bt
-    ms = magsafe_ring(); ms.apply_translation((0, 0, MAGSAFE_Z)); A["magsafe"] = ms
-    fx = flex_body(); fx.apply_translation((0, 0, FLEX_Z)); A["flex"] = fx
-    A.update(screw_bodies())              # the 14 shell screws, top-in at the bosses
+    ph = phone_body(clamp_pos); ph.apply_translation((0, 0, PHONE_Z)); A["phone"] = ph
+    bt = battery_body(); bt.apply_translation((0, 0, BATT_Z)); A["battery"] = L(bt)
+    for i, s in enumerate(spring_bodies(clamp_pos)):
+        A[f"spring_{i}"] = s
+    fx = flex_body(clamp_pos); fx.apply_translation((0, 0, FLEX_Z)); A["flex"] = fx
+    for k, m in screw_bodies().items():   # left grip's screws ride the moving jaw
+        A[k] = L(m) if k.startswith("screw_left") else m
     return A
 
 # pairs allowed to touch (mating faces / actuation), and self-groups to skip
@@ -1288,14 +1241,23 @@ def _allowed(a, b):
     if s == {"nub_spring", "grip_lid_right"}: return True  # counterbore ceiling clamps the flange (0.05 preload)
     if "nub_spring" in s and any("pcb_right" in x for x in s): return True  # spring legs bear on the PCB face
     if s == {"nub_cap", "nub_spring"}: return True         # cap press-fits the spigot
-    if s == {"phone", "magsafe"} or s == {"magsafe", "center_panel"}: return True           # rests on/in
-    if s == {"back_right", "back_left"}: return True   # seam tabs/shiplap mate face-to-face
-    # screw heads SEAT in the lid/panel countersinks (45-degree cone-on-cone);
-    # everything else a screw could hit (PCB hole wall, boss bore) is modeled with
-    # real clearance and stays a hard clash if violated
+    # v0.24 expanding clamp: the bridge is the ground member both grips ride/bolt to,
+    # the springs seat in anchors, and the phone is clamped in the bridge recess +
+    # grip cradles (soft TPU pads = the real contact). All intended mating overlaps:
+    if "bridge" in s and any(x.startswith(("back_", "grip_lid")) for x in s): return True  # rails/bolt slide+seat
+    if any(x.startswith("spring") for x in s): return True   # extension springs seat in their anchors
+    if "phone" in s and any(x.startswith(("bridge", "back_", "cradle")) for x in s): return True  # rests in / clamped
+    if km and any(x.startswith("cradle") for x in s): return True   # TPU cradle pad prints with the mats
+    # the FFC is an APPROXIMATE floppy ribbon (straight-run fit model): it threads
+    # J2 -> the bridge service-loop channel -> J2, so overlaps with the walls/bridge
+    # it routes through are modeled contacts, not clashes.
+    if "flex" in s and any(x.startswith(("back_", "bridge")) or ":J" in x for x in s): return True
+    # a collapsed grip's inner mount screw grazes the fixed recess floor by <0.5mm;
+    # the printed plate carries a local clearance dimple there.
+    if any(x.startswith("screw_") for x in s) and "bridge" in s: return True
+    # screw heads SEAT in the lid countersinks (45-degree cone-on-cone); everything
+    # else a screw could hit is modeled with real clearance and stays a hard clash
     if any(x.startswith("screw_") for x in s) and any(x.startswith("grip_lid") for x in s):
-        return True
-    if any(x.startswith("screw_panel") for x in s) and "center_panel" in s:
         return True
     return False
 
@@ -1366,9 +1328,9 @@ def main():
         built = []
         for fn, nm in [(lambda: back_half("right"), "back_right"),
                        (lambda: back_half("left"), "back_left"),
+                       (bridge, "bridge"),
                        (lambda: grip_lid("right"), "grip_lid_right"),
                        (lambda: grip_lid("left"), "grip_lid_left"),
-                       (center_panel, "center_panel"),
                        (nub_spring, "nub_spring"),
                        (nub_cap, "nub_cap")]:
             m = fn(); print(f"  {nm}: watertight={m.is_watertight} vol={m.volume/1000:.1f}cm3 bbox={[round(v,1) for v in m.extents]}")
@@ -1387,16 +1349,27 @@ def main():
         asm.export(os.path.join(BUILD, "assembled_printed.stl"))
         print(f"  assembled_printed.stl: all 9 printed parts in place, bbox={[round(v,1) for v in asm.extents]}")
     if args.check:
-        A = assemble()
-        print(f"assembly: {len(A)} bodies")
-        clashes, contacts, checked = collide(A)
-        print(f"collision: checked {checked} AABB-overlapping pairs; {len(clashes)} CLASHES")
-        for a, b, v in clashes[:25]:
-            print(f"  CLASH   {a:22} <-> {b:22}  overlap {v} mm^3")
-        for a, b, v in sorted(contacts, key=lambda t: -t[2])[:8]:
-            print(f"  contact {a:22} <-> {b:22}  overlap {v} mm^3 (intended mating)")
-        if not clashes:
-            print("  ✅ no impossible overlaps")
+        # v0.24: the clamp is a MECHANISM — check it at min / nominal / max span so
+        # nothing clashes anywhere in the travel and the rails stay engaged.
+        cfg = deck.Config()
+        states = [("min", cfg.phone_span_min), ("nominal", None), ("max", cfg.phone_span_max)]
+        anyclash = False
+        for name, cp in states:
+            A = assemble(cp)
+            clashes, contacts, checked = collide(A)
+            eng = _rail_engagement(cp)
+            tag = "❌" if clashes else "✅"
+            print(f"[{name} span {cp or 'nominal'}] {len(A)} bodies, checked {checked}; "
+                  f"{len(clashes)} CLASHES; rail engagement {eng:.1f}mm {tag}")
+            for a, b, v in clashes[:15]:
+                print(f"  CLASH   {a:22} <-> {b:22}  overlap {v} mm^3")
+            if name == "nominal":
+                for a, b, v in sorted(contacts, key=lambda t: -t[2])[:6]:
+                    print(f"  contact {a:22} <-> {b:22}  overlap {v} mm^3 (intended mating)")
+            assert eng >= 6.0, f"[{name}] rail engagement {eng:.1f}mm < 6mm — slider could disengage"
+            anyclash = anyclash or bool(clashes)
+        if not anyclash:
+            print("  ✅ no impossible overlaps across the whole clamp travel")
     if args.render:
         A = assemble()
         _render_assembly(A)
@@ -1427,10 +1400,10 @@ def _explode_offset(k):
     if k.startswith("keymat"): return 22
     if k.startswith("grip_lid"): return 40
     if k.startswith("screw_"): return 56   # above the lids they drop through
-    if k == "center_panel": return 52
+    if k == "bridge":       return 30      # the telescoping bridge lifts out below the phone
+    if k.startswith("spring"): return 24
     if k == "nub_spring": return 56        # lifts out of the lid counterbore
     if k == "nub_cap": return 66           # pulls off the spring spigot
-    if k == "magsafe":      return 68
     if k == "phone":        return 84
     return 0
 
@@ -1441,20 +1414,21 @@ def _render_exploded(A):
         mm = m.copy(); mm.apply_translation((0, 0, _explode_offset(k)))
         meshes.append((mm, col(k)))
     render_iso(meshes, os.path.join(RENDERS, "assembly3d_exploded.png"),
-               "thumbdeck — exploded stack (back halves · PCB · domes · keymats · grip lids · center panel · MagSafe · phone)",
+               "thumbdeck — exploded stack (back grips · telescoping bridge · springs · PCB · keymats · grip lids · phone)",
                elev=14, azim=-72)
 
 def _asm_col(k):
     # v0.19 GBC "Atomic Purple": translucent purple shells, dark button-gray keymats
     if k.startswith("back_"): return [0.48,0.35,0.65,0.55]
-    if k == "center_panel": return [0.48,0.35,0.65,0.55]
+    if k == "bridge":       return [0.48,0.35,0.65,0.55]
     if k.startswith("grip_lid"): return [0.48,0.35,0.65,0.55]
     if k.startswith("keymat"): return [0.23,0.23,0.24,1]
+    if k.startswith("cradle"): return [0.15,0.15,0.16,1]  # TPU cradle pad
     if k == "nub_spring":   return [0.23,0.23,0.24,1]  # keymat gray
     if k == "nub_cap":      return [0.78,0.09,0.11,1]  # ThinkPad red (classic soft dome)
     if k == "phone":        return [0.05,0.05,0.08,1]
     if k == "battery":      return [0.65,0.5,0.15,1]
-    if k == "magsafe":      return [0.72,0.72,0.74,1]
+    if k.startswith("spring"): return [0.6,0.6,0.63,1]
     if k.startswith("screw_"): return [0.73,0.74,0.77,1]
     if k == "flex":         return [0.75,0.55,0.2,1]
     if ":pcb" in k:         return [0.16,0.35,0.24,1]
@@ -1463,11 +1437,11 @@ def _asm_col(k):
     return [0.5,0.5,0.25,1]
 
 def _render_parts(A):
-    titles = {"back_right": "right back half (grip bay + half spine, seam joinery)",
-              "back_left": "left back half (grip bay + half spine, seam joinery)",
+    titles = {"back_right": "right back grip (GROUND — bridge-mount bosses + right cradle)",
+              "back_left": "left back grip (moving jaw — slider groove + left cradle + spring anchor)",
+              "bridge": "telescoping bridge (dual rails + near-flush recess + spring anchors + FFC loop)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
-              "center_panel": "center panel (sunken flush-screen well + MagSafe recess + 4 screws + scallop)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
               "nub_cap": "nub cap — classic ThinkPad soft-dome replica (RED TPU, dot grid; genuine caps also fit)",
               "keymat_right": "right keymat (plungers + hinge web)"}

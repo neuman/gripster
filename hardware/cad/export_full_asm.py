@@ -199,8 +199,8 @@ def _add_phone(scene, root, prod):
     M = R @ S
     probe = full.copy(); probe.apply_transform(M); bb = probe.bounds
     ctr = (bb[0] + bb[1]) / 2
-    tx, ty = -ctr[0], prod["magsafe"]["cy"] - ctr[1]  # centre x=0, y = ring centre
-    tz = deck3d.WELL_FLOOR - bb[0][2]                  # camera tip (min z) -> well floor
+    tx, ty = -ctr[0], (prod["phone"]["y"] + prod["phone"]["h"]/2) - ctr[1]  # x=0, y = phone centre
+    tz = deck3d.RECESS_TOP - bb[0][2]                 # camera tip (min z) -> bridge recess floor
     T = np.eye(4); T[:3, 3] = [tx, ty, tz]
     Mfull = T @ M
     scene.graph.update(frame_to="phone", frame_from=root, matrix=np.eye(4))
@@ -212,7 +212,7 @@ def _add_phone(scene, root, prod):
                            parent_node_name="phone")
     fb = full.copy(); fb.apply_transform(Mfull)
     print(f"  phone: S25U {fb.extents[0]:.1f}x{fb.extents[1]:.1f}x{fb.extents[2]:.1f}mm, "
-          f"screen z={fb.bounds[1][2]:.2f} (face {deck3d.WELL_TOP}), cameras z={fb.bounds[0][2]:.2f} (well floor {deck3d.WELL_FLOOR:.2f})")
+          f"screen z={fb.bounds[1][2]:.2f} (face {deck3d.FACE_Z}), back z={fb.bounds[0][2]:.2f} (recess floor {deck3d.RECESS_TOP:.2f})")
 
 def main():
     prod = deck._last_prod = deck.product(deck.Config())
@@ -223,7 +223,7 @@ def main():
         scene.graph.update(frame_to=grp, frame_from=root, matrix=np.eye(4))
 
     # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
-    for n in ("back_left", "back_right", "center_panel",
+    for n in ("back_left", "back_right", "bridge",
               "grip_lid_left", "grip_lid_right", "nub_spring"):
         _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
     _add(scene, _stl("nub_cap"), "nub_cap", "shells", material=NUBCAP_MAT)
@@ -262,8 +262,8 @@ def main():
     _add(scene, bt, "battery", root, COL["battery"])
     fx = deck3d.flex_body(); fx.apply_translation((0, 0, deck3d.FLEX_Z))
     _add(scene, fx, "flex", root, COL["flex"])
-    ms = deck3d.magsafe_ring(); ms.apply_translation((0, 0, deck3d.MAGSAFE_Z))
-    _add(scene, ms, "magsafe_ring", root, COL["ring"])
+    for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs
+        _add(scene, sp, f"spring_{i}", root, COL["ring"])
     _add_phone(scene, root, prod)
 
     os.makedirs(MODELS, exist_ok=True)

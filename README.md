@@ -1,10 +1,10 @@
 # Gripster
 
-**A wireless split thumb keyboard that turns your phone into a handheld deck.** Your phone
-MagSafe-mounts landscape in the middle, flush with the keyboard face; two grips flank it and you
-thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
+**A wireless split thumb keyboard that turns your phone into a handheld deck.** Your phone clamps
+landscape in the middle on a spring-loaded expanding bridge (Kishi/Backbone style, fits 130–170 mm
+phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 
-[![Gripster — 3/4 view of the assembled deck: translucent Atomic-Purple shells, dark-gray keymats, a phone seated landscape in the sunken centre well](renders/sketchfab_grab.png)](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279)
+[![Gripster — 3/4 view of the assembled deck: translucent Atomic-Purple shells, dark-gray keymats, a phone clamped landscape in the middle](renders/sketchfab_grab.png)](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279)
 
 <sub>☝️ **This image is a link — click it to spin the real assembly in 3D on Sketchfab.**</sub>
 
@@ -23,9 +23,10 @@ thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 
 **What makes this interesting:**
 
-- **The screen sits flush with the keys.** The phone drops into a sunken well so its glass and the
-  keyboard face form one continuous plane 14.7 mm off the back — ~15.7 mm at the thin edges. It is not a
-  phone bolted on top of a keyboard.
+- **It fits your phone, not one phone.** The two grips ride a spring-loaded expanding bridge (v0.24,
+  Kishi/Backbone style): stretch it open, drop the phone in, and two extension springs clamp it by the
+  short edges — anywhere from ~130 to ~170 mm long. A recessed cradle keeps the nominal phone's screen
+  roughly flush with the keys; the whole thing collapses flat for a pocket.
 - **The back is contoured to the hand.** A faceted 90s-industrial crown (Rii-8+ grip swells) rises up
   to 5.5 mm below the back plane at each grip so the device fills the palm instead of pressing a flat
   slab into it — thin at the edges, ~20 mm at the grips. (v0.23; the back halves print crown-up.)
@@ -215,10 +216,10 @@ Decisions that are **yours to make** — they change the shape of the build:
 1. **Feel.** Keys are **rectangular 8.5 × 7 mm at 10 × 9 mm pitch** (v0.17, i8+ chiclet — wider than
    tall so the 6-row field stays short). Still an open call: a flat ortho grid vs a **canted/fanned
    arc** to feel more like a controller — the arc is a keymat/standoff change, not a pitch change.
-2. **Phone-fit window.** The shell is now dimensioned to the **S25 Ultra + a 1.2 mm thin case**
-   (v0.18 flush-screen well) — a different phone or a substantially different case needs
-   `phone_w`/`phone_h`/`phone_t`/`case_t` re-set and the shells re-generated (one command; boards
-   unaffected).
+2. **Phone-fit window.** v0.24's expanding clamp fits phones with a **130–170 mm long edge** (cased)
+   out of the box — the springs take up the rest. The nominal near-flush point is tuned to the
+   **S25 Ultra + a 1.2 mm case**; `phone_span_min/max` (and `phone_t`/`case_t` for the recess depth)
+   re-set the range and re-generate the shells (one command; boards unaffected).
 3. **Cell size — settled in v0.18:** standard **403040 (~450–500 mAh)** in the left grip cavity (the
    only standard shape that fits the 5.1 mm free depth there); PROG's 196 mA ≈ 0.43 C suits it as-is.
    Sleep-managed runtime is still weeks.
@@ -358,7 +359,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 
 | | value |
 |---|---|
-| Form | phone (**S25 Ultra + thin case**) in **LANDSCAPE**, MagSafe-seated in a **sunken well — screen flush with the keyboard face** (14.7 mm front plane, ~15.7 mm thin edges, **faceted ergonomic back crown swelling to ~20 mm at the grips** — v0.23); two dome-key grips, **fixed shell in 5 printed parts** in **Game-Boy-Color design language** (v0.19: boxy rounded-corner outline, translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
+| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in an **expanding spring clamp** (v0.24, Kishi/Backbone style — grips slide on a printed dual-rail bridge, 2 extension springs, near-flush recessed cradle at 14.7 mm); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |

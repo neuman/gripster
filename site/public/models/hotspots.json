@@ -1,10 +1,10 @@
 [
  {
   "id": "phone",
-  "title": "Flush-screen phone well",
-  "oneLiner": "A sunken pocket in the center panel that seats the S25 Ultra so its screen sits level with the keyboard face.",
-  "blurb": "v0.18 sank the center panel into a well so a cased Samsung S25 Ultra's screen sits flush with the keyboard face — the device face plane sits 14.7 mm off the back while the well floor drops to 5.1 mm, closing the step between glass and keycap. The goal was thumbs sweeping straight from screen to keys with no step, explicitly not a phone bolted on top of a keyboard. Fitting the phone that deep left no cell height in the spine, so the same v0.18 change moved the 403040 LiPo battery into the left grip's cavity with no PCB reroute.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "title": "Expanding spring clamp",
+  "oneLiner": "The phone is clamped by its short edges between the grips, which slide on a spring-loaded bridge to fit different-size phones.",
+  "blurb": "v0.24 replaced the fixed flush-screen well with a Kishi-2/Backbone-style expanding clamp: the two grips slide on a printed dual-rail bridge and two extension springs pull them together to grip the phone by its short edges, over a 130–170 mm long-edge range. The right grip is the fixed ground; the left grip is the moving jaw. The bridge carries a recessed cradle floor set so the nominal Samsung S25 Ultra's screen still lands roughly flush with the keyboard face (14.7 mm plane, recess floor 5.1 mm); soft cradle pads and screen-edge lips retain the phone, and the whole thing collapses flat for storage.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "phone__0",
@@ -75,22 +75,22 @@
   ]
  },
  {
-  "id": "magsafe",
-  "title": "MagSafe N52 ring",
-  "oneLiner": "The N52 disc-magnet ring set into the well recess that centres and aligns the phone.",
-  "blurb": "The ring sits 0.2 mm proud of the well's Ø57×1.8 mm recess so the phone's case contacts the magnets directly rather than the surrounding shell plastic, keeping it centred landscape over the keys. It's deliberately alignment-only: an early hardware review judged that magnets alone shed peel and torque on a handheld device, so actual retention is carried by the moulded phone pocket, the well's wall band, and the panel's border screws — the ring positions the phone, it doesn't hold it in.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "id": "clamp",
+  "title": "Telescoping dual-rail bridge",
+  "oneLiner": "The printed bridge the grips slide on — dual rails, a recessed phone cradle, spring anchors, and the FFC service loop.",
+  "blurb": "The bridge is the fixed ground member, bolted to the right grip and cantilevering left. It carries two Y-separated rails (kept clear of the battery band) that the left grip's slider rides, a recessed floor that positions the phone near-flush, low y-walls for front/back retention, and anchors for the two extension springs that provide the clamp force. Because the span is now variable, the 16-way FFC gains a rolling service loop that folds in a channel under the bridge as the grips move; a rail end-stop keeps the jaw from running off at full extension (validated with ≥6 mm rail engagement across the whole 130–170 mm travel). MagSafe was dropped — the spring clamp and edge cradles do the retention.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
-   "magsafe_ring__vc"
+   "bridge__atomic_purple"
   ]
  },
  {
   "id": "battery",
   "title": "403040 LiPo pouch (left grip)",
   "oneLiner": "The device's single battery — a 403040 pouch (~450–500 mAh) foam-taped under the left grip's passive board.",
-  "blurb": "When the phone well sank to put the screen flush with the keyboard face, only 0.5 mm of clearance remained under the well floor — too thin for any standard LiPo pouch. A cavity survey found the right grip (already hosting the mated JST-PH connector) had just 0.24 mm to spare, while the left grip's passive matrix board left 5.14 mm free above its floor, so the cell moved there instead. The 403040 pouch now sits foam-taped under the left grip's key field, leads crossing the spine to J3 on the right board; the trade-off is that a battery swap means opening the left grip's five screws rather than the panel hatch.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v018--flush-screen-phone-well--battery-to-the-left-grip-2026-07-14",
+  "blurb": "The 403040 pouch lives in the left grip's cavity, foam-taped under the passive matrix board, with leads crossing to J3 on the right board. It sits there because the grip's passive board left ~5 mm of free depth above its floor (versus 0.24 mm in the right grip beside the mated JST-PH connector), and because the center spine is occupied by the telescoping clamp mechanism, not a battery. In v0.24 the left grip is the moving clamp jaw, so the battery rides with it — the FFC is the only thing that crosses between the grips — and a swap means opening the left grip's five screws.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "battery__vc"
@@ -100,7 +100,7 @@
   "id": "bridge",
   "title": "16-way FFC bridge",
   "oneLiner": "The single ribbon cable that carries the passive left grip's matrix columns into the one MCU on the right — not a link between two keyboards.",
-  "blurb": "Gripster looks like a split keyboard but isn't one: a single nRF52840 module in the right grip scans one 9x10 matrix, and the left grip is just domes, diodes and a connector with no chip of its own. The 16-way FFC ribbon carries the left grip's columns 5-9 plus the shared rows across the bridge, S-bending down into a 0.5 mm floor channel under the phone-well slab. This was a v0.3 pivot away from an earlier two-controller ZMK BLE split, chosen because the grips are physically bridged (not detachable) like a Backbone-style controller, so a wired cable is simpler than pairing two radios — netting one battery, one charge session, and no inter-half BLE bond.",
+  "blurb": "Gripster looks like a split keyboard but isn't one: a single nRF52840 module in the right grip scans one 9x10 matrix, and the left grip is just domes, diodes and a connector with no chip of its own. The 16-way FFC ribbon carries the left grip's columns 5-9 plus the shared rows across to the right board. Because v0.24 lets the grips slide apart to fit different phones, the ribbon now runs with a rolling service loop that folds in a channel under the telescoping bridge and pays out as the jaw moves. This was a v0.3 pivot away from an earlier two-controller ZMK BLE split, chosen because the grips are physically bridged like a Backbone-style controller, so a wired cable is simpler than pairing two radios — one battery, one charge session, no inter-half BLE bond.",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v03--the-architecture-pivot-single-controller",
   "docLabel": "design-decisions.md",
   "anchorNodes": [

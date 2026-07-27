@@ -57,14 +57,14 @@
     "phone__9"
    ]
   },
-  "magsafe_ring": {
+  "springs": {
    "offset": [
     0,
     0,
-    85.387
+    0
    ],
    "nodes": [
-    "magsafe_ring__vc"
+    "springs__vc"
    ]
   },
   "flex": {
@@ -188,14 +188,14 @@
     "grip_lid_left__atomic_purple"
    ]
   },
-  "center_panel": {
+  "bridge": {
    "offset": [
     0,
     0,
     0
    ],
    "nodes": [
-    "center_panel__atomic_purple"
+    "bridge__atomic_purple"
    ]
   },
   "back_right": {
