@@ -223,7 +223,7 @@ def main():
         scene.graph.update(frame_to=grp, frame_from=root, matrix=np.eye(4))
 
     # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
-    for n in ("back_left", "back_right", "bridge",
+    for n in ("back_left", "back_right", "bridge", "pinion",
               "grip_lid_left", "grip_lid_right", "nub_spring"):
         _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
     _add(scene, _stl("nub_cap"), "nub_cap", "shells", material=NUBCAP_MAT)

@@ -19,23 +19,25 @@ springs**, **preserve near-flush at the nominal phone**, phone long-edge range
   a deliberate reversal of the v0.8 "fixed shell vs telescoping" call and the v0.18
   flush-well — logged there as trade-offs, now revisited because the user wants
   multi-phone fit over a single-phone flush mount.
-- **One-sided telescoping clamp.** `deck.product()` is parametric on `clamp_pos` (the
-  cased phone long edge). The **right grip is ground** — its inner edge is pinned at
-  the nominal half-gap (84.85) so the fixed `bridge` bolted to it never moves. The
-  **left grip is the moving jaw**: its origin tracks `clamp_pos`, it rides the bridge
-  rails on a printed slider, and 2 extension springs pull it inward. Symmetric two-
-  sided (centred, stiffer) is the noted fallback if the ~180 mm cantilever proves
-  floppy; the clamped phone triangulates the jaw and mitigates that.
-- **Fully ENCLOSED telescoping bridge (feedback: the springs/flex/power must never be
-  exposed).** The mechanism is housed in two nested shrouds, Backbone-style: a fixed
-  **outer shroud** (the `bridge` part — a closed box, recess-floor top / bottom cover /
-  y-walls / right end wall, open only on its left end, bolted to the right grip) and a
-  moving **inner shroud** grown onto `back_left` that telescopes inside it. They always
-  overlap (`_shroud_overlap` asserted ≥12 mm; actual 57 mm at min → 17 mm at max), so
-  the enclosure never opens. The **2 extension springs live inside the outer shroud**
-  (fixed anchor at x=22, pulling the inner shroud's hook), and both cables run enclosed
-  through the shrouds. The phone rests on the outer shroud's top + the cradle ledges;
-  the low nested inner-shroud top just closes the cavity under the phone.
+- **THREE-STAGE GEARED brace (feedback: match the Kishi's geared telescope; make it
+  sturdy for print/mould).** `deck.product()` is parametric on `clamp_pos`; the right
+  grip is the frame reference and the left is the moving jaw. The brace is a 3-section
+  slide: a **centre stage** (`bridge`) telescoping inside a **channel on each grip**,
+  with a **pinion** (`pinion`) meshing a **fixed rack** (right grip) and a **moving
+  rack** (left grip). This enforces a **2:1** — `_center_x()` places the centre at the
+  midpoint = the phone centreline at every span. *Why geared, not free-sliding:* a
+  telescope's stiffness is its overlap; free stages hand off (one runs to its stop,
+  then the other), leaving the worst-case one-joint-does-all at intermediate spans. The
+  2:1 keeps **both joints half-engaged everywhere**, maximising rigidity, killing
+  racking, halving per-joint travel/wear, and keeping the pad behind the phone. Three
+  stages (not two) also buy the collapsed→extended range without a bigger closed unit.
+  It evolved from a 2-stage nested shroud (this same iteration) once the geared
+  reference was specified.
+- **Sturdy section (per the brief).** Every stage is a solid bar with a **flat
+  phone-side top + a rounded-bevel back** (`_rbar`) — a deep, stress-concentration-free
+  section for bending/torsion, comfortable in hand, and consonant with the v0.23 crown.
+  The clamp **springs**, the **FFC**, and the **power cable** run enclosed in the nested
+  stages' cavity on y-lanes clear of the gear/racks.
 - **The missing power cable, added + enclosed.** The battery leads (left-grip 403040 →
   J3 on the right board) were never modeled; they're now a `power_body` routed enclosed
   through the shrouds in its own y/z lane beside the FFC, each with a rolling service

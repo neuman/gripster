@@ -1,29 +1,29 @@
 # 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24
 
-**v0.24 expanding spring-clamp back (2026-07-26, branch feature/expanding-clamp).**
-The rigid center — the bolted **center panel** and its **sunken flush-screen well +
-MagSafe ring** — is replaced by a **Kishi-2/Backbone-style expanding clamp** that
-clasps different-size phones (cased long edge **130–170 mm**). The two grips are no
-longer joined at x=0; the **right grip is fixed ground**, the **left grip is a moving
-jaw** that telescopes on a printed **enclosed bridge**, and **two extension springs**
-pull them together to grip the phone by its short edges. The mechanism is fully
-**ENCLOSED at every extension** by two nested shrouds (Backbone-style): a fixed
-**outer shroud** (the `bridge` part, a closed box open only on its left end, bolted to
-the right grip) and a moving **inner shroud** (grown onto `back_left`) that slides
-inside it — they always overlap (≥17 mm at max span) so the **springs, the FFC, and
-the battery power cable** are never exposed in the gap. The outer shroud's top is the
-**near-flush recess floor** (nominal S25U screen ≈ flush at 14.7 mm); both grips carry
-a **phone-edge cradle** (backstop wall + screen-edge lip + rest ledge; soft TPU pad).
-The **battery power cable** (left-grip 403040 → J3 on the right board), previously
-unmodeled, now runs enclosed alongside the FFC, each with a rolling service loop.
-`deck.product(clamp_pos)` is parametric on the clamped span;
-`deck3d --check` validates at **min / nominal / max** and asserts the shroud stays
-overlapped (enclosure never opens) — all 9 parts watertight + bed-fit, **0 collisions
-across the whole travel** (shroud overlap 57→17 mm). MagSafe is dropped; the 403040
-battery stays in the (now sliding) left grip.
-The near-flush option means non-nominal phone thicknesses sit slightly proud/low, and
-the largest phones' extreme edges are carried by the cradle (edge-clamp) rather than
-the central recess floor.
+**v0.24 expanding clamp back — THREE-STAGE GEARED brace (2026-07-26/27, branch
+feature/expanding-clamp).** The rigid center — the bolted **center panel** and its
+**sunken flush-screen well + MagSafe ring** — is replaced by a **Kishi-2/Backbone-style
+expanding clamp** that clasps different-size phones (cased long edge **130–170 mm**).
+The brace is a **3-section geared telescope**: a **centre stage** (the `bridge` part)
+that slides inside a **channel on each grip**, plus a **pinion** (`pinion` part) that
+meshes a **FIXED rack** on the right grip and a **MOVING rack** on the left grip. The
+rack-and-pinion forces a **2:1 relationship** — the centre always sits at the phone
+midpoint and **both joints stay half-engaged**, so overlap (== bending/torsion
+stiffness) is maximised at *every* extension (not just the ends), the stages can't
+rack, per-joint travel and wear are halved, and the pad stays behind the phone. Three
+stages (vs two) also buy the collapsed→extended range without a bigger closed unit.
+**Section (sturdy, per the brief):** all stages are solid bars with a **FLAT phone-side
+top + a ROUNDED-bevel back** (`_rbar`) — beefy section for stiffness, comfortable, and
+it echoes the v0.23 crown. Both grips keep a **phone-edge cradle** (wall + screen-edge
+lip + rest ledge; TPU pad). The clamp **springs**, the **FFC**, and the **battery power
+cable** (left-grip 403040 → J3, previously unmodeled) all run **enclosed** in the nested
+stages' cavity, each with a rolling service loop. `deck.product(clamp_pos)` is
+parametric on the clamped span; `deck3d --check` validates at **min / nominal / max**
+and asserts the centre stays engaged in both channels (≥12 mm) — all parts watertight
++ bed-fit, **0 collisions across the whole travel**. MagSafe is dropped; the 403040
+battery stays in the (sliding) left grip. Fit-model notes: the pinion uses approximate
+straight-flank teeth (**involute for production**) and the exact telescoping-slide fits
+are coupon-tuned; non-nominal phone thicknesses sit slightly proud/low.
 
 **v0.23 faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics).**
 The dead-flat back is replaced by a **faceted palm crown** — a hard-industrial 90s
@@ -270,7 +270,8 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 | Part | Orientation | Notes |
 |---|---|---|
 | `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim. v0.24: `back_left` is the sliding jaw (slider groove); `back_right` is ground (cradle + bridge bosses) |
-| `bridge` (v0.24) | **open side down** | the fixed outer shroud is a closed box open on its left end; print with the open face on the bed (bridged top, ~30° internal supports for the cavity roof) or split-print; houses the springs + cable runs |
+| `bridge` (centre stage, v0.24) | **flat top down** | prints the flat phone face on the bed, rounded-bevel back up (self-supporting); the mid-y gear/rack slot is a through-pocket |
+| `pinion` (v0.24) | flat, gear-axis vertical | a small spur gear (Ø3 bore for the axle); print fine layers, or use nylon/POM for a real gear |
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
 | `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |

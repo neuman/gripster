@@ -23,10 +23,11 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
 
 **What makes this interesting:**
 
-- **It fits your phone, not one phone.** The two grips ride a spring-loaded expanding bridge (v0.24,
-  Kishi/Backbone style): stretch it open, drop the phone in, and two extension springs clamp it by the
-  short edges — anywhere from ~130 to ~170 mm long. A recessed cradle keeps the nominal phone's screen
-  roughly flush with the keys; the whole thing collapses flat for a pocket.
+- **It fits your phone, not one phone.** The grips ride a **three-stage geared telescoping brace**
+  (v0.24, Kishi-style): a centre stage slides inside a channel on each grip, and a **pinion meshes a
+  rack on each grip** so the two joints extend together (2:1) — both stay half-engaged, so it's stiff
+  and doesn't rack no matter how far it's opened. Stretch it, drop the phone in, and springs clamp it
+  by the short edges — ~130 to ~170 mm long. It collapses flat for a pocket.
 - **The back is contoured to the hand.** A faceted 90s-industrial crown (Rii-8+ grip swells) rises up
   to 5.5 mm below the back plane at each grip so the device fills the palm instead of pressing a flat
   slab into it — thin at the edges, ~20 mm at the grips. (v0.23; the back halves print crown-up.)
@@ -359,7 +360,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 
 | | value |
 |---|---|
-| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in an **expanding spring clamp** (v0.24, Kishi/Backbone style — grips slide on a printed dual-rail bridge, 2 extension springs, near-flush recessed cradle at 14.7 mm); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
+| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **three-stage geared expanding clamp** (v0.24, Kishi-style — centre brace + rack-and-pinion 2:1 telescope, flat-front/rounded-back stages, 2 clamp springs); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |

@@ -3,7 +3,7 @@
   "id": "phone",
   "title": "Expanding spring clamp",
   "oneLiner": "The phone is clamped by its short edges between the grips, which slide on a spring-loaded bridge to fit different-size phones.",
-  "blurb": "v0.24 replaced the fixed flush-screen well with a Kishi-2/Backbone-style expanding clamp: the two grips slide on a printed dual-rail bridge and two extension springs pull them together to grip the phone by its short edges, over a 130–170 mm long-edge range. The right grip is the fixed ground; the left grip is the moving jaw. The bridge carries a recessed cradle floor set so the nominal Samsung S25 Ultra's screen still lands roughly flush with the keyboard face (14.7 mm plane, recess floor 5.1 mm); soft cradle pads and screen-edge lips retain the phone, and the whole thing collapses flat for storage.",
+  "blurb": "v0.24 replaced the fixed flush-screen well with a Kishi-style expanding clamp: a three-stage geared telescoping brace between the grips, with two springs pulling them together to grip the phone by its short edges over a 130–170 mm long-edge range. A centre stage slides inside a channel on each grip; a rack-and-pinion gears the two joints 2:1 so they extend together and stay stiff. Soft cradle pads and screen-edge lips retain the phone; the whole thing collapses flat for storage.",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
@@ -76,9 +76,9 @@
  },
  {
   "id": "clamp",
-  "title": "Telescoping dual-rail bridge",
-  "oneLiner": "The printed bridge the grips slide on — dual rails, a recessed phone cradle, spring anchors, and the FFC service loop.",
-  "blurb": "The bridge is the fixed ground member, bolted to the right grip and cantilevering left. It carries two Y-separated rails (kept clear of the battery band) that the left grip's slider rides, a recessed floor that positions the phone near-flush, low y-walls for front/back retention, and anchors for the two extension springs that provide the clamp force. Because the span is now variable, the 16-way FFC gains a rolling service loop that folds in a channel under the bridge as the grips move; a rail end-stop keeps the jaw from running off at full extension (validated with ≥6 mm rail engagement across the whole 130–170 mm travel). MagSafe was dropped — the spring clamp and edge cradles do the retention.",
+  "title": "Three-stage geared brace",
+  "oneLiner": "The Kishi-style telescoping brace: a centre stage between two grip channels, geared 2:1 by a rack-and-pinion so both joints stay stiff.",
+  "blurb": "The brace is a three-section slide: a centre stage telescopes inside a channel on each grip, and a pinion on the centre meshes a fixed rack on the right grip and a moving rack on the left. That rack-and-pinion forces a 2:1 — the centre always sits at the phone's midpoint and both joints stay half-engaged. It matters because a telescope's stiffness IS its overlap: free-sliding stages hand off (one runs to its stop, then the other), leaving the worst-case one-joint-does-everything at partial extension, which is exactly when you're torquing the grips. Gearing keeps overlap maximal at every width, kills parallelogram racking, halves per-joint wear, and keeps the pad behind the phone. Every stage is a solid bar with a flat phone-side face and a rounded-bevel back for stiffness. The clamp springs, the FFC and the battery power cable all run enclosed inside. Validated 0-collision from 130 to 170 mm; teeth are shown straight-flank but would be involute for production.",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
