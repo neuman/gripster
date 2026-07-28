@@ -13,12 +13,36 @@ Chosen after four decisions: **printed dual-rail slide** (no metal rods), **2 ex
 springs**, **preserve near-flush at the nominal phone**, phone long-edge range
 **130–170 mm**.
 
+**FINAL landing: 2-part tray (the geared 3-stage below was built, then simplified away).**
+
 - **The rigid center is gone.** Deleted the bolted `center_panel`, the sunken
-  flush-screen well, the MagSafe ring, the x=0 back seam + tabs/shiplap, the panel
-  screws, and the central spine slab. The two grips are now separate bodies. This was
-  a deliberate reversal of the v0.8 "fixed shell vs telescoping" call and the v0.18
-  flush-well — logged there as trade-offs, now revisited because the user wants
-  multi-phone fit over a single-phone flush mount.
+  flush-screen well, the x=0 back seam + tabs/shiplap, the panel screws, and the central
+  spine slab. The two grips are now separate bodies joined by the telescoping tray. A
+  deliberate reversal of the v0.8/v0.18 fixed-flush calls — the user wants multi-phone
+  fit over a single-phone flush mount.
+- **2-part telescoping TRAY (final).** After building the geared 3-stage (below), the
+  user flagged it as over-complex and pointed to the Abxylute S9 / 8BitDo single-joint
+  trays. Reframe that settled it: **our travel is only ~40 mm (1.3:1)**, and the geared
+  telescope's whole value is holding overlap over *large* travel — for 40 mm a single
+  lap keeps huge overlap throughout, so the gear solved a problem we don't have. The
+  tray (`bridge` = fixed tray + the left grip's lapping plate) is simpler, sturdier in
+  practice (the clamped phone is the stiffener), far easier to tune, and its continuous
+  flat top hosts the MagSafe ring + leaves back-space for maker alt-shells (the user's
+  hackability goal). Kept: the enclosure (lapping plates), springs, power cable, rounded
+  section. Dropped: the pinion, both racks, the separate centre stage, the twin channels.
+- **Face-down retention is MECHANICAL, not magnetic.** Requirement: usable screen-down
+  over your face (Switch/Steam-Deck). Magnets shear/peel — unsafe over a face — so the
+  phone is trapped between the tray (behind) and **deep soft lips** (front); gravity just
+  presses it into the lips. The lips + a compliant edge grip are one **TPU gripper** per
+  grip (`gripper_left/right`, GameSir-style, prints with the keymats). Lip depth + clamp
+  force are the coupon tune.
+- **MagSafe is back — as a SECONDARY convenience.** A strong **N52 ring** (mount side,
+  not a passive steel plate — the user correctly noted the phone/case magnet is the weak
+  one) seats in a recess at the tray centre (`magsafe_ring`), for back-flat + snap only.
+  Because it isn't load-bearing, its alignment drift across phone sizes/cases (the thing
+  that killed a fixed ring on the old rigid mount) stops mattering; makers can reposition
+  or float it. Opt-in: Android (incl. our S25U) needs a magnetic case/stick-on ring;
+  iPhone gets it free; the clamp holds the phone either way.
 - **THREE-STAGE GEARED brace (feedback: match the Kishi's geared telescope; make it
   sturdy for print/mould).** `deck.product()` is parametric on `clamp_pos`; the right
   grip is the frame reference and the left is the moving jaw. The brace is a 3-section

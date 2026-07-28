@@ -7,9 +7,9 @@ Produces models/thumbdeck_full_asm.glb: a named node hierarchy (opens as an
 object tree in Blender / any glTF viewer):
 
     thumbdeck_v019
-    ├── shells/            back_left, back_right, grip_lid_*, center_panel —
+    ├── shells/            back_left, back_right, grip_lid_*, bridge (v0.24 tray) —
     │                      translucent GBC "Atomic Purple" PBR material
-    ├── keymats/           keymat_left, keymat_right (GBC dark button gray)
+    ├── keymats/           keymat_left, keymat_right + gripper_* (GBC dark, TPU)
     ├── pcb_right/         board/ (KiCad-generated: real Edge.Cuts body, copper
     │   │                  tracks+pads, soldermask, silkscreen — exported by
     │   │                  kicad-cli from the routed .kicad_pcb, consolidated
@@ -18,11 +18,11 @@ object tree in Blender / any glTF viewer):
     │                      diodes, passives) as its real-dimension fit body,
     │                      plus the 37 snap domes
     ├── pcb_left/          same (42 domes + FFC)
-    ├── screws/            the 14 M3x10 flush-countersunk shell screws (top-in:
-    │                      5 per grip at the deck.build mount bosses + 4 panel)
+    ├── screws/            the M3x10 flush-countersunk shell screws (top-in:
+    │                      5 per grip lid) + 2 short M3 bridge-to-grip bolts
     ├── battery            403040 pouch in the left grip (sketch tan)
-    ├── flex               FFC jumper in the floor channel (ribbon amber)
-    ├── magsafe_ring       N52 ring in the well recess
+    ├── flex               FFC jumper in the enclosed tray channel (ribbon amber)
+    ├── magsafe_ring       N52 ring in the tray-centre recess (secondary hold)
     └── phone/             real Samsung S25 Ultra model (assets/s25_ultra.glb,
                            own materials incl. screen texture) — screen faces OUT
                            (+z), camera bump flush with the panel's well floor
@@ -223,12 +223,12 @@ def main():
         scene.graph.update(frame_to=grp, frame_from=root, matrix=np.eye(4))
 
     # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
-    for n in ("back_left", "back_right", "bridge", "pinion",
+    for n in ("back_left", "back_right", "bridge",
               "grip_lid_left", "grip_lid_right", "nub_spring"):
         _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
     _add(scene, _stl("nub_cap"), "nub_cap", "shells", material=NUBCAP_MAT)
-    for n in ("keymat_left", "keymat_right"):
-        _add(scene, _stl(n), n, "keymats", material=KEYMAT_MAT)
+    for n in ("keymat_left", "keymat_right", "gripper_left", "gripper_right"):
+        _add(scene, _stl(n), n, "keymats", material=KEYMAT_MAT)   # TPU parts
 
     # boards: KiCad-generated body/copper/mask/silk + deck3d component bodies
     for side in ("right", "left"):
@@ -264,6 +264,8 @@ def main():
     _add(scene, deck3d.power_body(), "power", root, [217, 51, 40, 255]) # battery power cable (enclosed)
     for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs (enclosed)
         _add(scene, sp, f"spring_{i}", root, COL["ring"])
+    ms = deck3d.magsafe_ring(); ms.apply_translation((0, 0, deck3d.MAGSAFE_Z))
+    _add(scene, ms, "magsafe_ring", root, COL["ring"])                 # v0.24c secondary N52 ring
     _add_phone(scene, root, prod)
 
     os.makedirs(MODELS, exist_ok=True)

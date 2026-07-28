@@ -23,11 +23,12 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
 
 **What makes this interesting:**
 
-- **It fits your phone, not one phone.** The grips ride a **three-stage geared telescoping brace**
-  (v0.24, Kishi-style): a centre stage slides inside a channel on each grip, and a **pinion meshes a
-  rack on each grip** so the two joints extend together (2:1) — both stay half-engaged, so it's stiff
-  and doesn't rack no matter how far it's opened. Stretch it, drop the phone in, and springs clamp it
-  by the short edges — ~130 to ~170 mm long. It collapses flat for a pocket.
+- **It fits your phone, not one phone.** The grips ride a **2-part telescoping tray** (v0.24,
+  Abxylute/8BitDo-style): stretch it open, drop the phone in, and two springs clamp it by the short
+  edges — ~130 to ~170 mm long, and it collapses flat for a pocket. The phone is held **mechanically** —
+  trapped between the tray and **soft TPU grippers with deep capture lips** — so it stays put even
+  screen-down over your face like a Switch. **MagSafe is back** too (a strong N52 ring in the tray), but
+  as a *snap-and-hold-flat* bonus, never the thing keeping the phone up.
 - **The back is contoured to the hand.** A faceted 90s-industrial crown (Rii-8+ grip swells) rises up
   to 5.5 mm below the back plane at each grip so the device fills the palm instead of pressing a flat
   slab into it — thin at the edges, ~20 mm at the grips. (v0.23; the back halves print crown-up.)
@@ -360,7 +361,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 
 | | value |
 |---|---|
-| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **three-stage geared expanding clamp** (v0.24, Kishi-style — centre brace + rack-and-pinion 2:1 telescope, flat-front/rounded-back stages, 2 clamp springs); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
+| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **2-part telescoping tray** (v0.24, Abxylute/8BitDo-style — spring clamp, TPU edge grippers + deep capture lips, secondary N52 MagSafe ring); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |
@@ -415,8 +416,8 @@ an animation. Scrolling down peels the device from the front face to the back. G
 <details>
 <summary><strong>Show all five layers</strong> (click to expand)</summary>
 
-**5 · Front layer** (2D concept; printed as 3 parts since v0.16 — two grip lids + center panel) —
-key openings, phone pocket, screw holes, and the MagSafe N52 ring seated in its recess.
+**5 · Front layer** (2D concept — key openings, phone pocket, screw holes, MagSafe recess; the
+v0.24 front is now two grip lids + the separate telescoping `bridge` tray, not a center panel).
 
 ![Front shell](renders/layer_5_front_shell.png)
 
@@ -438,8 +439,9 @@ so the chin could be trimmed.
 ![PCB back](renders/layer_2_pcb_back.png)
 
 **1 · Back layer** (2D concept; printed as left/right halves since v0.16) — the case, screw bosses,
-support posts under the key field, the LiPo bay in the LEFT grip, the FFC floor channel + MagSafe
-well in the spine, and the USB-C / power-switch / pinhole cutouts.
+support posts under the key field, the LiPo bay in the LEFT grip, and the USB-C / power-switch /
+pinhole cutouts. In v0.24 the center spine is the telescoping `bridge` tray (springs + FFC + power
+cable run enclosed inside it), not a fixed floor channel.
 
 ![Back shell](renders/layer_1_back_shell.png)
 
@@ -452,32 +454,34 @@ build. The mechanical parts are generated from the **same** parametric
 model as the PCB ([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) via CadQuery, so key
 openings land on dome pads and bosses land on mount holes *by construction*. The whole stack — back
 halves, PCB with **real-dimension** components (E73 module, USB-C, connectors, SOT-23s, 0402s,
-snap-domes), LiPo, FFC jumper, keymats, grip lids, center panel, MagSafe ring, phone — is assembled
-in one frame and **collision-checked**: `deck3d.py --check` reports **0 impossible overlaps**. Full
-method: [`docs/cad-process.md`](docs/cad-process.md).
+snap-domes), LiPo, FFC jumper, keymats, grip lids, the **`bridge` telescoping tray**, **TPU
+grippers**, MagSafe ring, phone — is assembled in one frame and **collision-checked at min /
+nominal / max clamp span**: `deck3d.py --check` reports **0 impossible overlaps** across the whole
+130–170 mm travel. Full method: [`docs/cad-process.md`](docs/cad-process.md).
 
 ![Full assembly](renders/assembly3d.png)
 
-**Exploded** — back halves · PCB + domes · keymats · grip lids · center panel · MagSafe · phone:
+**Exploded** — back halves · PCB + domes · keymats · grip lids · `bridge` tray · TPU grippers · MagSafe · phone:
 
 ![Exploded assembly](renders/assembly3d_exploded.png)
 
-The shell is **five printed parts** (v0.16 split, v0.17 proportions — cyan grip lids, pink back +
-center panel per the concept sketches), so everything prints flat on a **220 × 220 mm Ender 3 V2
-bed** — the old one-piece shells needed a 350-class printer. The two back halves join at mid-spine
-with printed tabs + wall shiplaps (no seam screws); the screwed-on center panel bridges that seam,
-carries the phone pocket + MagSafe ring recess, and doubles as the **FFC service hatch** (4 face
-screws, grips untouched; since v0.18 the battery is serviced through the left grip instead). v0.17
+The shell prints flat on a **220 × 220 mm Ender 3 V2 bed** — the old one-piece shells needed a
+350-class printer. Since **v0.24** the rigid center panel is gone: the two back halves are the
+**grips themselves** — `back_right` is the fixed ground, `back_left` is the moving clamp jaw — and a
+separate **`bridge` telescoping tray** bolts to the right grip while the left grip's inner shroud
+laps inside it, enclosing the springs, FFC and power cable. The tray top carries the **MagSafe ring
+recess**; **TPU grippers** on each inner edge do the mechanical hold. Opening the left grip's five
+screws services the battery. v0.17
 keymats carry the **rectangular keycaps** (8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the
 space bars and the right H-row's Rii-style Enter, round cluster keys) on the same living-hinge web
 (TPU 95A), now with **debossed Rii-style legends** (primary, shifted-symbol and FN-layer); the grip
 lids get matching rounded-rect openings.
-Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, center panel
-169.1 × 102.8, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
+Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, `bridge` tray
+~131 × 83, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
 
-Back half | Grip lid | Center panel | Keymat
+Back half | Grip lid | `bridge` tray | Keymat
 :---:|:---:|:---:|:---:
-![back](renders/part_back_right.png) | ![lid](renders/part_grip_lid_right.png) | ![panel](renders/part_center_panel.png) | ![keymat](renders/part_keymat_right.png)
+![back](renders/part_back_right.png) | ![lid](renders/part_grip_lid_right.png) | ![bridge](renders/part_bridge.png) | ![keymat](renders/part_keymat_right.png)
 
 Regenerate: `hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render`
 (`--all` also gates every part on the Ender 3 V2 bed-fit; `--sync-models` refreshes the tracked STLs
@@ -544,9 +548,9 @@ appear.
 | Item | Spec | Qty | Notes |
 |---|---|---|---|
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package exported by `gen_fab.py` into `hardware/kicad/generated/fab/`. |
-| Shell | 7 prints (2 back halves, 2 grip lids, center panel, v0.21 nub spring + cap), **MagSafe N52 ring** in the panel recess | 1 | MagSafe = alignment; the phone pocket takes the load. All parts fit a 220 × 220 bed. |
+| Shell | 7 prints (2 back halves, 2 grip lids, v0.24 `bridge` tray, v0.21 nub spring + cap) + 2 **TPU grippers**, **MagSafe N52 ring** in the tray recess | 1 | Retention is mechanical (TPU grippers + capture lips + clamp); MagSafe is a secondary snap. All parts fit a 220 × 220 bed. |
 | Pointing nub | **TMAG5273A1** hall sensor (C3716049, on the right board) + **Ø4 × 2 mm N52 disc magnet** in the printed spring | 1 + spare magnets | v0.21: the only added electronics is one SOT-23-6 — machine-placed with everything else. v0.22: the spring's post is a standard TrackPoint square platform — genuine classic caps fit; a red soft-dome replica prints in TPU. |
-| M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 14 | Heads flush with the face (v0.19). 5/grip + 4 on the center panel border; detach load goes to the border screws + slab stiffness. |
+| M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 10 + 10 | Heads flush with the face (v0.19). 5/grip lid; v0.24: the 4 center-panel screws are gone — the `bridge` tray bolts to the right grip with 2 short M3s into its cradle bosses. |
 
 ---
 
@@ -639,9 +643,10 @@ one `gen_fab.py` run away.
 - **Battery first (v0.18):** foam-tape the 403040 to the LEFT grip's floor and route its leads
   through the bottom-border lane before the left board goes in — the cell lives UNDER the passive
   PCB. Then seat each board on its 3 support posts + perimeter bosses; screw on each grip lid
-  (5 × M3×10 CSK), join the back halves (printed tabs + shiplaps, screwless), then the center panel
-  last (4 × M3×10 CSK) — it splices the seam and is the **FFC service hatch** (the battery now needs
-  the left grip opened instead). Full order: [`docs/assembly.md`](docs/assembly.md).
+  (5 × M3×10 CSK). v0.24: route the FFC + power cable through the tray, **bolt the `bridge` tray to
+  the right grip** (2 × M3), lap the left grip's inner shroud into it, then press the TPU grippers +
+  MagSafe ring — the battery is serviced by opening the left grip. Full order:
+  [`docs/assembly.md`](docs/assembly.md).
 - **Battery:** meter the pigtail against the **"+"/"−" silk at J3** first (vendors wire PH pigtails
   both ways) — but **do not connect the cell until after the first flash** (REGOUT0 must be
   programmed first — see [`docs/assembly.md`](docs/assembly.md)). Slide switch OFF for assembly.

@@ -1,29 +1,29 @@
 # 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24
 
-**v0.24 expanding clamp back — THREE-STAGE GEARED brace (2026-07-26/27, branch
+**v0.24 expanding clamp back — 2-PART TRAY + MagSafe + TPU grippers (2026-07-27, branch
 feature/expanding-clamp).** The rigid center — the bolted **center panel** and its
-**sunken flush-screen well + MagSafe ring** — is replaced by a **Kishi-2/Backbone-style
-expanding clamp** that clasps different-size phones (cased long edge **130–170 mm**).
-The brace is a **3-section geared telescope**: a **centre stage** (the `bridge` part)
-that slides inside a **channel on each grip**, plus a **pinion** (`pinion` part) that
-meshes a **FIXED rack** on the right grip and a **MOVING rack** on the left grip. The
-rack-and-pinion forces a **2:1 relationship** — the centre always sits at the phone
-midpoint and **both joints stay half-engaged**, so overlap (== bending/torsion
-stiffness) is maximised at *every* extension (not just the ends), the stages can't
-rack, per-joint travel and wear are halved, and the pad stays behind the phone. Three
-stages (vs two) also buy the collapsed→extended range without a bigger closed unit.
-**Section (sturdy, per the brief):** all stages are solid bars with a **FLAT phone-side
-top + a ROUNDED-bevel back** (`_rbar`) — beefy section for stiffness, comfortable, and
-it echoes the v0.23 crown. Both grips keep a **phone-edge cradle** (wall + screen-edge
-lip + rest ledge; TPU pad). The clamp **springs**, the **FFC**, and the **battery power
-cable** (left-grip 403040 → J3, previously unmodeled) all run **enclosed** in the nested
-stages' cavity, each with a rolling service loop. `deck.product(clamp_pos)` is
-parametric on the clamped span; `deck3d --check` validates at **min / nominal / max**
-and asserts the centre stays engaged in both channels (≥12 mm) — all parts watertight
-+ bed-fit, **0 collisions across the whole travel**. MagSafe is dropped; the 403040
-battery stays in the (sliding) left grip. Fit-model notes: the pinion uses approximate
-straight-flank teeth (**involute for production**) and the exact telescoping-slide fits
-are coupon-tuned; non-nominal phone thicknesses sit slightly proud/low.
+**sunken flush-screen well** — is replaced by a **2-part telescoping tray** (Abxylute
+S9 / 8BitDo style) that clasps different-size phones (cased long edge **130–170 mm**).
+*Why the tray, not the geared 3-stage:* the 3-stage rack-and-pinion (built and kept in
+git, `fbf79a9`) earns its keep only over **large** travel; our range is ~40 mm (1.3:1),
+where a single lap keeps huge overlap throughout — so the gear solved a problem we don't
+have. The tray is simpler, sturdier-in-practice (the clamped phone stiffens it), far
+easier to print/tune, and its **continuous flat top** both hosts the MagSafe ring and
+leaves clean back-space for maker alt-shells (solar / battery / LoRa). Mechanism: the
+`bridge` is the fixed tray (bolted to the right grip); the left grip's plate laps inside
+it, so the two overlap at every span and **enclose** the springs + FFC + power cable.
+**Retention is MECHANICAL, never the magnets** — the phone is trapped between the tray
+(behind) and **deep soft lips** (front) so it can't fall when used screen-down over your
+face (Switch/Steam-Deck style). A soft **TPU gripper** on each grip's inner edge
+(`gripper_left/right`, GameSir-style) combines the compliant edge-grip + the capture lip
+in one part. **MagSafe is back** as a **secondary** back-hold/snap only: a strong N52
+ring seats in a recess at the tray centre (`magsafe_ring`); because it's not load-
+bearing, its alignment drift across phones/cases is a non-issue, and makers can
+reposition/float it. `deck.product(clamp_pos)` is parametric on the span; `deck3d
+--check` validates at **min / nominal / max** — all parts watertight + bed-fit,
+**0 collisions across the whole travel**, tray lap ≥17 mm. The 403040 battery stays in
+the (sliding) left grip. Fit-model notes: lip depth + clamp force are coupon-tuned for
+face-down capture; non-nominal phone thicknesses sit slightly proud/low.
 
 **v0.23 faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics).**
 The dead-flat back is replaced by a **faceted palm crown** — a hard-industrial 90s
@@ -199,24 +199,29 @@ cavity stack above is untouched.
   RIGHT lid additionally carries the **nub aperture** (Ø10 through) with an
   underside **Ø15.2 × 1.2 counterbore** that seats and clamps the `nub_spring`
   flange — prints clean face-down (the counterbore is a top-layers void).
-- **Center panel (`center_panel`)** — the pink "front of the back", v0.18 a
-  **sunken tray** (~169 × 102.8 mm): border flange 12.3..14.7 flush with
-  the lids, then a deep well whose floor slab (2.1..4.7) puts the **cased
-  phone's screen exactly in the keyboard-face plane (14.7)**. v0.19: closed at the
-  x-ends — the grips' PCB/lid inner edges stop the phone (0.3 mm/side); the
-  2.0 mm well wall band captures its long edges; an R9 thumb scallop in the top
-  border tips it out. In the well floor: the **Ø57 × 1.8 mm recess** for the
-  Ø56 N52 MagSafe ring — the 2.0 mm ring sits 0.2 mm proud, the phone rests on
-  it, and a **0.8 mm printed web** (4 layers) remains under the recess; 4 floor
-  nubs below the slab carry down-press into the back floor. A deliberate
-  **0.3 mm reveal gap** separates panel from lids (no overlap → no screw-head
-  clash, no mid-air mating faces; prints back-face-down, support-free). It is
-  the **bolted splice for the x=0 back seam and the spine service hatch**:
-  4 M3 countersunk screws into Ø8 floor bosses straddling the seam + (until v0.18) 2 more at
-  **ring height** into the transverse-wall bosses (heads sink 1.4 mm below the
-  pocket floor, under the phone). Remove the 4 panel screws → FFC exposed, grips
-  untouched; since v0.18 the battery lives in the **left grip** and is serviced
-  there, not behind this panel.
+- **Telescoping tray (`bridge`)** — v0.24 replaces the old bolted center panel
+  with a **2-part telescoping tray** (Abxylute-S9 / 8BitDo style). The `bridge` is
+  the **fixed OUTER shroud**: it bolts to the right grip (the ground member) with 2
+  short M3s and cantilevers left as a closed box (open on its left end) that
+  **encloses the two clamp springs, the FFC service loop, and the battery power
+  cable** at every extension. Its top is the **phone rest** (RECESS_TOP = 5.1, so
+  the nominal cased screen lands ≈ flush at the 14.7 face plane); the tray centre
+  carries a **Ø57 × 1.8 mm recess for the Ø56 N52 MagSafe ring** (a *secondary*
+  snap — see below). The **left grip is the moving jaw**: it grows an INNER shroud
+  that laps inside the `bridge` (staying overlapped 57→17 mm across the 130–170 mm
+  travel, so nothing ever un-encloses), pulled closed by the springs.
+- **TPU grippers (`gripper_left`, `gripper_right`)** — the phone's **mechanical**
+  retention (GameSir-style). Each is a soft TPU 95A part on a grip's inner edge that
+  protrudes **into the well**: a compliant **edge-grip pad** (1.6 mm, the phone
+  compresses it) plus a **deep capture lip** (CRADLE_LIP = 2.8 mm) overhanging the
+  screen edge. Lip + clamp are what hold the phone — so it's safe used **screen-down
+  over your face** (Switch/Steam-Deck style), never relying on the magnets. Print in
+  TPU with the keymats.
+- **MagSafe ring (`magsafe_ring`)** — Ø56 N52 ring in the tray-centre recess, a
+  **SECONDARY** back-hold + snap only. Because the clamp + lips retain the phone, the
+  ring isn't load-bearing, so its slight mis-alignment across phone/case sizes is a
+  non-issue. The strong magnet is on **our** side (the phone/case magnet is the weak
+  one — a steel plate alone wouldn't hold face-down).
 - **Keymats** (per grip, TPU 95A) — keycap plungers over the dome centres joined
   by **living-hinge webs**; each plunger nub actuates its dome; the web edge is
   what the grip lid's rim clamps. Print a 3×3 coupon to tune travel + hinge
@@ -227,14 +232,17 @@ cavity stack above is untouched.
 Two solids may **touch** (mating faces, a plunger resting on a dome) but must not
 **interpenetrate** by more than a small tolerance. The check reports any pair whose
 mesh-intersection volume exceeds the tolerance, classified as *contact* (OK) vs
-*clash* (fix). Intended stack (bottom→top): back halves (tabs + wall shiplaps at
-x=0) → PCB on standoffs + posts → domes on pads → retention tape → keymat
-plungers → grip lids (rim on the web) → center panel (border on the walls +
-bosses, bridging the back seam; slab on its floor nubs); phone sunk in the well
-on the MagSafe ring, screen flush at 14.7; LiPo on the LEFT grip floor under the
-passive PCB; FFC jumper across the spine in the 0.5 mm floor channel under the
-well slab. The back-half pair and the lid↔keymat rims are the
-whitelisted contacts; the back-seam interpenetration is additionally asserted ~0.
+*clash* (fix). Intended stack (bottom→top): back halves → PCB on standoffs + posts
+→ domes on pads → retention tape → keymat plungers → grip lids (rim on the web);
+the **`bridge` tray** bolts to the right grip and the **left grip's inner shroud**
+laps inside it (overlap asserted ≥12 mm across travel); the phone rests on the tray
+top, clamped by the spring-driven jaw against the **TPU grippers** (soft pads +
+capture lips, which the phone compresses), screen ≈ flush at 14.7, with the N52
+**MagSafe ring** in the tray-centre recess as a secondary snap. LiPo on the LEFT
+grip floor under the passive PCB; the FFC jumper + battery power cable run **enclosed
+inside the tray** on separate y-lanes with a rolling service loop. The back-half
+pair, the lid↔keymat rims, the tray lap, and the gripper/magsafe↔phone contacts are
+the whitelisted mating contacts; everything else that interpenetrates is a clash.
 
 ## The full nested assembly (`models/thumbdeck_full_asm.glb`)
 
@@ -270,14 +278,15 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 | Part | Orientation | Notes |
 |---|---|---|
 | `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim. v0.24: `back_left` is the sliding jaw (slider groove); `back_right` is ground (cradle + bridge bosses) |
-| `bridge` (centre stage, v0.24) | **flat top down** | prints the flat phone face on the bed, rounded-bevel back up (self-supporting); the mid-y gear/rack slot is a through-pocket |
-| `pinion` (v0.24) | flat, gear-axis vertical | a small spur gear (Ø3 bore for the axle); print fine layers, or use nylon/POM for a real gear |
+| `bridge` (fixed tray, v0.24) | open side down | closed tray open on its left end (the left grip's plate laps in); light supports for the cavity roof or split tray+lid; MagSafe recess in the top |
+| `gripper_left/right` (v0.24) | **TPU, lip up** | soft edge-grip + capture lip; print in TPU 95A with the keymats; lip depth is the face-down-capture tune |
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
-| `center_panel` | **back face down** | pocket + recess face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |
+| `magsafe_ring` | *(not printed)* | Ø56 N52 ring, press-seated in the tray-centre recess (secondary hold) |
 | `nub_spring` | flange down (PETG) | legs + hub up; brim; NO supports (arms self-support); `NUB_ARM_T` is the stiffness coupon |
 | `nub_cap` | skirt down (**red** TPU 95A) | dot-grid top up; print with the keymats; genuine classic TrackPoint caps are a no-print alternative |
 
 Slicer: ~0.12 mm elephant-foot compensation keeps the printed seam faces true;
-the modeled 0.25–0.3 mm joint clearances assume roughly that. Solid infill on the
-panel (it is only 2.6–4.6 mm thick) stiffens the MagSafe pocket floor.
+the modeled 0.25–0.3 mm joint clearances assume roughly that (the tray lap fit and
+the gripper seat are the coupon-tuned clearances). Dense infill on the `bridge` tray
+top stiffens the MagSafe pocket floor and the cantilever.

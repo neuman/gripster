@@ -90,8 +90,9 @@ per part. In the DFM/component preview, verify and rotate if needed:
 Snap domes are mechanical spring contacts — they oxidise/warp in reflow, so no
 house machine-places them. Your steps after delivery: press the **78 domes** under
 the Snaptron retention array, print shells + keymats, foam-tape the battery into
-the **left grip before its board goes in**, seat the FFC jumper in its floor
-channel before the center panel goes on (4 border screws), close the shell.
+the **left grip before its board goes in**, seat the FFC jumper + power cable in
+the tray channel, bolt the `bridge` tray to the right grip (2 M3s) and lap the left
+grip's shroud into it, press the TPU grippers + MagSafe ring, close the shell.
 PCBWay can quote manual dome-sheet application, but it
 roughly doubles the cost — pressing them yourself is a calm 20-minute job.
 

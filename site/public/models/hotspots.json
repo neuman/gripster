@@ -1,10 +1,10 @@
 [
  {
   "id": "phone",
-  "title": "Expanding spring clamp",
-  "oneLiner": "The phone is clamped by its short edges between the grips, which slide on a spring-loaded bridge to fit different-size phones.",
-  "blurb": "v0.24 replaced the fixed flush-screen well with a Kishi-style expanding clamp: a three-stage geared telescoping brace between the grips, with two springs pulling them together to grip the phone by its short edges over a 130–170 mm long-edge range. A centre stage slides inside a channel on each grip; a rack-and-pinion gears the two joints 2:1 so they extend together and stay stiff. Soft cradle pads and screen-edge lips retain the phone; the whole thing collapses flat for storage.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
+  "title": "Expanding tray + TPU grippers",
+  "oneLiner": "The phone clamps by its short edges in a 2-part spring-loaded tray, held mechanically by soft TPU grippers with deep capture lips — safe even screen-down.",
+  "blurb": "v0.24 replaced the fixed flush-screen well with a 2-part telescoping tray — the simple Abxylute-S9 / 8BitDo approach, not a geared Kishi brace: the two grips slide on a spring-loaded bridge and pull together to grip the phone by its short edges over a 130–170 mm long-edge range, enough for a regular iPhone or Galaxy through the Ultra sizes. Retention is MECHANICAL: soft TPU grippers on each inner edge combine a compliant edge-grip with a deep lip that captures the screen edge, so the phone stays put even used screen-down over your face like a Switch. A strong N52 MagSafe ring is back in the tray centre as a secondary snap-and-hold — a bonus, never the thing keeping the phone up. It collapses flat for a pocket and leaves back-space for alternative maker shells (battery, solar, LoRa).",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "phone__0",
@@ -76,10 +76,10 @@
  },
  {
   "id": "clamp",
-  "title": "Three-stage geared brace",
-  "oneLiner": "The Kishi-style telescoping brace: a centre stage between two grip channels, geared 2:1 by a rack-and-pinion so both joints stay stiff.",
-  "blurb": "The brace is a three-section slide: a centre stage telescopes inside a channel on each grip, and a pinion on the centre meshes a fixed rack on the right grip and a moving rack on the left. That rack-and-pinion forces a 2:1 — the centre always sits at the phone's midpoint and both joints stay half-engaged. It matters because a telescope's stiffness IS its overlap: free-sliding stages hand off (one runs to its stop, then the other), leaving the worst-case one-joint-does-everything at partial extension, which is exactly when you're torquing the grips. Gearing keeps overlap maximal at every width, kills parallelogram racking, halves per-joint wear, and keeps the pad behind the phone. Every stage is a solid bar with a flat phone-side face and a rounded-bevel back for stiffness. The clamp springs, the FFC and the battery power cable all run enclosed inside. Validated 0-collision from 130 to 170 mm; teeth are shown straight-flank but would be involute for production.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
+  "title": "2-part telescoping tray",
+  "oneLiner": "A fixed outer shroud bolted to the right grip; the left grip's plate laps inside it, enclosing the springs, FFC and power cable at every extension.",
+  "blurb": "A geared 3-stage Kishi brace was built first, then simplified away: our travel is only ~40 mm (130–170 mm phones, a 1.3:1 range), and a rack-and-pinion earns its complexity at a Kishi's ~3:1. Instead the tray is two parts that telescope, like an Abxylute S9 or 8BitDo controller: a fixed outer shroud bolts to the right grip (the ground member); the left grip — the moving jaw — carries a plate that laps inside the shroud. Two extension springs pull the jaw closed to clamp the phone, and because the jaw's plate stays captured inside the shroud at every width, the springs, the FFC service loop and the battery power cable are enclosed the whole time. The phone is held mechanically by the soft TPU grippers and their deep capture lips, not by the springs alone or the magnets — so it's safe screen-down. Validated 0-collision from 130 to 170 mm. Flat by design, it also frees the back for maker-swapped shells.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "bridge__atomic_purple"
@@ -89,8 +89,8 @@
   "id": "battery",
   "title": "403040 LiPo pouch (left grip)",
   "oneLiner": "The device's single battery — a 403040 pouch (~450–500 mAh) foam-taped under the left grip's passive board.",
-  "blurb": "The 403040 pouch lives in the left grip's cavity, foam-taped under the passive matrix board, with leads crossing to J3 on the right board. It sits there because the grip's passive board left ~5 mm of free depth above its floor (versus 0.24 mm in the right grip beside the mated JST-PH connector), and because the center spine is occupied by the telescoping clamp mechanism, not a battery. In v0.24 the left grip is the moving clamp jaw, so the battery rides with it — the FFC is the only thing that crosses between the grips — and a swap means opening the left grip's five screws.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-kishibackbone-style",
+  "blurb": "The 403040 pouch lives in the left grip's cavity, foam-taped under the passive matrix board, with leads crossing to J3 on the right board. It sits there because the grip's passive board left ~5 mm of free depth above its floor (versus 0.24 mm in the right grip beside the mated JST-PH connector), and because the center spine is occupied by the telescoping tray mechanism, not a battery. In v0.24 the left grip is the moving clamp jaw, so the battery rides with it — the FFC and its power cable are the only things that cross between the grips, both enclosed in the tray — and a swap means opening the left grip's five screws.",
+  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "battery__vc"

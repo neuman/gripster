@@ -57,6 +57,16 @@
     "phone__9"
    ]
   },
+  "magsafe_ring": {
+   "offset": [
+    0,
+    0,
+    85.387
+   ],
+   "nodes": [
+    "magsafe_ring__vc"
+   ]
+  },
   "springs": {
    "offset": [
     0,
@@ -71,7 +81,7 @@
    "offset": [
     0,
     0,
-    0
+    -51.233
    ],
    "nodes": [
     "power__vc"
@@ -138,6 +148,26 @@
     "pcb_right__soldermask"
    ]
   },
+  "gripper_right": {
+   "offset": [
+    45.57,
+    0,
+    65.464
+   ],
+   "nodes": [
+    "gripper_right__gbc_button_gray"
+   ]
+  },
+  "gripper_left": {
+   "offset": [
+    -45.57,
+    0,
+    65.464
+   ],
+   "nodes": [
+    "gripper_left__gbc_button_gray"
+   ]
+  },
   "keymat_right": {
    "offset": [
     45.57,
@@ -198,21 +228,11 @@
     "grip_lid_left__atomic_purple"
    ]
   },
-  "pinion": {
-   "offset": [
-    0,
-    0,
-    0
-   ],
-   "nodes": [
-    "pinion__atomic_purple"
-   ]
-  },
   "bridge": {
    "offset": [
     0,
     0,
-    0
+    -14.231
    ],
    "nodes": [
     "bridge__atomic_purple"

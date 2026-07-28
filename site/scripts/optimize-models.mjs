@@ -41,8 +41,9 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 })
 
 const SINGLE = new Set([
-  'back_left', 'back_right', 'center_panel', 'grip_lid_left', 'grip_lid_right',
-  'nub_spring', 'nub_cap', 'keymat_left', 'keymat_right', 'battery', 'flex', 'magsafe_ring',
+  'back_left', 'back_right', 'bridge', 'gripper_left', 'gripper_right',
+  'grip_lid_left', 'grip_lid_right', 'nub_spring', 'nub_cap',
+  'keymat_left', 'keymat_right', 'battery', 'flex', 'power', 'magsafe_ring',
 ])
 function moverOf(nodeName) {
   const base = nodeName.split('__')[0]
@@ -52,13 +53,14 @@ function moverOf(nodeName) {
 // Layer along the thin (thickness) axis: back (−) → front (+); matches the
 // physical z-stack (back shells → boards → face lids/keymats → phone).
 const LAYER = {
-  back_left: -3, back_right: -3, screws: -2, battery: -2.4, flex: -1.8,
-  pcb_right: -1, pcb_left: -1, center_panel: 0,
+  back_left: -3, back_right: -3, screws: -2, battery: -2.4, flex: -1.8, power: -1.8,
+  pcb_right: -1, pcb_left: -1, bridge: -0.5,
   grip_lid_left: 1, grip_lid_right: 1, nub_spring: 1.3,
-  keymat_left: 2, keymat_right: 2, nub_cap: 2.6, magsafe_ring: 3, phone: 4,
+  keymat_left: 2, keymat_right: 2, gripper_left: 2.3, gripper_right: 2.3,
+  nub_cap: 2.6, magsafe_ring: 3, phone: 4,
 }
-const LEFT = new Set(['back_left', 'grip_lid_left', 'keymat_left', 'pcb_left'])
-const RIGHT = new Set(['back_right', 'grip_lid_right', 'keymat_right', 'pcb_right', 'nub_spring', 'nub_cap'])
+const LEFT = new Set(['back_left', 'grip_lid_left', 'keymat_left', 'pcb_left', 'gripper_left'])
+const RIGHT = new Set(['back_right', 'grip_lid_right', 'keymat_right', 'pcb_right', 'nub_spring', 'nub_cap', 'gripper_right'])
 
 function perNodeBounds(doc) {
   const out = {}

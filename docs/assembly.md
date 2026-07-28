@@ -37,8 +37,9 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
    preview checklist (LED polarity!). That directory is **not committed**;
    generate it first with `python3 hardware/scripts/gen_fab.py` (it refuses
    unless DRC is 0/0).
-2. **Prints:** six PETG shell parts — `back_left`, `back_right`,
-   `grip_lid_left`, `grip_lid_right`, `center_panel`, and the v0.21 nub pair:
+2. **Prints:** six PETG shell parts — `back_left` (moving jaw), `back_right`
+   (ground), `grip_lid_left`, `grip_lid_right`, the v0.24 `bridge` telescoping
+   tray, and the v0.21 nub pair:
    `nub_spring` (Ø14.8 flexure; **its 3 spiral arms are the compliance coupon**
    — print one, flex it by hand, and if it feels dead-stiff or floppy retune
    `NUB_ARM_T` ±0.2 in `deck3d.py` before printing the final) and `nub_cap`
@@ -46,22 +47,26 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
    replica; tune its 4.6 mm square socket ±0.1 to press snug on the spring's
    4.4 mm square platform — or skip it and push on any **genuine classic
    full-size TrackPoint cap**, which shares the same socket standard) — and
-   the two keymats (TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
+   the two keymats **plus the two `gripper_left/right` phone grippers** (all
+   TPU 95A). STLs are tracked in `hardware/cad/models/` (or regenerate to
    `hardware/cad/build/`, STEP alongside). Every part fits a 220 × 220 bed
    (Ender 3 V2) flat; orientations + slicer notes in
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
    fatigue (>10 k presses) before printing the full mats.
 3. **Order alongside:** 78+ Snaptron 7 mm domes with the taped retention array,
-   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥194 mm**
-   — 200 mm is the common stock length (e.g. "FFC-1.0-16P-200mm" type A); the J2
-   contact rows sit 173.3 mm apart plus ~4 mm ZIF insertion each end and the
-   S-bends down into the spine floor channel, so a 200 mm ribbon has only
-   ~6 mm slack and anything under 194 mm cannot mate — plus a 1S **403040**
-   pouch LiPo (4.0 × 30 × 40 mm, ~450–500 mAh, JST-PH; the footprint is a hard
-   limit — the cell lives inside the **left grip**, not the spine), 0.3 mm foam
-   tape for the cell, Ø56 N52 MagSafe ring, **14 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 14 M3×10 DIN 965 countersunk
-   screws** (one SKU: 10 grip, 4 panel border).
-   (DIN 965 = 90° countersunk flat head, flush with the face.)
+   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥240 mm**
+   (v0.24) — the clamp span is now VARIABLE (the grips slide 130–170 mm), so the
+   ribbon carries a **rolling service loop** that folds in a channel under the
+   telescoping `bridge` tray and pays out as the jaw moves; it must reach at max
+   extension (~195 mm J2-to-J2) plus the fold, so coupon-tune the loop radius —
+   plus the **battery power cable** (2-wire, ≥240 mm, JST-PH) that runs enclosed
+   in the tray beside it, 2 **extension springs** (~5–8 N, ≥40 mm working
+   extension) for the clamp force, a 1S **403040** pouch LiPo (4.0 × 30 × 40 mm,
+   ~450–500 mAh, JST-PH; the footprint is a hard limit — the cell lives inside
+   the **left grip**, not the spine), 0.3 mm foam tape for the cell, Ø56 N52
+   MagSafe ring, **10 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 10 M3×10 DIN 965
+   countersunk screws** (10 grip lids) + **2 short M3** for the bridge-to-grip
+   bolts. (DIN 965 = 90° countersunk flat head, flush with the face.)
 
 ## 1. Press the domes
 
@@ -86,12 +91,12 @@ serviced through the left grip, not the panel).
    *(The two ring-height spine anchors are gone in v0.18 — the panel takes 4
    border screws only.)*
 2. **FFC jumper first:** with the boards loose, open both ZIF latches and seat
-   the ribbon (≥194 mm type-A), **contacts facing the board at both ends** (the
-   ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
+   the ribbon (≥240 mm type-A, v0.24), **contacts facing the board at both ends**
+   (the ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
    ribbon is correct by construction; do not twist it). Close the latches. The
-   ZIFs are unreachable once the lids are on. The ribbon will later S-bend down
-   from each ZIF and cross the spine in a 0.5 mm floor channel under the
-   phone-well slab (step 6).
+   ZIFs are unreachable once the lids are on. The ribbon will later fold into a
+   **rolling service loop** inside the telescoping `bridge` tray that pays out as
+   the clamp jaw slides (step 6).
 3. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
    JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
    wire lands on the pin marked **"+"** on the back silk beside J3 — that is
@@ -113,12 +118,17 @@ serviced through the left grip, not the panel).
    fit-checked for this layout on 2026-07-14.)*
 5. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
    clamps the keymat web); drive the **5 M3×10 countersunk screws per grip** — heads finish flush with the face.
-6. **Join the back halves:** lay the FFC flat across the spine and seat it
-   fully into its 0.5 mm floor channel (the well slab covers it once the panel
-   is on — it must be in the channel *before* then), thread the battery leads
-   through the lead windows in both transverse walls toward J3 (still
-   unplugged), then engage the two floor tabs and the wall shiplaps at x=0 and
-   press the halves flush. No screws here — the center panel is the splice.
+6. **Cable the tray + join the grips (v0.24):** the two grips no longer meet at
+   x=0 — they're bridged by the telescoping tray. Lay the FFC and the battery
+   power cable into the `bridge` tray's enclosed channels, each with a **rolling
+   service loop** (a U-fold that pays out as the jaw slides) — route them on
+   their separate y-lanes so they don't chafe. Bolt the `bridge` to the **right
+   grip** (the ground member) with its **2 short M3s** into the cradle bosses,
+   then engage the **left grip's inner shroud** into the open left end of the
+   tray so it laps inside (it stays overlapped 57→17 mm across the travel, so the
+   springs/FFC/power stay enclosed at every width). Hook the **2 extension
+   springs** from the tray's fixed anchors to the inner shroud's hooks — these
+   are the clamp force. Leave the battery unplugged for now.
 7. **Pointing nub (v0.21):** three steps, all on the right lid.
    **(a) Magnet:** press the Ø4 × 2 N52 disc into the `nub_spring` hub pocket
    **N pole facing down** (toward the sensor). Find N BEFORE seating, with a
@@ -141,14 +151,15 @@ serviced through the left grip, not the panel).
    First power-up: leave the nub untouched for the first ~2 s (32-sample zero
    calibration); axis flips/swaps are DT properties in `thumbdeck.dts`, not
    code.
-8. Seat the **MagSafe ring** in the panel recess (epoxy the full annulus — the
-   bond takes the detach pull, backed by the border screws and the slab's
-   stiffness), then fit the **center panel** — its sunken tray drops over the
-   spine, the border flange lands flush with the grip lids' keyboard face and
-   the well slab rests on the 4 floor nubs — and drive its **4 M3×10 countersunk border
-   screws** straddling the back seam. To service the FFC later, only these 4
-   come back out; swapping the battery instead means opening the **left grip**
-   (5 screws, lid, keymat, board).
+8. **Grippers + MagSafe (v0.24):** press the two **TPU grippers** onto the grips'
+   inner edges — each seats against the rigid backstop wall so its soft pad + deep
+   capture lip protrude into the well (a drop of CA if loose). These + the clamp
+   are the **mechanical** hold, so the phone is safe even used screen-down. Then
+   seat the **MagSafe ring** in the tray-centre recess (epoxy the annulus) — this
+   is a **secondary** snap only, not load-bearing, so exact alignment across phone
+   sizes doesn't matter. To fit a phone: pull the left grip out against the
+   springs, drop the phone in, release — it clamps by the short edges. Servicing
+   the battery means opening the **left grip** (5 screws, lid, keymat, board).
 
 ## 3. First flash (one-time SWD, then UF2 forever)
 
