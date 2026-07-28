@@ -1358,6 +1358,39 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
     return clashes, contacts, checked
 
 
+def cable_enclosure(A, gap_x=6.0):
+    """v0.24c enclosure guard. The collide() pass only tests interpenetration, NOT
+    whether the FFC + power cable are actually SURROUNDED by shell — so an exposed
+    cable in the inter-grip gap passes collide() silently (exactly what a translucent
+    render can look like, and what the user must otherwise eyeball). This ray-casts
+    each cable outward in ±z (top/bottom) and ±y (front/back walls) at samples across
+    the OPEN gap between the two grip bodies and asserts a shell blocks every ray. The
+    connector ends (inside each grip, where the ribbon must exit to its ZIF) are
+    excluded — enclosure is only required across the span the tray bridges. Returns
+    the list of still-exposed (cable, x, open-directions) samples (empty == sealed)."""
+    shell = trimesh.util.concatenate([A[n] for n in ("bridge", "back_left", "back_right") if n in A])
+    # the gap the tray must seal: right grip inner edge (+82.6) .. left grip inner edge.
+    gxr = BR_X_RIGHT
+    gxl = min(A["back_left"].bounds[1][0], -BR_X_RIGHT)   # inner shroud right end (moves with the jaw)
+    dirs = {"up": (0, 0, 1.0), "down": (0, 0, -1.0), "front": (0, -1.0, 0), "back": (0, 1.0, 0)}
+    exposed = []
+    for cab in ("flex", "power"):
+        if cab not in A:
+            continue
+        m = A[cab]; lo, hi = m.bounds
+        cy = (lo[1] + hi[1]) / 2.0; cz = (lo[2] + hi[2]) / 2.0
+        x0 = max(lo[0] + gap_x, gxl + gap_x); x1 = min(hi[0] - gap_x, gxr - gap_x)
+        if x1 <= x0:
+            continue
+        for x in np.linspace(x0, x1, 30):
+            org = np.array([[x, cy, cz]])
+            opend = [d for d, v in dirs.items()
+                     if not shell.ray.intersects_any(org, np.array([v], dtype=float))[0]]
+            if opend:
+                exposed.append((cab, round(float(x), 1), opend))
+    return exposed
+
+
 def bed_fit(m, name):
     """Every printed part must fit an Ender 3 V2 (220x220x250) laid flat, with
     brim margin: xy bbox <= BED_XY (=204). Returns True when it fits."""
@@ -1416,16 +1449,21 @@ def main():
             A = assemble(cp)
             clashes, contacts, checked = collide(A)
             ov = _shroud_overlap(cp)
-            tag = "❌" if clashes else "✅"
+            exposed = cable_enclosure(A)
+            tag = "❌" if (clashes or exposed) else "✅"
             print(f"[{name} span {cp or 'nominal'}] {len(A)} bodies, checked {checked}; "
-                  f"{len(clashes)} CLASHES; shroud overlap {ov:.1f}mm {tag}")
+                  f"{len(clashes)} CLASHES; shroud overlap {ov:.1f}mm; "
+                  f"cable enclosure {'SEALED' if not exposed else f'{len(exposed)} EXPOSED'} {tag}")
             for a, b, v in clashes[:15]:
                 print(f"  CLASH   {a:22} <-> {b:22}  overlap {v} mm^3")
+            for cab, x, opend in exposed[:8]:
+                print(f"  EXPOSED {cab:22} x={x:7.1f}  open: {','.join(opend)}")
             if name == "nominal":
                 for a, b, v in sorted(contacts, key=lambda t: -t[2])[:6]:
                     print(f"  contact {a:22} <-> {b:22}  overlap {v} mm^3 (intended mating)")
             assert ov >= 12.0, f"[{name}] shroud overlap {ov:.1f}mm < 12mm — enclosure could open"
-            anyclash = anyclash or bool(clashes)
+            assert not exposed, f"[{name}] {len(exposed)} cable sample(s) NOT enclosed by the tray"
+            anyclash = anyclash or bool(clashes) or bool(exposed)
         if not anyclash:
             print("  ✅ no impossible overlaps across the whole clamp travel")
     if args.render:
