@@ -3,7 +3,74 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.24 (first entry).
+current design is rev-A / v0.24d (first entry).
+
+## v0.24d — enclosure lane plan + gripper teeth (2026-07-28, branch feature/expanding-clamp)
+
+User review of the v0.24c clamp found three faults. All three were real, and the first
+two were the *same* fault: v0.24c placed the enclosure's contents by eye, one at a time,
+instead of to a plan.
+
+- **Everything inside the enclosure now runs in its own y LANE, on one shared z.**
+  Front → back the tray reads `spring | FFC | power | spring`, every lane on `LANE_Z`
+  (the mid-height of the *moving* shroud's cavity). Nothing is stacked over anything.
+  - *Why it was broken:* v0.24c ran the FFC at y=24 directly under spring 0 (also y=24),
+    z bands overlapping — the coil sat on the ribbon, and the ribbon's service loop had
+    nowhere to crumple at short spans that wasn't a spring. The user called this out
+    before it ever got printed.
+  - *The fix is a lane plan, not a nudge.* The springs move OUT to the enclosure's y
+    extremes (13.5 / 83.5); the FFC keeps **J2's y centre (24.5)** so the 16-way ribbon
+    still enters the ZIF dead straight rather than being doglegged to make room; the
+    power cable keeps its own row at 40. Pushing the springs outboard is a second win:
+    a wider stance resists jaw racking.
+  - **Printed divider RIBS** wall each cable into a channel, in *both* telescoping
+    members, so a loose loop has no path into a spring lane at any extension. The tray's
+    ribs can only live right of the moving shroud's end at the *shortest* span — that is
+    still the majority of the run, and exactly the stretch that was open cavity before.
+- **The cables were exposed out the back at full extension — root cause was a z, not a
+  gap.** v0.24c pinned both cables to the FIXED tray's floor. The MOVING shroud's floor
+  sits 1.4 mm *above* that, so across the span only the moving shroud covers (longest at
+  full extension) the cables hung in open air behind the device — the power cable's
+  envelope reaching 0.95 mm below the shroud's underside. Putting every lane on `LANE_Z`
+  *inside the moving shroud's cavity* makes enclosure hold **by construction** at every
+  extension, instead of depending on the fixed tray still happening to be underneath.
+  Two consequential fixes came with it: the shroud's left end wall now has real cable
+  **pass-throughs** (v0.24c modelled the ribbon straight through 1.4 mm of PETG), and the
+  tray's right end wall has **one window per lane** (v0.24c cut a single window at
+  y 15–33, which the power lane at y=40 missed entirely).
+- **The TPU grippers get TEETH** (the GameSir / Abxylute detail v0.24c skipped). 13
+  half-round ribs at 3.4 mm pitch, axis along the phone's thickness, 0.8 mm proud of the
+  pad face. A flat pad resisted the phone creeping or rotating in y by friction alone;
+  the teeth bite the cased edge, which is what actually keeps the screen square to the
+  keyboard face. Rolling them out of cylinders centred *on* the pad face leaves exactly
+  half proud — the shape that bites and the shape TPU prints without support. The
+  capture lip also gains a **lead-in chamfer** on its top inboard edge so the phone snaps
+  past it instead of having to be threaded in square.
+- **Both `--check` guards that should have caught this were themselves wrong** — worth
+  recording, because the geometry bugs were only survivable *because* the guards passed.
+  - `cable_enclosure` ray-cast from the cable's **centre line**, so a cable sunk inside a
+    shroud wall reported "SEALED": every ray promptly hit the wall it was embedded in. It
+    now runs two tests — a **solid** test (the clipped run may not intersect the tray at
+    all; a cable inside a wall is impossible, not "contact") and rays cast from just
+    outside the cable's **envelope**. Fed the v0.24c lanes it fails 2 / 9 / 10 samples at
+    min / nominal / max span, `power … open: down` — precisely the reported symptom, and
+    worst at full extension, as reported.
+  - `_allowed` whitelisted **"spring vs anything"** as intended mating, which is how a
+    coil resting on the FFC never showed up as a clash. A spring may now only touch its
+    own anchors (`bridge`, `back_left`). Likewise the cables no longer get a free pass
+    against `bridge`: inside the tray they run in a walled channel with real clearance,
+    so any overlap there means buried-in-a-wall.
+  - `--check` now also asserts the **lane plan** numerically (each cable between the two
+    springs, ≥2 mm clear of both, channels far enough apart to wall off, lane axis inside
+    the moving shroud's cavity) — pure arithmetic, so a lane regression fails in
+    milliseconds instead of after a four-minute build.
+
+**Known, not fixed here:** the spring stroke is aggressive. With the anchor at x=22 the
+installed length runs ~7.9 mm at min span to ~48 mm at max — a >5:1 working ratio no coil
+extension spring will survive. Moving the anchor toward the tray's right wall converts
+that to a far saner ratio on the same 40 mm travel. Left alone deliberately: it is a
+spring-selection question the user has not weighed in on, and it does not interact with
+the lane plan.
 
 ## v0.24 — expanding spring-clamp back (2026-07-26, branch feature/expanding-clamp)
 

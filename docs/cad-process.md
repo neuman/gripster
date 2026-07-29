@@ -1,7 +1,8 @@
-# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24
+# 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24d
 
 **v0.24 expanding clamp back — 2-PART TRAY + MagSafe + TPU grippers (2026-07-27, branch
-feature/expanding-clamp).** The rigid center — the bolted **center panel** and its
+feature/expanding-clamp; **v0.24d** 2026-07-28 adds the enclosure **lane plan** and the
+gripper **teeth** — see below).** The rigid center — the bolted **center panel** and its
 **sunken flush-screen well** — is replaced by a **2-part telescoping tray** (Abxylute
 S9 / 8BitDo style) that clasps different-size phones (cased long edge **130–170 mm**).
 *Why the tray, not the geared 3-stage:* the 3-stage rack-and-pinion (built and kept in
@@ -210,13 +211,30 @@ cavity stack above is untouched.
   snap — see below). The **left grip is the moving jaw**: it grows an INNER shroud
   that laps inside the `bridge` (staying overlapped 57→17 mm across the 130–170 mm
   travel, so nothing ever un-encloses), pulled closed by the springs.
+- **Enclosure LANE PLAN (v0.24d)** — everything inside runs in its own **y lane** on
+  one shared **z** (`LANE_Z`, the mid-height of the *moving* shroud's cavity). Front
+  → back: `spring (y 13.5) | FFC (24.5) | power (40) | spring (83.5)`, with printed
+  **divider ribs** walling each cable into a channel in *both* telescoping members.
+  Two v0.24c faults drove it: the FFC sat at y = 24 *directly under* spring 0 (also
+  y = 24, z bands overlapping — coil on ribbon), and every cable was pinned to the
+  FIXED tray's floor, 1.4 mm below the moving shroud's, so past the tray's left end
+  they hung in **open air out the back** (worst at full extension). Putting the lanes
+  inside the moving shroud's cavity makes enclosure hold *by construction*. The FFC
+  lane is **J2's own y centre**, so the 16-way ribbon enters the ZIF dead straight
+  rather than being doglegged to make room for a spring — move the springs, not the
+  ribbon. `--check` asserts the lane plan arithmetically before any mesh work.
 - **TPU grippers (`gripper_left`, `gripper_right`)** — the phone's **mechanical**
   retention (GameSir-style). Each is a soft TPU 95A part on a grip's inner edge that
   protrudes **into the well**: a compliant **edge-grip pad** (1.6 mm, the phone
-  compresses it) plus a **deep capture lip** (CRADLE_LIP = 2.8 mm) overhanging the
-  screen edge. Lip + clamp are what hold the phone — so it's safe used **screen-down
-  over your face** (Switch/Steam-Deck style), never relying on the magnets. Print in
-  TPU with the keymats.
+  compresses it), a comb of **13 half-round TEETH** (v0.24d, 3.4 mm pitch, 0.8 mm
+  proud, axis along the phone's thickness) that bite the cased edge so the phone
+  can't creep or rotate out of square, plus a **deep capture lip** (CRADLE_LIP =
+  2.8 mm) overhanging the screen edge, with a 0.8 mm lead-in chamfer on its top
+  inboard edge. Lip + teeth + clamp are what hold the phone — so it's safe used
+  **screen-down over your face** (Switch/Steam-Deck style), never relying on the
+  magnets. The teeth are rolled out of cylinders centred *on* the pad face, which
+  leaves exactly half proud: the shape that bites, and the shape TPU prints without
+  support. Print in TPU with the keymats.
 - **MagSafe ring (`magsafe_ring`)** — Ø56 N52 ring in the tray-centre recess, a
   **SECONDARY** back-hold + snap only. Because the clamp + lips retain the phone, the
   ring isn't load-bearing, so its slight mis-alignment across phone/case sizes is a
@@ -278,8 +296,8 @@ Outputs land in `hardware/cad/build/` (STEP/STL, git-ignored) and `renders/`;
 | Part | Orientation | Notes |
 |---|---|---|
 | `back_left`, `back_right` | **cavity opening down (faceted crown up)** | v0.23: crown prints apex-up = self-supporting cosmetic face; the internal PCB bosses/posts are the only downward faces → **tree supports inside the cavity** (scars hidden); 6 mm brim. v0.24: `back_left` is the sliding jaw (slider groove); `back_right` is ground (cradle + bridge bosses) |
-| `bridge` (fixed tray, v0.24) | open side down | closed tray open on its left end (the left grip's plate laps in); light supports for the cavity roof or split tray+lid; MagSafe recess in the top |
-| `gripper_left/right` (v0.24) | **TPU, lip up** | soft edge-grip + capture lip; print in TPU 95A with the keymats; lip depth is the face-down-capture tune |
+| `bridge` (fixed tray, v0.24) | open side down | closed tray open on its left end (the left grip's plate laps in); light supports for the cavity roof or split tray+lid; MagSafe recess in the top. v0.24d: the internal **lane ribs** print as vertical walls in this orientation — no supports, but check they come out full-height or the cable channels won't wall off |
+| `gripper_left/right` (v0.24) | **TPU, lip up** | soft edge-grip + **teeth** + capture lip; print in TPU 95A with the keymats. Teeth are half-round ribs running vertically in this orientation → self-supporting; lip depth + tooth bite are the face-down-capture tune |
 | `grip_lid_left/right` | **cosmetic face down** | rim downstands face up; no supports |
 | `keymat_left/right` | web down (TPU 95A) | as before |
 | `magsafe_ring` | *(not printed)* | Ø56 N52 ring, press-seated in the tray-centre recess (secondary hold) |

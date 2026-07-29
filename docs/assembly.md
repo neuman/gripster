@@ -153,8 +153,12 @@ serviced through the left grip, not the panel).
    code.
 8. **Grippers + MagSafe (v0.24):** press the two **TPU grippers** onto the grips'
    inner edges — each seats against the rigid backstop wall so its soft pad + deep
-   capture lip protrude into the well (a drop of CA if loose). These + the clamp
-   are the **mechanical** hold, so the phone is safe even used screen-down. Then
+   capture lip protrude into the well (a drop of CA if loose). **Teeth face the
+   phone** (v0.24d: 13 half-round ribs down the pad's inner face — they bite the
+   cased edge so the phone can't creep or rotate; a gripper pressed on backwards
+   will hold, badly, and is the first thing to check if the screen won't stay
+   square). These + the clamp are the **mechanical** hold, so the phone is safe
+   even used screen-down. Then
    seat the **MagSafe ring** in the tray-centre recess (epoxy the annulus) — this
    is a **secondary** snap only, not load-bearing, so exact alignment across phone
    sizes doesn't matter. To fit a phone: pull the left grip out against the

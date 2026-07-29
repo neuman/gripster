@@ -441,7 +441,11 @@ so the chin could be trimmed.
 **1 · Back layer** (2D concept; printed as left/right halves since v0.16) — the case, screw bosses,
 support posts under the key field, the LiPo bay in the LEFT grip, and the USB-C / power-switch /
 pinhole cutouts. In v0.24 the center spine is the telescoping `bridge` tray (springs + FFC + power
-cable run enclosed inside it), not a fixed floor channel.
+cable run enclosed inside it), not a fixed floor channel. v0.24d gives the tray's contents a
+**lane plan** — front to back it reads `spring | FFC | power | spring`, every lane on one z with
+printed divider ribs between them, so nothing is stacked over anything and the cables sit inside
+the *moving* shroud's cavity (enclosed at every extension, not just while the fixed tray happens
+to still be underneath).
 
 ![Back shell](renders/layer_1_back_shell.png)
 
@@ -645,7 +649,10 @@ one `gen_fab.py` run away.
   PCB. Then seat each board on its 3 support posts + perimeter bosses; screw on each grip lid
   (5 × M3×10 CSK). v0.24: route the FFC + power cable through the tray, **bolt the `bridge` tray to
   the right grip** (2 × M3), lap the left grip's inner shroud into it, then press the TPU grippers +
-  MagSafe ring — the battery is serviced by opening the left grip. Full order:
+  MagSafe ring — the battery is serviced by opening the left grip. v0.24d: each cable threads its
+  **own walled channel** (FFC in the middle-front lane, power behind it, a spring in each outboard
+  lane) — thread them before the shrouds are lapped together, and don't let a service loop sit
+  across a divider rib. Full order:
   [`docs/assembly.md`](docs/assembly.md).
 - **Battery:** meter the pigtail against the **"+"/"−" silk at J3** first (vendors wire PH pigtails
   both ways) — but **do not connect the cell until after the first flash** (REGOUT0 must be

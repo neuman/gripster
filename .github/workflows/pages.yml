@@ -6,7 +6,11 @@ name: Deploy site to GitHub Pages
 
 on:
   push:
-    branches: [main, feature/right-joystick]
+    # main ONLY — there is one live site, not a page per branch. feature/right-joystick
+    # used to be listed here while it was in flight; because it shared the `pages`
+    # concurrency group below, a simultaneous push to both branches meant whichever
+    # landed second cancelled the other, and main lost 4 of its last 5 runs that way.
+    branches: [main]
     paths:
       - 'site/**'
       - '.github/workflows/pages.yml'

@@ -310,16 +310,64 @@ INNER_LEN = 62.0                             # moving inner-shroud length (overl
 # retention is mechanical, never the magnets. A soft TPU GRIPPER on each grip's inner
 # edge (GameSir-style) combines the edge grip + the capture lip in one part.
 CRADLE_LIP = 2.8                             # DEEP lip overhanging the screen edge = face-down capture
+LIP_T = 1.6                                  # capture-lip thickness (z), measured down from FACE_Z
+LIP_CHAM = 0.8                               # lead-in chamfer on the lip's top inboard edge (snap the phone past it)
 GRIP_PAD_T = 1.6                             # TPU gripper wall thickness (soft edge grip)
 GRIP_PAD_LEN = 46.0                          # gripper length along the phone short edge (y)
+# v0.24d gripper TEETH (the GameSir/Abxylute detail v0.24c left out): a comb of
+# half-round ribs on the pad's phone-facing face, axis along z (the phone's
+# thickness), pitch along y. A flat TPU pad only resists the phone sliding in y by
+# friction; the teeth BITE the cased edge, so the phone can't creep or rotate in
+# the clamp — which is what actually keeps the screen square to the keyboard face.
+TOOTH_PITCH = 3.4                            # tooth pitch along y (13 teeth over the 46mm pad)
+TOOTH_R = 0.8                                # half-round tooth radius = 0.8mm bite into the cased edge
 MAG_D = 56.0                                 # N52 MagSafe ring OD
 MAG_REC_R = 28.6                             # ring recess radius (Ø57.2 for the Ø56 ring)
 MAG_REC_D = 1.8                              # ring recess depth (ring 2.0 -> 0.2 proud, phone rests on it)
 BOLT_Y = (46.0, 62.0)                        # bridge->right-grip bolt line (clear of J2 at y 12.5..33.5)
 BOLT_X = 83.3                                # bolt column: behind the right cradle wall (outboard of the phone edge)
-SPRING_Y = (24.0, 73.0)                      # 2 extension springs, flanking, inside the outer shroud
+# === v0.24d internal LANE PLAN =====================================================
+# v0.24c stacked things inside the enclosure: the FFC ran at y=24 directly UNDER
+# spring 0 (also y=24), their z bands overlapping — the coil would have sat on the
+# ribbon and abraded it, and the ribbon's service loop had nowhere to crumple that
+# wasn't a spring. And every cable was pinned to the OUTER tray's floor, which is
+# 1.4mm below the INNER shroud's floor, so across the span only the inner shroud
+# covers (worst at full extension) the cables hung in open air behind the device.
+#
+# Both are lane bugs, so the fix is one lane plan. Front -> back the enclosure is:
+#
+#     spring | FFC | power | spring          (y lanes, walled by printed ribs)
+#
+# and EVERY lane shares one z (LANE_Z), the mid-height of the inner shroud's
+# cavity. Nothing is stacked over anything; the springs are pushed out to the
+# enclosure's y extremes (a wider stance also resists jaw racking); the cables sit
+# inside the MOVING shroud's cavity, so they are enclosed at every extension by
+# construction, not by the tray happening to still be under them.
+CAV_Y0 = SHROUD_Y0 + SHROUD_CLR + 2 * SHROUD_WALL       # 10.15 — inner-shroud cavity, front
+CAV_Y1 = SHROUD_Y1 - SHROUD_CLR - 2 * SHROUD_WALL       # 86.85 — ... back
+CAV_Z0 = SHROUD_ZBOT + SHROUD_CLR + 2 * SHROUD_WALL     # -1.35 — ... floor
+CAV_Z1 = SHROUD_ZTOP - BR_PLATE_T - SHROUD_CLR - SHROUD_WALL   # 1.75 — ... ceiling
+LANE_Z = (CAV_Z0 + CAV_Z1) / 2.0             # 0.2 — the ONE z axis every lane shares
+SPRING_Y = (13.5, 83.5)                      # 2 extension springs, OUTBOARD lanes (sym about cy=48.5)
 SPRING_D = 4.0                               # extension-spring OD (fit model)
 SPRING_ANCHOR_X = 22.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
+FLEX_Y, FLEX_W, FLEX_T = 24.5, 9.5, 0.3      # FFC lane — J2's y centre (13.07..35.92), so the
+                                             #   16-way 0.5mm-pitch ribbon enters the ZIF dead straight
+POWER_Y, POWER_W, POWER_T = 40.0, 3.0, 2.2   # battery 2-wire lane — its own row, clear of both springs
+RIB_T = 1.2                                  # divider-rib thickness (3 perimeters at 0.4 nozzle)
+LANE_CLR = 1.0                               # cable <-> channel wall clearance, per side
+LANE_GAP_MIN = 2.0                           # --check: required clear y gap, spring lane <-> cable lane
+
+def _chan_bands():
+    """(y0, y1) of each cable channel = the lane plus its clearance, front to back."""
+    return [(FLEX_Y - FLEX_W / 2 - LANE_CLR, FLEX_Y + FLEX_W / 2 + LANE_CLR),
+            (POWER_Y - POWER_W / 2 - LANE_CLR, POWER_Y + POWER_W / 2 + LANE_CLR)]
+
+def _rib_bands():
+    """(y0, y1) of each divider rib: RIB_T thick, hugging both walls of each channel.
+    Printed into BOTH telescoping members so a cable is walled off from the spring
+    lanes over the whole run, at every extension."""
+    return [b for c0, c1 in _chan_bands() for b in ((c0 - RIB_T, c0), (c1, c1 + RIB_T))]
 # M3 flush-countersunk face hardware (v0.19, feedback: proud pan heads were
 # uncomfortable). DIN 965 90-degree head, dk<=6.0: cone face Ø6.2 with the head
 # nominally 0.1-0.3 sub-flush (FDM droop/elephant-foot budget); panel cones cut
@@ -622,9 +670,28 @@ def _grip_bridge_iface(part, side):
         inner = _cq_from_poly(shp_box(gxl + SHROUD_WALL, iy0 + SHROUD_WALL, sx_in + 2, iy1 - SHROUD_WALL),
                               izb + SHROUD_WALL, (izt - SHROUD_WALL) - (izb + SHROUD_WALL))
         part = part.union(outer.cut(inner))                 # closed box, open right end
-        for sy in SPRING_Y:                                 # spring hooks at the inner shroud's right end
-            part = part.union(cq.Workplane("XY").workplane(offset=izb + SHROUD_WALL)
-                              .center(sx_in - 3.0, sy).box(3.0, 3.0, 4.0, centered=(True, True, False)))
+        # v0.24d LANE RIBS: full-cavity-height dividers run the shroud's whole length,
+        # walling the FFC and the power cable into their own channels. The service
+        # loop can crumple all it likes at short spans — it has no path into a spring.
+        for ry0, ry1 in _rib_bands():
+            part = part.union(_cq_from_poly(shp_box(gxl + SHROUD_WALL, ry0, sx_in, ry1),
+                                            CAV_Z0, CAV_Z1 - CAV_Z0))
+        # v0.24d cable pass-throughs in the shroud's LEFT end wall. v0.24c closed that
+        # wall solid, so the ribbon and the battery leads had no way into the left grip
+        # (they were modelled straight through 1.4mm of PETG).
+        for cy0, cy1 in _chan_bands():
+            part = part.cut(_cq_from_poly(shp_box(gxl - 1, cy0, gxl + SHROUD_WALL + 1, cy1),
+                                          CAV_Z0, CAV_Z1 - CAV_Z0))
+        # spring HOOK LUGS, one per spring lane, at the shroud's open right end. The lug
+        # spans the shroud's full solid height (izb..izt) so the Ø4 spring works in the
+        # OUTER tray's deeper cavity on LANE_Z instead of being squeezed into the
+        # shallower inner cavity; a slot behind the end bar is the eye the spring's end
+        # hook drops over. Spring lanes only — the lug never enters a cable channel.
+        for sy in SPRING_Y:
+            part = part.union(_cq_from_poly(shp_box(sx_in - 6.0, sy - 2.5, sx_in + 3.0, sy + 2.5),
+                                            izb, izt - izb))
+            part = part.cut(_cq_from_poly(shp_box(sx_in - 2.4, sy - 1.6, sx_in + 0.6, sy + 1.6),
+                                          LANE_Z - 1.6, 3.2))
     return part
 
 def back_half(side):
@@ -787,20 +854,33 @@ def _bridge_build():
                                 BR_X_RIGHT - SHROUD_WALL, SHROUD_Y1 - SHROUD_WALL),
                         zb + SHROUD_WALL, zpi - (zb + SHROUD_WALL))
     br = box.cut(cav)
-    # (2) fixed spring anchor posts inside the cavity (the springs hook the inner shroud)
+    # (2) fixed spring anchor posts inside the cavity (the springs hook the inner
+    #     shroud), tall enough to carry the coil on the shared LANE_Z axis
     for sy in SPRING_Y:
         br = br.union(cq.Workplane("XY").workplane(offset=zb + SHROUD_WALL)
-                      .center(SPRING_ANCHOR_X, sy).box(3.0, 3.0, 4.0, centered=(True, True, False)))
+                      .center(SPRING_ANCHOR_X, sy)
+                      .box(3.0, 3.0, (LANE_Z + SPRING_D / 2 + 0.8) - (zb + SHROUD_WALL),
+                           centered=(True, True, False)))
+    # (2b) v0.24d LANE RIBS in the tray cavity, mirroring the shroud's. They can only
+    #      live where the moving shroud can never reach — i.e. right of its end at the
+    #      SHORTEST span — but that is the majority of the tray, and it is exactly the
+    #      stretch where the cables and the springs would otherwise share open cavity.
+    rib_x0 = _inner_right(deck.Config().phone_span_min) + 3.0
+    for ry0, ry1 in _rib_bands():
+        br = br.union(_cq_from_poly(shp_box(rib_x0, ry0, BR_X_RIGHT - SHROUD_WALL, ry1),
+                                    zb + SHROUD_WALL, zpi - (zb + SHROUD_WALL)))
     # (3) bolt bosses into the right grip (round, past the plate edge at BOLT_X)
     for by in BOLT_Y:
         br = br.union(cq.Workplane("XY").workplane(offset=zpi)
                       .center(BOLT_X, by).circle(2.7).extrude(BR_PLATE_T))
         br = br.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
                     .center(BOLT_X, by).circle(SCREW_HOLE_R).extrude(-(BR_PLATE_T + 0.2)))
-    # (4) cable window in the RIGHT end wall (FFC to J2 + battery leads to J3)
-    br = br.cut(cq.Workplane("XY").workplane(offset=zb + SHROUD_WALL + 0.4)
-                .center(BR_X_RIGHT - SHROUD_WALL / 2, 24.0)
-                .box(SHROUD_WALL + 1, 18.0, 3.2, centered=(True, True, False)))
+    # (4) cable windows in the RIGHT end wall — one per LANE (FFC to J2, battery leads
+    #     to J3), on the lane z band. v0.24c cut a single window at y 15..33, which the
+    #     power lane at y=40 missed entirely.
+    for cy0, cy1 in _chan_bands():
+        br = br.cut(_cq_from_poly(shp_box(BR_X_RIGHT - SHROUD_WALL - 1, cy0, BR_X_RIGHT + 1, cy1),
+                                  CAV_Z0 - 0.2, (CAV_Z1 + 0.2) - (CAV_Z0 - 0.2)))
     # (5) MagSafe ring recess in the tray top at the phone centre (0, cy). SECONDARY
     #     hold only — the clamp + deep lips do retention; a solid local backing keeps
     #     the recess from opening into the spring/cable cavity below.
@@ -818,19 +898,34 @@ def gripper(side):
     return _memo(f"gripper_{side}", lambda: _gripper_build(side))
 
 def _gripper_build(side):
-    """v0.24c soft TPU GRIPPER on a grip's inner edge (GameSir-style): a compliant
-    pad that grips the phone's cased short edge PLUS a capture LIP over the screen
-    edge — the combined soft grip + retention lip in one part. Print in TPU with the
-    keymats. Retention is mechanical (this lip + the rigid backstop + the clamp),
-    never the magnets — so the phone can't drop when used screen-down over your face.
-    CRADLE_LIP (lip depth) + the clamp spring are the face-down-capture tune."""
+    """v0.24d soft TPU GRIPPER on a grip's inner edge (GameSir / Abxylute-style): a
+    compliant pad on the phone's cased short edge, a comb of TEETH that bite that
+    edge, and a capture LIP over the screen edge — soft grip, anti-slide and
+    retention in one part. Print in TPU with the keymats. Retention is mechanical
+    (lip + teeth + the rigid backstop + the clamp), never the magnets, so the phone
+    can't drop when used screen-down over your face.
+
+    v0.24c had the pad and the lip but no teeth, so nothing but friction stopped the
+    phone creeping or rotating in y between the jaws. The teeth are half-round ribs
+    running along z (the phone's thickness) at TOOTH_PITCH along y: rolling them out
+    of a cylinder centred ON the pad face leaves exactly half proud, which is both
+    the shape that bites and the shape TPU prints cleanly without support."""
     cy = prod_cy(); s = 1 if side == "right" else -1
     xe = s * 82.6                                  # phone short edge on this side
     y0, y1 = cy - GRIP_PAD_LEN / 2, cy + GRIP_PAD_LEN / 2
     lo, hi = sorted((xe, xe - s * GRIP_PAD_T))     # protrudes INTO the well (phone compresses it)
     pad = _cq_from_poly(shp_box(lo, y0, hi, y1), RECESS_TOP, FACE_Z - RECESS_TOP)   # soft edge grip
+    face = xe - s * GRIP_PAD_T                     # the pad face the phone presses on
+    n = int(GRIP_PAD_LEN // TOOTH_PITCH)           # 13 teeth, centred on the pad
+    for i in range(n):
+        ty = cy - (n - 1) * TOOTH_PITCH / 2 + i * TOOTH_PITCH
+        pad = pad.union(cq.Workplane("XY").workplane(offset=RECESS_TOP)
+                        .center(face, ty).circle(TOOTH_R).extrude(FACE_Z - RECESS_TOP))
     lo2, hi2 = sorted((xe, xe - s * CRADLE_LIP))
-    lip = _cq_from_poly(shp_box(lo2, y0, hi2, y1), FACE_Z - 1.6, 1.6)               # capture lip over the screen
+    lip = _cq_from_poly(shp_box(lo2, y0, hi2, y1), FACE_Z - LIP_T, LIP_T)           # capture lip over the screen
+    # lead-in on the lip's top INBOARD edge: the phone snaps past a chamfer instead of
+    # having to be threaded in square, and the deep lip stays deep where it matters.
+    lip = lip.edges(f"|Y and {'<X' if s > 0 else '>X'} and >Z").chamfer(LIP_CHAM)
     return _to_trimesh(pad.union(lip), f"gripper_{side}")
 
 def magsafe_ring():
@@ -1004,10 +1099,11 @@ def spring_bodies(clamp_pos=None):
     """v0.24: the 2 extension springs (fit models), INSIDE the outer shroud — each
     runs from the fixed anchor (SPRING_ANCHOR_X) to the moving inner shroud's hook
     (near its right/open end). They stretch as the jaw pulls out and are fully
-    enclosed by the outer shroud at every extension."""
-    zc = SHROUD_ZBOT + SHROUD_WALL + SPRING_D / 2 + 0.6      # low in the cavity
+    enclosed by the outer shroud at every extension. v0.24d: on LANE_Z in the
+    OUTBOARD y lanes, so a coil is never stacked over a cable."""
+    zc = LANE_Z                                               # the shared lane axis
     x_fixed = SPRING_ANCHOR_X
-    x_move = _inner_right(clamp_pos) - 3.0                    # the inner shroud's spring hook
+    x_move = _inner_right(clamp_pos) + 1.8                    # the shroud's hook-lug eye bar
     out = []
     for sy in SPRING_Y:
         c = trimesh.creation.cylinder(radius=SPRING_D/2, height=abs(x_fixed - x_move), sections=16)
@@ -1028,16 +1124,19 @@ def _cable_run(clamp_pos, y, w, h, z):
     return _place(m, (lx + rx) / 2, y, z)
 
 def flex_body(clamp_pos=None):
-    """Bridge FFC (16-way ribbon, matrix): runs ENCLOSED through the shrouds at
-    y~24, low in the cavity. The variable span is taken up by a rolling service loop
-    that folds inside the enclosure; modeled as the straight enclosed run."""
-    return _cable_run(clamp_pos, 24.0, 12.0, 0.3, SHROUD_ZBOT + SHROUD_WALL + 0.9)
+    """Bridge FFC (16-way, 0.5mm pitch -> 9.5mm ribbon; the matrix jumper): runs
+    ENCLOSED through the shrouds in the FLEX lane, walled off from both springs by
+    the divider ribs, on LANE_Z inside the MOVING shroud's cavity (v0.24c pinned it
+    to the fixed tray's floor, 1.4mm below that cavity — so past the tray's left end
+    it hung in open air, worst at full extension). The variable span is taken up by a
+    rolling service loop folding inside its channel; modeled as the straight run."""
+    return _cable_run(clamp_pos, FLEX_Y, FLEX_W, FLEX_T, LANE_Z)
 
 def power_body(clamp_pos=None):
-    """Battery POWER cable (2-wire, left-grip 403040 -> J3 on the right board) — the
-    piece that was missing. Routed ENCLOSED through the shrouds alongside the FFC (a
-    separate y-lane / z-lane), with its own service-loop slack folding inside."""
-    return _cable_run(clamp_pos, 40.0, 3.0, 2.2, SHROUD_ZBOT + SHROUD_WALL + 0.5)
+    """Battery POWER cable (2-wire, left-grip 403040 -> J3 on the right board).
+    Routed ENCLOSED alongside the FFC in its OWN walled channel — same z, its own y
+    row — with its own service-loop slack folding inside."""
+    return _cable_run(clamp_pos, POWER_Y, POWER_W, POWER_T, LANE_Z)
 
 # ---- the 14 shell screws (5 per grip + 4 panel, v0.19) -----------------------------
 # M3 x 10 COUNTERSUNK (DIN 965, 90-degree, dk<=6.0), dropped in from the TOP: the
@@ -1298,15 +1397,21 @@ def _allowed(a, b):
     # the springs seat in anchors, and the phone is clamped in the bridge recess +
     # grip cradles (soft TPU pads = the real contact). All intended mating overlaps:
     if "bridge" in s and any(x.startswith(("back_", "grip_lid")) for x in s): return True  # tray lap slide+seat
-    if any(x.startswith("spring") for x in s): return True   # extension springs seat in their anchors
+    # v0.24d: a spring may only ever touch its OWN anchors — the tray's fixed post and
+    # the moving jaw's hook lug. v0.24c whitelisted "spring vs anything", which is how
+    # spring 0 came to share lane y=24 with the FFC, coil resting on ribbon, unflagged.
+    if any(x.startswith("spring") for x in s):
+        return any(x in ("bridge", "back_left") for x in s)
     if "phone" in s and any(x.startswith(("bridge", "back_", "cradle", "gripper", "magsafe")) for x in s): return True  # rests / clamped
     if any(x.startswith("gripper") for x in s) and any(x.startswith(("back_", "grip_lid")) for x in s): return True  # TPU gripper seats on the grip cradle
     if km and any(x.startswith(("cradle", "gripper")) for x in s): return True   # TPU grippers print with the mats
     if "magsafe" in s and any(x.startswith("bridge") for x in s): return True    # N52 ring seats in the tray recess
-    # the FFC is an APPROXIMATE floppy ribbon (straight-run fit model): it threads
-    # J2 -> the bridge service-loop channel -> J2, so overlaps with the walls/bridge
-    # it routes through are modeled contacts, not clashes.
-    if any(x in ("flex", "power") for x in s) and any(x.startswith(("back_", "bridge")) or ":J" in x for x in s): return True
+    # the FFC is an APPROXIMATE floppy ribbon (straight-run fit model) and has to pass
+    # THROUGH each grip's shell to reach its ZIF, so grip/connector overlaps are
+    # modeled contacts. The fixed TRAY is NOT on that list any more (v0.24c let it be):
+    # inside the tray the cable runs in a walled channel with real clearance, so any
+    # overlap there means it is buried in a wall — impossible, not "contact".
+    if any(x in ("flex", "power") for x in s) and any(x.startswith("back_") or ":J" in x for x in s): return True
     if "power" in s and "battery" in s: return True         # the power cable plugs the battery
     # a collapsed grip's inner mount screw grazes the fixed recess floor by <0.5mm;
     # the printed plate carries a local clearance dimple there.
@@ -1359,36 +1464,58 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
 
 
 def cable_enclosure(A, gap_x=6.0):
-    """v0.24c enclosure guard. The collide() pass only tests interpenetration, NOT
-    whether the FFC + power cable are actually SURROUNDED by shell — so an exposed
-    cable in the inter-grip gap passes collide() silently (exactly what a translucent
-    render can look like, and what the user must otherwise eyeball). This ray-casts
-    each cable outward in ±z (top/bottom) and ±y (front/back walls) at samples across
-    the OPEN gap between the two grip bodies and asserts a shell blocks every ray. The
-    connector ends (inside each grip, where the ribbon must exit to its ZIF) are
-    excluded — enclosure is only required across the span the tray bridges. Returns
-    the list of still-exposed (cable, x, open-directions) samples (empty == sealed)."""
+    """v0.24d enclosure guard. collide() only tests interpenetration, NOT whether the
+    FFC + power cable are actually SURROUNDED by shell — so an exposed cable in the
+    inter-grip gap passes collide() silently (exactly what a translucent render can
+    look like, and what you must otherwise eyeball).
+
+    The v0.24c version of THIS guard had the mirror-image blind spot: it ray-cast from
+    the cable's CENTRE LINE, so a cable sunk INSIDE a shroud wall reported "sealed" —
+    every ray promptly hit the wall it was embedded in — while its real envelope hung
+    in open air below that wall. Both halves of the run are now checked, over the
+    bridged span only (the connector ends inside each grip, where the ribbon must exit
+    to its ZIF, are excluded):
+
+      (a) SOLID — the clipped run may not intersect the fixed tray at all. A cable
+          inside a wall is not a routed cable, it is an impossible one.
+      (b) ENCLOSED — rays cast from just OUTSIDE the cable's ENVELOPE (±z off its
+          top/bottom faces, ±y off its side faces) must every one hit shell.
+
+    Returns the list of failing (cable, x, reasons) samples (empty == sealed)."""
     shell = trimesh.util.concatenate([A[n] for n in ("bridge", "back_left", "back_right") if n in A])
-    # the gap the tray must seal: right grip inner edge (+82.6) .. left grip inner edge.
     gxr = BR_X_RIGHT
-    gxl = min(A["back_left"].bounds[1][0], -BR_X_RIGHT)   # inner shroud right end (moves with the jaw)
     dirs = {"up": (0, 0, 1.0), "down": (0, 0, -1.0), "front": (0, -1.0, 0), "back": (0, 1.0, 0)}
-    exposed = []
+    bad = []
     for cab in ("flex", "power"):
         if cab not in A:
             continue
         m = A[cab]; lo, hi = m.bounds
         cy = (lo[1] + hi[1]) / 2.0; cz = (lo[2] + hi[2]) / 2.0
-        x0 = max(lo[0] + gap_x, gxl + gap_x); x1 = min(hi[0] - gap_x, gxr - gap_x)
+        x0, x1 = lo[0] + gap_x, min(hi[0] - gap_x, gxr - gap_x)
         if x1 <= x0:
             continue
+        # (a) the clipped run, as a solid, must sit in free space inside the tray
+        if "bridge" in A:
+            seg = _place(_box(x1 - x0, hi[1] - lo[1], hi[2] - lo[2]), (x0 + x1) / 2.0, cy, cz)
+            try:
+                inter = A["bridge"].intersection(seg)
+                vol = float(inter.volume) if inter is not None and hasattr(inter, "volume") else 0.0
+            except Exception:
+                vol = 0.0
+            if vol > 1.0:
+                bad.append((cab, round((x0 + x1) / 2.0, 1), [f"buried in bridge ({vol:.0f}mm3)"]))
+        # (b) enclosure, sampled off the cable's own surfaces rather than its centre
         for x in np.linspace(x0, x1, 30):
-            org = np.array([[x, cy, cz]])
+            org = {"up":    (x, cy, hi[2] + 0.15),
+                   "down":  (x, cy, lo[2] - 0.15),
+                   "front": (x, lo[1] - 0.15, cz),
+                   "back":  (x, hi[1] + 0.15, cz)}
             opend = [d for d, v in dirs.items()
-                     if not shell.ray.intersects_any(org, np.array([v], dtype=float))[0]]
+                     if not shell.ray.intersects_any(np.array([org[d]], dtype=float),
+                                                     np.array([v], dtype=float))[0]]
             if opend:
-                exposed.append((cab, round(float(x), 1), opend))
-    return exposed
+                bad.append((cab, round(float(x), 1), opend))
+    return bad
 
 
 def bed_fit(m, name):
@@ -1443,6 +1570,28 @@ def main():
         # v0.24: the clamp is a MECHANISM — check it at min / nominal / max span so
         # nothing clashes anywhere in the travel and the rails stay engaged.
         cfg = deck.Config()
+        # v0.24d LANE PLAN, checked before any mesh work (pure numbers, so a lane
+        # regression fails in milliseconds instead of after a 4-minute build): every
+        # cable gets its own y row BETWEEN the two springs, never stacked on one.
+        for nm, (ly, lw) in (("flex", (FLEX_Y, FLEX_W)), ("power", (POWER_Y, POWER_W))):
+            assert min(SPRING_Y) < ly < max(SPRING_Y), f"{nm} lane y={ly} is not between the springs"
+            for sy in SPRING_Y:
+                gap = abs(sy - ly) - (SPRING_D + lw) / 2.0
+                assert gap >= LANE_GAP_MIN, (f"{nm} lane (y={ly}) is only {gap:.1f}mm clear of the "
+                                             f"spring lane at y={sy} — min {LANE_GAP_MIN}mm")
+        for a, b in zip(_chan_bands(), _chan_bands()[1:]):
+            assert b[0] - a[1] >= 2 * RIB_T, "cable channels are too close to wall off from each other"
+        assert CAV_Z0 <= LANE_Z - POWER_T / 2 and LANE_Z + POWER_T / 2 <= CAV_Z1, \
+            "the lane axis does not fit inside the MOVING shroud's cavity"
+        for sy in SPRING_Y:                       # the outboard lanes must still fit the cavity
+            assert CAV_Y0 <= sy - SPRING_D / 2 and sy + SPRING_D / 2 <= CAV_Y1, \
+                f"spring lane y={sy} does not fit inside the enclosure cavity {CAV_Y0}..{CAV_Y1}"
+        ribs = _rib_bands()                       # ...and no divider rib may foul one
+        assert min(r[0] for r in ribs) - (SPRING_Y[0] + SPRING_D / 2) >= 1.0 and \
+               (SPRING_Y[1] - SPRING_D / 2) - max(r[1] for r in ribs) >= 1.0, \
+            "a cable channel's divider rib fouls a spring lane"
+        print(f"  lanes y: spring {SPRING_Y[0]} | flex {FLEX_Y} | power {POWER_Y} | spring {SPRING_Y[1]}"
+              f"  (all on z={LANE_Z:.2f}, moving-shroud cavity {CAV_Z0:.2f}..{CAV_Z1:.2f}) ✅")
         states = [("min", cfg.phone_span_min), ("nominal", None), ("max", cfg.phone_span_max)]
         anyclash = False
         for name, cp in states:
@@ -1456,8 +1605,8 @@ def main():
                   f"cable enclosure {'SEALED' if not exposed else f'{len(exposed)} EXPOSED'} {tag}")
             for a, b, v in clashes[:15]:
                 print(f"  CLASH   {a:22} <-> {b:22}  overlap {v} mm^3")
-            for cab, x, opend in exposed[:8]:
-                print(f"  EXPOSED {cab:22} x={x:7.1f}  open: {','.join(opend)}")
+            for cab, x, why in exposed[:8]:
+                print(f"  EXPOSED {cab:22} x={x:7.1f}  {','.join(why)}")
             if name == "nominal":
                 for a, b, v in sorted(contacts, key=lambda t: -t[2])[:6]:
                     print(f"  contact {a:22} <-> {b:22}  overlap {v} mm^3 (intended mating)")
@@ -1539,14 +1688,17 @@ def _asm_col(k):
 
 def _render_parts(A):
     titles = {"back_right": "right back grip (GROUND — bridge-mount bosses + right cradle)",
-              "back_left": "left back grip (moving jaw — inner shroud + left cradle + spring hook)",
-              "bridge": "telescoping bridge — fixed OUTER SHROUD (encloses springs + FFC + power cable)",
+              "back_left": "left back grip (moving jaw — inner shroud + lane ribs + left cradle + spring hook lugs)",
+              "bridge": "telescoping bridge — fixed tray (lane channels: spring | FFC | power | spring)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
+              "gripper_right": "right TPU gripper (toothed edge pad + capture lip)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
               "nub_cap": "nub cap — classic ThinkPad soft-dome replica (RED TPU, dot grid; genuine caps also fit)",
               "keymat_right": "right keymat (plungers + hinge web)"}
     for nm, title in titles.items():
+        if nm not in A:
+            continue
         render_iso([(A[nm], [0.4, 0.45, 0.5, 1])], os.path.join(RENDERS, f"part_{nm}.png"),
                    f"thumbdeck — {title}", elev=40, azim=-60)
 
