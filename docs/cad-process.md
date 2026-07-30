@@ -226,15 +226,57 @@ cavity stack above is untouched.
 - **TPU grippers (`gripper_left`, `gripper_right`)** — the phone's **mechanical**
   retention (GameSir-style). Each is a soft TPU 95A part on a grip's inner edge that
   protrudes **into the well**: a compliant **edge-grip pad** (1.6 mm, the phone
-  compresses it), a comb of **13 half-round TEETH** (v0.24d, 3.4 mm pitch, 0.8 mm
-  proud, axis along the phone's thickness) that bite the cased edge so the phone
-  can't creep or rotate out of square, plus a **deep capture lip** (CRADLE_LIP =
-  2.8 mm) overhanging the screen edge, with a 0.8 mm lead-in chamfer on its top
-  inboard edge. Lip + teeth + clamp are what hold the phone — so it's safe used
-  **screen-down over your face** (Switch/Steam-Deck style), never relying on the
-  magnets. The teeth are rolled out of cylinders centred *on* the pad face, which
-  leaves exactly half proud: the shape that bites, and the shape TPU prints without
-  support. Print in TPU with the keymats.
+  compresses it), a comb of half-round **TEETH** (v0.24d, 3.4 mm pitch, 0.8 mm proud,
+  axis along the phone's thickness) that bite the cased edge so the phone can't creep
+  or rotate out of square, plus a **capture lip** hooking over the phone's front face,
+  with a 0.8 mm lead-in chamfer on its top inboard edge. Lip + teeth + clamp are what
+  hold the phone — so it's safe used **screen-down over your face** (Switch/Steam-Deck
+  style), never relying on the magnets. The teeth are rolled out of cylinders centred
+  *on* the pad face, which leaves exactly half proud: the shape that bites, and the
+  shape TPU prints without support. Print in TPU with the keymats.
+- **Capture-lip DATUMS (v0.24e)** — the lip is dimensioned off two surfaces that
+  physically exist, because v0.24d referenced two that don't and reduced the lip to
+  decoration without anything flagging it:
+  - **Underside = `PHONE_FACE_Z`** (`RECESS_TOP + PHONE_TC` = 14.5), the phone's front
+    face. v0.24d used `FACE_Z - LIP_T` = 13.1, which is **1.4 mm inside the phone body** —
+    modelled buried in the phone, leaving 0.2 mm of actual capture. The lip now stands
+    proud of the keyboard face by `LIP_T - 0.2` = 2.2 mm, i.e. a bezel over the phone's
+    edge, which is what every commercial phone clamp has.
+  - **Overhang = `LIP_OVER` past the TOOTH CREST**, not past the nominal phone-edge
+    plane. The pad + teeth stand 2.4 mm proud of that plane, so the clamped phone's edge
+    rests on the crest; measuring a "2.8 mm deep lip" from the nominal plane delivered
+    **0.4 mm** of real overhang. `lip_depth() = GRIP_PAD_T + TOOTH_R + LIP_OVER`.
+  `LIP_OVER` must exceed a phone case's front edge radius (~1.0–1.5 mm) or the lip lands
+  on the case's chamfer and the phone's weight becomes a force spreading the jaws. The
+  lip's **underside stays dead flat** for the same reason. `--check` asserts all of it.
+- **The lip is TPU, and nothing rigid is ever over the screen (v0.24e).** A rigid PETG
+  hook over the phone was built and rejected: **a hook at a fixed z can only capture a
+  phone whose cased thickness is ≤ nominal** — a thicker case puts the front face above
+  the lip's underside, the jaw can't close, and the capture silently degrades to a side
+  pad. TPU deforms and part-captures where PETG fails hard, and printed PETG on cover
+  glass is a scratch source. Stiffness and thickness-compliance are both +z, so the lip
+  can't give you both; the compliance has to be the TPU. What survives from the rigid
+  version is `_gripper_retainer`, which caps the lip's **root** so the gripper can't peel
+  off (review's real finding — `gripper()` is a plain L-section with no dovetail or screw)
+  and stops `RETAIN_CLR` = 0.4 mm **outboard of the clamped phone edge**, leaving 3.4 mm
+  of lip free to flex. Wall rises to `retain_top()`; `--check` asserts the retainer never
+  overhangs the phone and that the free flexing length survives.
+- **Insertion headroom (v0.24e).** The jaw must open to
+  `P + lip_depth() + GRIP_PAD_T + TOOTH_R` = P + 7.8 — seat one edge on its tooth crest,
+  then translate the other past the far lip. Tilting in doesn't help: the phone's xz
+  diagonal is longer than its length and the well is exactly `PHONE_TC` deep. Travel used
+  to equal the phone range exactly, so the largest supported phone couldn't be fitted at
+  all. `clamp_insert_clr` = 9.0 → jaw opens to 179, and `INNER_LEN` went **62 → 67**
+  because every mm of opening costs a mm of telescoping overlap (13.35 mm at full open,
+  against the ≥ 12 assert). `--check` runs a fourth **"open"** state — the widest the jaw
+  goes, not the biggest phone, is the worst case for both overlap and cable enclosure.
+- **Bottom SHELF (v0.24e)** — a `SHELF_H` = 3 mm upstand along the tray top's low-y edge
+  plus a tab on each grip's cradle, landing on the nominal phone's bottom long edge.
+  Held normally the phone's weight acts along **−y**, and nothing was under it: the tray
+  sits *behind* the phone (z), not *below* it (y), so that load rode entirely on clamp
+  friction — the one path that decays (TPU creep, dust, a glossy case). The shelf makes
+  it a bearing load. It only blocks −y, so the phone still drops straight in and lifts
+  straight out.
 - **MagSafe ring (`magsafe_ring`)** — Ø56 N52 ring in the tray-centre recess, a
   **SECONDARY** back-hold + snap only. Because the clamp + lips retain the phone, the
   ring isn't load-bearing, so its slight mis-alignment across phone/case sizes is a

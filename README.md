@@ -219,7 +219,10 @@ Decisions that are **yours to make** — they change the shape of the build:
    tall so the 6-row field stays short). Still an open call: a flat ortho grid vs a **canted/fanned
    arc** to feel more like a controller — the arc is a keymat/standoff change, not a pitch change.
 2. **Phone-fit window.** v0.24's expanding clamp fits phones with a **130–170 mm long edge** (cased)
-   out of the box — the springs take up the rest. The nominal near-flush point is tuned to the
+   out of the box — the springs take up the rest. The jaw itself opens to **179 mm**: it has to
+   clear the capture hooks to let the largest phone in, and v0.24e found that until then the travel
+   was exactly the phone range, so a 170 mm phone couldn't physically be fitted. The nominal
+   near-flush point is tuned to the
    **S25 Ultra + a 1.2 mm case**; `phone_span_min/max` (and `phone_t`/`case_t` for the recess depth)
    re-set the range and re-generate the shells (one command; boards unaffected).
 3. **Cell size — settled in v0.18:** standard **403040 (~450–500 mAh)** in the left grip cavity (the

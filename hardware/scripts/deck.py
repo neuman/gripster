@@ -164,7 +164,27 @@ class Config:
     # long edge (phone_h + 2*case_t = 165.2) keeps the right grip's ground position;
     # smaller phones collapse the left grip inward. See deck.product() + deck3d bridge().
     phone_span_min: float = 130.0  # smallest cased long-edge the clamp closes onto (iPhone-mini class)
-    phone_span_max: float = 170.0  # largest cased long-edge the rails reach (S25U-plus class)
+    phone_span_max: float = 170.0  # largest cased long-edge the CLAMP HOLDS (S25U-plus class)
+    # v0.24e: the MECHANISM has to open FURTHER than the biggest phone it holds. You seat
+    # one short edge under its capture lip, then translate the other edge past the opposite
+    # lip. Rotating the phone in does not help — its xz diagonal is LONGER than its length,
+    # and the well is exactly PHONE_TC deep, so there is no room to dip a corner under the
+    # lip plane. Working it out in the product frame: the cradle walls are `clamp_pos`
+    # apart, so the tooth crests are `clamp_pos - 2*(GRIP_PAD_T+TOOTH_R)` apart and the lip
+    # tips `clamp_pos - 2*lip_depth()`. Seating one edge on its crest and clearing the far
+    # lip needs `clamp_pos >= P + lip_depth() + GRIP_PAD_T + TOOTH_R`, i.e. 7.8mm at the
+    # v0.24e lip, not the 3.0mm "one lip overhang" first assumed.
+    #
+    # Until v0.24e the travel was exactly 130-170, the same as the phone range, so the
+    # largest supported phone could not be fitted past a real lip at all. deck3d asserts
+    # this figure against its own lip geometry, so the two cannot drift apart.
+    clamp_insert_clr: float = 9.0  # extra jaw opening beyond phone_span_max, for insertion
+
+    @property
+    def clamp_open_max(self) -> float:
+        """Widest the jaw actually travels — the load/enclosure worst case, so this (not
+        phone_span_max) is what --check must validate the mechanism at."""
+        return self.phone_span_max + self.clamp_insert_clr
     # v0.11: trackpad = a PCB-INTEGRATED capacitive pad (copper on the front, ~34x26mm
     # so it fits the grip's upper zone with no overhang) driven by an Azoteq IQS7211E
     # controller on the BACK. Unlike a Cirque FFC module this is turnkey-friendly (just

@@ -3,7 +3,149 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.24d (first entry).
+current design is rev-A / v0.24e (first entry).
+
+## v0.24e — the capture lip actually captures (2026-07-30, branch main)
+
+User review of the assembled GLB: *"the lips of the grippers are submerged within the
+phone body… are they actually large enough to hold a phone with the gripster fully
+inverted?"* and *"is the grip strength really enough or do we need a small shelf?
+Phones dropping out is a dealbreaker."* Both were right, and the arithmetic is worse
+than the observation. **v0.24d had no working capture lip at all** — retention was
+friction, and friction does not have the margin.
+
+### The lip was measured off two planes that don't exist
+
+- **Underside.** It sat at `FACE_Z - LIP_T` = 13.1. A nominal cased phone's front face
+  is at `RECESS_TOP + PHONE_TC` = **14.5**. The lip was modelled **1.4 mm inside the
+  phone body**, so only its top 0.2 mm was ever above the screen.
+- **Overhang.** `CRADLE_LIP` = 2.8 was measured from the *nominal* phone-edge plane
+  (x = ±82.6). But the pad (1.6) and its teeth (0.8) stand 2.4 mm proud of that plane,
+  so the clamped phone's edge rests on the **tooth crest** at 80.2, against a lip inner
+  edge at 79.8 — **0.40 mm** of real overhang.
+- Review then found the 0.4 was itself optimistic: `LIP_CHAM` = 0.8 sits on the lip's
+  *top inboard* edge, which is precisely the sliver above the phone, so net capture over
+  the front face was **≈ −0.2 mm — a clearance gap**. And because the lip's inner edge
+  was 0.4 mm *inboard of the tooth crest*, the soft lip, not the teeth, was the clamp
+  contact: **the v0.24d teeth were dead geometry.**
+
+Fixed by referencing surfaces that physically exist: `PHONE_FACE_Z` for the underside,
+and `lip_depth() = GRIP_PAD_T + TOOTH_R + LIP_OVER` so `LIP_OVER` is overhang past what
+the phone actually touches. `--check` asserts both.
+
+### The lip stays TPU. A rigid hook was tried and rejected.
+
+An adversarial review refuted the all-TPU lip — it passes its bending check comfortably
+(b = 60, TPU 95A at a pessimistic E = 20 MPa → 0.47 mm tip deflection at 10 g, 16 % of
+the overhang) but review raised four modes bending never captures: **gripper pull-off**
+(`gripper()` is a plain L-section with no dovetail, undercut or screw, so the whole
+retention chain hung off a friction joint), **creep** under a deck stored face-down,
+**temperature** (TPU 95A loses 35–45 % of its modulus at 50 °C, 60–70 % at 70 °C), and
+**asymmetric load** (the phone rotates about one edge, so one lip takes all of it).
+
+So a rigid PETG hook over the phone was built — and then **rejected on user review, which
+was right**, for a reason none of the four reviewers raised:
+
+> **A rigid hook at a fixed z can only capture a phone whose cased thickness is ≤ nominal.**
+> The lip's underside is `PHONE_FACE_Z`, a 9.4 mm cased phone. A thicker case puts the
+> phone's front face *above* that plane, so its edge butts into the lip's z band and the
+> jaw cannot close. The lip degenerates into a side pad and the capture is silently gone.
+
+TPU fails gracefully in that case — it deforms, rides up, still part-captures — where
+PETG fails hard. And printed PETG layer lines on cover glass are a scratch source; TPU
+spreads the contact. Stiffness and thickness-compliance are the *same* direction (+z),
+so a lip cannot provide both: **the compliance has to be TPU, and the lip is the only
+place it can live** without moving the phone's back datum.
+
+What survives from the rigid version is the part that never touched the phone: a
+**`_gripper_retainer`** caps the TPU lip's **root** so the gripper cannot peel off, and
+stops `RETAIN_CLR` = 0.4 mm **outboard of the clamped phone edge** — so no rigid material
+is ever over the screen, and the 3.4 mm of lip inboard of it stays free to flex, which is
+exactly where a thick case needs give. Pull-off is solved; compliance and screen safety
+are kept. The lip's top inboard edge carries the lead-in chamfer; its **underside stays
+dead flat**, because a chamfer there would turn the phone's weight into a jaw-spreading
+wedge.
+
+**Known limitation, stated rather than hidden:** thickness compliance is only what the
+TPU lip can flex. Cases meaningfully thicker than nominal still lose capture. The real
+fix is a compliant pad *behind* the phone so the screen plane stays put regardless of
+case thickness — but that drops the tray floor and cascades into `SHROUD_ZTOP`, the
+v0.24d lane plan, the MagSafe recess and the v0.23 back crown, so it is not taken here.
+
+### Insertion: the mechanism couldn't fit its own largest phone
+
+Travel was exactly 130–170 — *identical* to the phone range — so at 170 there was zero
+opening left. With a real lip that is fatal. Rotating the phone in doesn't help: its
+xz diagonal (170.3) is longer than its length, and the well is exactly `PHONE_TC` deep.
+The only path is seat-one-edge-then-translate, which needs
+
+    clamp_pos ≥ P + lip_depth() + (GRIP_PAD_T + TOOTH_R) = P + 7.8
+
+not the "one lip overhang" (3.0) first assumed. `clamp_insert_clr` = **9.0**, so the jaw
+opens to **179**. Every mm of opening costs a mm of telescoping overlap, so `INNER_LEN`
+goes **62 → 67** to keep the enclosure sealed: overlap at *full open* is 13.35 mm,
+still over the ≥ 12 assertion. `--check` now runs a fourth **"open"** state, because the
+widest the jaw goes — not the biggest phone — is the real worst case.
+
+### Grip strength: the math, and why the shelf is justified
+
+Statics: the springs pull the moving jaw with total `F_s`; that force passes through the
+phone, so the normal force at **each** of the two grippers is `F_s` (not `F_s/2`).
+Holding force = `2·μ·F_s`.
+
+| `F_s` | μ | hold | slips at (0.30 kg phone) |
+|---|---|---|---|
+| 10 N | 0.6 (molded-TPU optimism) | 12.0 N | **4.1 g** |
+| 10 N | 0.40 (glazed, oily, dusty) | 8.0 N | **2.7 g** |
+| 10 N | 0.25 (printed ridges on a glossy PC case) | 5.0 N | **1.7 g** |
+| 20 N | 0.6 | 24.0 N | 8.2 g |
+
+Printed TPU is not molded TPU — layer ridges mean the pad contacts a smooth case only on
+ridge crests, and elastomer friction is adhesion-dominated, so **μ ≈ 0.25–0.45 is the
+defensible design range, not 0.6**. Review also derates `N` itself: the spring pulls at
+`LANE_Z` = 0.2 while the phone contact acts at pad mid-height ≈ 9.9, and that ~9.7 mm
+offset is a permanent racking couple reacted as slide friction in the shroud — roughly
+`N ≈ 0.7·F_s`. Net: **the phone slips at 2–3 g**, which is ordinary handling.
+
+Held normally, gravity acts along **−y**, and nothing was under the phone's bottom long
+edge — the tray sits *behind* it (z), not *below* it (y). So that load rode entirely on
+the one path that decays. **`SHELF_H` = 3 mm upstand** along the tray top's low-y edge
+plus a tab on each grip's cradle turns it into bearing (contact stress 0.05 MPa —
+nothing). It blocks only −y, so the phone still drops straight in and lifts straight
+out. Honest caveats: it does nothing for the device held **upside down** (+y), where
+friction still rules; and it can't live on the moving inner shroud, whose front wall is
+inset to y ≥ 8.75, *inside* the phone's 8.5 footprint — so at long spans ~40 mm of the
+phone's bottom edge overhangs the tray shelf and is carried by the cradle tabs.
+
+Worth recording: **no commercial controller has a bottom shelf** — Backbone, Kishi,
+GameSir and the Abxylute all leave both long edges clear. They can, because molded
+liners and higher clamp force give them the friction we don't have.
+
+### Springs: the anchor moves, and the spring type is still wrong
+
+`SPRING_ANCHOR_X` **22 → 76**. At 22 the installed length ran 7.85 → 47.85 mm — 510 %
+extension, which no coil spring survives — and because an extension spring is weakest
+when least stretched, the **smallest phones would have got the weakest clamp**. At 76 it
+runs 61.85 → 105.85 mm, a **1.71:1** length ratio instead of 6.1:1.
+
+That makes the spring *buildable*, not *right*. Review closed the loop on the numbers:
+a Ø4 / 0.5 mm music-wire spring at C = 7 caps initial tension at **F0 ≈ 1.85 N/spring,
+not the 3 N assumed** — τ_i would need ~259 MPa against a ~160 MPa limit — so min-span
+clamp lands near 5.8 N total, not 8.1. And the spring is **fatigue-limited** (τ ≈
+870–930 MPa against an ~843 MPa cyclic allowable, cycling on every insertion), while a
+**hooked extension spring's failure mode is total release**. None of Backbone, Kishi,
+GameSir or Abxylute uses hooked extension springs: they use **compression springs
+captive in the telescoping bridge**, or a **constant-force spiral**. That is a component
+choice for the user to make, so it is flagged, not silently changed.
+
+**Also flagged, not fixed:** the assembly GLB used to seat the phone by its *camera-bump
+tip* on the recess floor (a v0.18 rigid-well leftover), which put its screen 0.82 mm
+above `PHONE_FACE_Z` and is why the lip still rendered buried. It now seats by the
+**screen**, so the GLB and the fit model agree — and that makes visible a real
+interference the old datum was hiding: a bare S25U's camera bump stands ~2.0 mm proud of
+its back while a 1.2 mm case covers only 1.2 of it, so **a flat full-width tray cannot
+accept a phone whose bump exceeds its case thickness**. Either the tray needs a bump
+relief or it needs to narrow toward the Kishi/Backbone rail form.
 
 ## v0.24d — enclosure lane plan + gripper teeth (2026-07-28, branch feature/expanding-clamp)
 

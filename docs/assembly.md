@@ -151,18 +151,29 @@ serviced through the left grip, not the panel).
    First power-up: leave the nub untouched for the first ~2 s (32-sample zero
    calibration); axis flips/swaps are DT properties in `thumbdeck.dts`, not
    code.
-8. **Grippers + MagSafe (v0.24):** press the two **TPU grippers** onto the grips'
-   inner edges — each seats against the rigid backstop wall so its soft pad + deep
-   capture lip protrude into the well (a drop of CA if loose). **Teeth face the
-   phone** (v0.24d: 13 half-round ribs down the pad's inner face — they bite the
-   cased edge so the phone can't creep or rotate; a gripper pressed on backwards
-   will hold, badly, and is the first thing to check if the screen won't stay
-   square). These + the clamp are the **mechanical** hold, so the phone is safe
-   even used screen-down. Then
+8. **Grippers + MagSafe (v0.24):** **slide** the two **TPU grippers** in from the
+   **y end of each cradle, under the rigid retainer** — they are trapped by it, not
+   pressed on, so don't push them straight in from the front and don't glue them. **Teeth face the phone** (half-round ribs down the pad's inner
+   face — they bite the cased edge so the phone can't creep or rotate; a gripper in
+   backwards will hold, badly, and is the first thing to check if the screen won't
+   stay square). The gripper is **biased toward the bottom** of the cradle, not
+   centred — once the bottom shelf datums the phone by its lower long edge, a
+   centred pad would miss the bottom of every short phone. Push it down against the
+   shelf end of the slot. **v0.24e:** the **TPU lip** is what retains the phone — it
+   stays soft so it can flex for thicker cases and can't scratch cover glass; the
+   shell's retainer only stops the gripper peeling off and never reaches over the
+   screen. **Don't run without a gripper** — there is no rigid backup over the phone.
+   Retention is **mechanical**, so the deck is safe used screen-down. To fit a phone:
+   pull the jaws apart, **seat one short edge under its lip first**, then push the
+   other edge in — it will not drop straight down past both lips. To remove, hold the
+   jaws open and lift the phone **up over the 3 mm bottom shelf**; the lip undersides
+   are deliberately square and won't cam the phone out, which is the same reason it
+   can't fall out. **Very thick cases:** compliance is only what the TPU lip can flex,
+   so a chunky rugged case may push the lip aside and lose positive capture — check the
+   phone can't be lifted straight out before trusting it screen-down. Then
    seat the **MagSafe ring** in the tray-centre recess (epoxy the annulus) — this
    is a **secondary** snap only, not load-bearing, so exact alignment across phone
-   sizes doesn't matter. To fit a phone: pull the left grip out against the
-   springs, drop the phone in, release — it clamps by the short edges. Servicing
+   sizes doesn't matter. Servicing
    the battery means opening the **left grip** (5 screws, lid, keymat, board).
 
 ## 3. First flash (one-time SWD, then UF2 forever)

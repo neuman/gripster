@@ -183,9 +183,22 @@ def _add_phone(scene, root, prod):
     """Insert the real Samsung S25 Ultra model (assets/s25_ultra.glb) in place of
     the old black slab, KEEPING its own materials (screen texture, glass, cameras).
     The source model's axes: X = thickness (+X = screen face, -X = camera bump),
-    Y = length, Z = width. Placement: screen faces OUT (+z, out the keyboard face)
-    and the camera bump (deepest back point) sits FLUSH with the panel's well floor
-    (WELL_FLOOR) so the cameras rest on the panel instead of clipping through it.
+    Y = length, Z = width. Placement: screen faces OUT (+z, out the keyboard face).
+
+    v0.24e — the DATUM changed, and it matters. This used to seat the camera-bump tip
+    on the recess floor, a leftover from the v0.18 rigid well (which had a bump pocket).
+    Under the v0.24 clamp the phone is CASED and rests on its case back, and every
+    retention dimension is referenced to `deck3d.PHONE_FACE_Z` — the front face of a
+    nominal cased phone. Seating by the bump put this model's screen 0.82mm above that
+    plane, so the capture lip rendered buried in the phone even when it was correctly
+    placed against the fit model. The screen is now pinned to PHONE_FACE_Z, so the GLB
+    and the fit model agree and the lip reads as it is built.
+
+    Consequence, deliberately left visible: this is a BARE S25U whose camera bump stands
+    ~2.0mm proud of its back, while a 1.2mm case back only covers 1.2mm of that — so the
+    bump now shows ~0.8mm INTO the flat tray. That is a real interference, not a render
+    artifact: a flat full-width tray cannot accept a phone whose bump exceeds its case
+    thickness. See docs/design-decisions.md (v0.24e, "camera bump vs the flat tray").
     All transforms baked into the vertices (viewer-proof; see module docstring)."""
     psc = trimesh.load(PHONE_GLB)
     nodes = list(psc.graph.nodes_geometry)
@@ -200,7 +213,7 @@ def _add_phone(scene, root, prod):
     probe = full.copy(); probe.apply_transform(M); bb = probe.bounds
     ctr = (bb[0] + bb[1]) / 2
     tx, ty = -ctr[0], (prod["phone"]["y"] + prod["phone"]["h"]/2) - ctr[1]  # x=0, y = phone centre
-    tz = deck3d.RECESS_TOP - bb[0][2]                 # camera tip (min z) -> bridge recess floor
+    tz = deck3d.PHONE_FACE_Z - bb[1][2]               # SCREEN (max z) -> the cased-phone front face
     T = np.eye(4); T[:3, 3] = [tx, ty, tz]
     Mfull = T @ M
     scene.graph.update(frame_to="phone", frame_from=root, matrix=np.eye(4))
@@ -212,7 +225,9 @@ def _add_phone(scene, root, prod):
                            parent_node_name="phone")
     fb = full.copy(); fb.apply_transform(Mfull)
     print(f"  phone: S25U {fb.extents[0]:.1f}x{fb.extents[1]:.1f}x{fb.extents[2]:.1f}mm, "
-          f"screen z={fb.bounds[1][2]:.2f} (face {deck3d.FACE_Z}), back z={fb.bounds[0][2]:.2f} (recess floor {deck3d.RECESS_TOP:.2f})")
+          f"screen z={fb.bounds[1][2]:.2f} (PHONE_FACE_Z {deck3d.PHONE_FACE_Z:.2f}, lip underside), "
+          f"bump tip z={fb.bounds[0][2]:.2f} (recess floor {deck3d.RECESS_TOP:.2f} "
+          f"-> {deck3d.RECESS_TOP - fb.bounds[0][2]:+.2f} interference)")
 
 def main():
     prod = deck._last_prod = deck.product(deck.Config())

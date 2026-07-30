@@ -145,7 +145,7 @@ img { max-width: 100%; display: block; }
 }
 .gv-pin-dot {
   display: block; width: 14px; height: 14px; margin: 6px; border-radius: 50%;
-  background: var(--accent); border: 2px solid #fff;
+  background: transparent; border: 2px solid #fff;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent), var(--shadow);
 }
 .gv-pin::after {
@@ -154,7 +154,7 @@ img { max-width: 100%; display: block; }
 }
 @keyframes pulse { 0% { transform: scale(0.6); opacity: 0.7; } 100% { transform: scale(1.5); opacity: 0; } }
 .gv-pin.is-occluded { opacity: 0.28; }
-.gv-pin.is-active .gv-pin-dot { background: #fff; box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+.gv-pin.is-active .gv-pin-dot { background: transparent; box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
 .gv-pin.is-active::after { animation: none; }
 @media (prefers-reduced-motion: reduce) { .gv-pin::after { animation: none; } }
 

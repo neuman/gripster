@@ -303,24 +303,78 @@ SHROUD_ZTOP = RECESS_TOP                     # 5.1 — top plate top = recess fl
 SHROUD_WALL = 1.4                            # shroud wall thickness
 SHROUD_CLR = 0.35                            # inner<->outer nesting slide clearance (coupon-tune)
 OUTER_LEFT = -45.0                           # fixed outer-shroud left end (right of the -49.65 min left-jaw)
-INNER_LEN = 62.0                             # moving inner-shroud length (overlap >=17mm at max span)
+INNER_LEN = 67.0                             # moving inner-shroud length. v0.24e: 62 -> 67, bought
+                                             #   back the 9mm of insertion headroom the capture
+                                             #   lips need — every extra mm of jaw opening costs a
+                                             #   mm of telescoping overlap, and the enclosure
+                                             #   assertion (>=12mm) has to hold at FULL open.
 # v0.24c: 2-part TRAY simplification (drop the 3-stage gear) + face-down MECHANICAL
 # capture. The phone is trapped between the tray (behind) and DEEP soft lips (front)
 # so it can't fall toward your face when used screen-down (Switch/Steam-Deck style) —
 # retention is mechanical, never the magnets. A soft TPU GRIPPER on each grip's inner
 # edge (GameSir-style) combines the edge grip + the capture lip in one part.
-CRADLE_LIP = 2.8                             # DEEP lip overhanging the screen edge = face-down capture
-LIP_T = 1.6                                  # capture-lip thickness (z), measured down from FACE_Z
-LIP_CHAM = 0.8                               # lead-in chamfer on the lip's top inboard edge (snap the phone past it)
 GRIP_PAD_T = 1.6                             # TPU gripper wall thickness (soft edge grip)
-GRIP_PAD_LEN = 46.0                          # gripper length along the phone short edge (y)
+GRIP_PAD_LEN = 60.0                          # gripper length along the phone short edge (y)
+# v0.24e: the pad is biased BELOW the phone's y centre. Once the bottom shelf exists the
+# phone is datumed by its BOTTOM long edge, not centred — a short-edge-66.6 phone rests
+# at y 8.5..75.1, not 15.2..81.8 — so a pad centred on cy=48.5 would miss the bottom of
+# every small phone. 43.0 covers an 80.0 and a 66.6 short edge.
+GRIP_PAD_CY = 43.0                           # gripper y centre (vs the phone/grip cy of 48.5)
 # v0.24d gripper TEETH (the GameSir/Abxylute detail v0.24c left out): a comb of
 # half-round ribs on the pad's phone-facing face, axis along z (the phone's
 # thickness), pitch along y. A flat TPU pad only resists the phone sliding in y by
 # friction; the teeth BITE the cased edge, so the phone can't creep or rotate in
 # the clamp — which is what actually keeps the screen square to the keyboard face.
-TOOTH_PITCH = 3.4                            # tooth pitch along y (13 teeth over the 46mm pad)
+TOOTH_PITCH = 3.4                            # tooth pitch along y
 TOOTH_R = 0.8                                # half-round tooth radius = 0.8mm bite into the cased edge
+# === v0.24e CAPTURE-LIP geometry ===================================================
+# Retention is the one function where being wrong drops a phone on someone's face, so
+# every dimension here is referenced to a REAL surface, not a nominal plane.
+#
+# v0.24d measured the lip depth from the NOMINAL phone-edge plane (x = ±82.6) — but the
+# clamped phone's edge does not sit there. The pad (GRIP_PAD_T) and its teeth (TOOTH_R)
+# stand 2.4mm proud of that plane, so the phone's edge rests on the TOOTH CREST and the
+# 2.8mm "deep lip" was delivering 0.4mm of actual overhang. It also put the lip's
+# underside at FACE_Z - LIP_T = 13.1, which is 1.4mm INSIDE the phone: the lip was
+# modelled buried in the phone body, so its real capture over the front face was 0.2mm.
+# Both are fixed by referencing the two surfaces that physically exist:
+PHONE_FACE_Z = RECESS_TOP + PHONE_TC          # 14.5 — the nominal cased phone's FRONT face
+                                              #   (its back rests on the tray at RECESS_TOP)
+LIP_OVER = 3.0                                # overhang measured from the CLAMPED phone edge
+                                              #   (the tooth crest) — must clear a case's front
+                                              #   edge radius (~1.0-1.5) so the lip lands
+                                              #   flat-on-flat and cannot wedge the jaws open
+# THE LIP IS TPU. A rigid PETG hook over the phone was tried in v0.24e-rc and rejected on
+# review — correctly, and the reason is worth keeping written down:
+#
+#   A hook at a FIXED z can only capture a phone whose cased thickness is <= nominal.
+#   The lip's underside is PHONE_FACE_Z (a 9.4mm cased phone). Thicker case -> the phone's
+#   front face lands ABOVE that plane, so its edge butts into the lip's z band and the
+#   jaw simply cannot close: the lip becomes a side pad and the capture is silently gone.
+#
+# TPU fails gracefully there — it deforms, rides up and still part-captures — where PETG
+# fails hard. It is also the only sane thing to have in contact with a phone's screen
+# edge: printed PETG layer lines on cover glass are a scratch source, and TPU spreads the
+# contact instead of concentrating it. Both reasons are the user's, and both are right.
+#
+# The one thing the rigid shell still does is stop the GRIPPER being pulled off (see
+# `_gripper_retainer`) — because `gripper()` is otherwise a plain L-section held on by
+# friction, which review flagged as the real weak link. That retainer caps the lip's ROOT
+# only; it stops outboard of the clamped phone edge and never touches the phone.
+LIP_T = 1.6                                   # TPU lip thickness above PHONE_FACE_Z
+RETAIN_T = 1.6                                # rigid retainer over the lip's root (no phone contact)
+RETAIN_CLR = 0.4                              # retainer tip clearance OUTBOARD of the clamped edge
+LIP_CHAM = 0.8                                # lead-in chamfer on the TPU lip's top inboard edge
+def lip_depth():
+    """Total TPU lip reach inboard from the rigid backstop wall = pad + teeth + overhang."""
+    return GRIP_PAD_T + TOOTH_R + LIP_OVER
+# === v0.24e BOTTOM SHELF ===========================================================
+# Held normally the phone's weight acts along -y, and NOTHING was below its bottom long
+# edge — the tray is behind the phone (z), not under it (y). That load was carried purely
+# by clamp friction, which is the one load path that degrades (TPU creep, dust, a glossy
+# case) and has no margin against ordinary shock. The shelf turns it into a bearing load.
+SHELF_H = 3.0                                 # upstand above the tray top / cradle ledge
+SHELF_W = 1.5                                 # thickness in y (sits directly over the tray wall)
 MAG_D = 56.0                                 # N52 MagSafe ring OD
 MAG_REC_R = 28.6                             # ring recess radius (Ø57.2 for the Ø56 ring)
 MAG_REC_D = 1.8                              # ring recess depth (ring 2.0 -> 0.2 proud, phone rests on it)
@@ -350,7 +404,14 @@ CAV_Z1 = SHROUD_ZTOP - BR_PLATE_T - SHROUD_CLR - SHROUD_WALL   # 1.75 — ... ce
 LANE_Z = (CAV_Z0 + CAV_Z1) / 2.0             # 0.2 — the ONE z axis every lane shares
 SPRING_Y = (13.5, 83.5)                      # 2 extension springs, OUTBOARD lanes (sym about cy=48.5)
 SPRING_D = 4.0                               # extension-spring OD (fit model)
-SPRING_ANCHOR_X = 22.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
+# v0.24e: the anchor moves 22 -> 76, hard against the tray's right wall. At x=22 the
+# installed spring length ran 7.85mm (min span) to 47.85mm (max span) — a >5:1 working
+# ratio no coil spring survives, and worse, at MIN span the spring is barely stretched,
+# so the SMALLEST phones would have got the WEAKEST clamp. Anchoring at the far end makes
+# the installed length 61.85 -> 101.85mm: the same 40mm of travel now rides on a long
+# spring, so the force ratio across the range collapses to something a real off-the-shelf
+# extension spring can deliver. See docs/design-decisions.md for the force numbers.
+SPRING_ANCHOR_X = 76.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
 FLEX_Y, FLEX_W, FLEX_T = 24.5, 9.5, 0.3      # FFC lane — J2's y centre (13.07..35.92), so the
                                              #   16-way 0.5mm-pitch ribbon enters the ZIF dead straight
 POWER_Y, POWER_W, POWER_T = 40.0, 3.0, 2.2   # battery 2-wire lane — its own row, clear of both springs
@@ -632,6 +693,60 @@ def _memo(name, builder):
         _BUILT[name] = builder()
     return _BUILT[name].copy()
 
+def lip_top():
+    """z of the TPU capture lip's top face."""
+    return PHONE_FACE_Z + LIP_T
+
+def retain_top():
+    """z of the rigid retainer's top face. The cradle wall rises to here."""
+    return lip_top() + RETAIN_T
+
+def retain_tip(side):
+    """x of the retainer's inboard tip — RETAIN_CLR OUTBOARD of where the clamped phone's
+    edge actually sits (the tooth crest), so no rigid material is EVER over the screen."""
+    s = 1 if side == "right" else -1
+    return s * (BR_X_RIGHT - GRIP_PAD_T - TOOTH_R + RETAIN_CLR)
+
+def _gripper_retainer(part, side, gx):
+    """v0.24e RIGID retainer over the TPU lip's ROOT — and nothing else.
+
+    The lip itself is TPU, because it has to flex for phone+case thickness variance and
+    because hard plastic on cover glass is a scratch source. But `gripper()` is a plain
+    L-section pressed onto the cradle with no dovetail, undercut or screw, so review found
+    the entire retention chain hanging off a friction joint: the phone's pull lifts the
+    lip, the L rotates, and the pad peels off the wall. This caps that.
+
+    It stops `RETAIN_CLR` OUTBOARD of the clamped phone edge, so it never overhangs the
+    screen and never limits how thick a phone can be — the lip's free length inboard of
+    it is still soft and still flexes, which is exactly where a thick case needs give."""
+    s = 1 if side == "right" else -1
+    prod = _product(); ph = prod["phone"]
+    py0, py1 = ph["y"] - 0.5, ph["y"] + ph["h"] + 0.5
+    tip = retain_tip(side)
+    root = s * (gx - 0.9)                          # outboard face of the cradle wall
+    cap = _cq_from_poly(shp_box(min(tip, root), py0, max(tip, root), py1),
+                        lip_top(), RETAIN_T)
+    return part.union(cap)
+
+def shelf_y():
+    """(y0, y1) of the bottom shelf: an upstand at the phone well's LOW-y edge, whose
+    inboard face lands exactly on the nominal phone's bottom long edge. A phone with a
+    shorter y edge simply rests on the same face and sits low in the well."""
+    py = _product()["phone"]["y"]
+    return py - SHELF_W, py
+
+def _cradle_shelf(part, x0, x1):
+    """v0.24e BOTTOM SHELF, cradle segment. Held normally the phone's weight acts along
+    -y and nothing was under its bottom long edge — the tray sits BEHIND the phone, not
+    below it — so that load was carried entirely by clamp friction. Friction is the one
+    path that decays (TPU creep under permanent compression, dust, a glossy case) and it
+    had no margin against ordinary shock. These tabs (plus the tray rib in _bridge_build)
+    put a hard bearing surface under the phone. They only block -y, so the phone still
+    drops straight into the well and lifts straight back out."""
+    sy0, sy1 = shelf_y()
+    return part.union(_cq_from_poly(shp_box(min(x0, x1), sy0, max(x0, x1), sy1),
+                                    RECESS_TOP, SHELF_H))
+
 def _grip_bridge_iface(part, side):
     """v0.24 ENCLOSED telescoping-clamp interface on a grip's back half. Both grips
     get a phone-edge CRADLE (backstop wall + screen-edge lip + rest ledge; TPU pad
@@ -645,9 +760,15 @@ def _grip_bridge_iface(part, side):
     gx = _seam_frame(); zt = RECESS_TOP
     if side == "right":
         xw0, xw1 = BR_X_RIGHT, gx - 0.9           # 82.6 .. 83.95 (stops shy of J2's courtyard @84.8)
-        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))   # rigid backstop wall
+        # rigid backstop wall. v0.24e: it now rises to the TOP of the TPU lip instead of
+        # stopping at FACE_Z. The lip is a cantilever carrying the phone's whole weight
+        # when the deck is used screen-down; rooted only in 1.6mm of TPU it could roll,
+        # so the wall gives it a rigid root and the overhang is the only free length.
+        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, retain_top() - zt))
         part = part.union(_cq_from_poly(shp_box(xw0 - 4.0, py0, xw0, py1), zt - 1.2, 1.2))  # ledge: phone edge rests here
-        # (the capture lip + soft edge grip are the TPU gripper, gripper("right"))
+        part = _cradle_shelf(part, xw0 - 4.0, xw1)   # v0.24e bottom shelf (see _cradle_shelf)
+        part = _gripper_retainer(part, side, gx)     # v0.24e rigid retainer over the TPU lip ROOT
+        # (the soft edge grip + teeth + the lip's TPU facing are gripper("right"))
         for by in BOLT_Y:                          # bridge-bolt bosses (M3 insert) behind the cradle wall
             part = part.union(cq.Workplane("XY").workplane(offset=FLOOR)
                               .center(BOLT_X, by).circle(2.8).extrude(zt - FLOOR))
@@ -656,8 +777,10 @@ def _grip_bridge_iface(part, side):
     else:
         gxl = -gx                                  # left grip inner edge (-84.85)
         xw0, xw1 = gxl + 0.9, -BR_X_RIGHT         # -83.95 .. -82.6 cradle (stops shy of J2's courtyard)
-        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, FACE_Z - zt))   # rigid backstop wall
+        part = part.union(_cq_from_poly(shp_box(xw0, py0, xw1, py1), zt, retain_top() - zt))  # rigid backstop wall
         part = part.union(_cq_from_poly(shp_box(xw1, py0, xw1 + 4.0, py1), zt - 1.2, 1.2))  # ledge: phone edge rests here
+        part = _cradle_shelf(part, xw0, xw1 + 4.0)   # v0.24e bottom shelf (see _cradle_shelf)
+        part = _gripper_retainer(part, side, gx)     # v0.24e rigid retainer over the TPU lip ROOT
         # moving INNER SHROUD: a closed box from the grip inner edge inward INNER_LEN,
         # sized to nest inside the outer shroud (walls/floor/top inset by
         # SHROUD_WALL+SHROUD_CLR), OPEN on its right (inboard) end. Houses the cable
@@ -889,6 +1012,13 @@ def _bridge_build():
                   .circle(MAG_REC_R + 1.4).extrude((zt) - (zpi - 0.8)))       # local backing plug
     br = br.cut(cq.Workplane("XY").workplane(offset=zt - MAG_REC_D).center(mcx, mcy)
                 .circle(MAG_REC_R).extrude(MAG_REC_D + 0.2))                  # ring recess (ring 0.2 proud)
+    # (6) v0.24e BOTTOM SHELF: an upstand along the tray top's low-y edge, sitting
+    #     directly over the front wall so it is fully supported. The phone's bottom long
+    #     edge bears on this instead of hanging off clamp friction. It spans the whole
+    #     tray; the grips' cradle tabs (_cradle_shelf) carry the phone's corners, which
+    #     is what matters at long spans where the phone overhangs the tray.
+    sy0, sy1 = shelf_y()
+    br = br.union(_cq_from_poly(shp_box(OUTER_LEFT, sy0, BR_X_RIGHT, sy1), zt, SHELF_H))
     return _to_trimesh(br, "bridge")
 
 def prod_cy():
@@ -898,33 +1028,43 @@ def gripper(side):
     return _memo(f"gripper_{side}", lambda: _gripper_build(side))
 
 def _gripper_build(side):
-    """v0.24d soft TPU GRIPPER on a grip's inner edge (GameSir / Abxylute-style): a
+    """v0.24e soft TPU GRIPPER on a grip's inner edge (GameSir / Abxylute-style): a
     compliant pad on the phone's cased short edge, a comb of TEETH that bite that
-    edge, and a capture LIP over the screen edge — soft grip, anti-slide and
-    retention in one part. Print in TPU with the keymats. Retention is mechanical
-    (lip + teeth + the rigid backstop + the clamp), never the magnets, so the phone
-    can't drop when used screen-down over your face.
+    edge, and a capture LIP that hooks over the phone's FRONT face — soft grip,
+    anti-slide and retention in one part. Print in TPU with the keymats. Retention is
+    mechanical (lip + teeth + the rigid backstop + the clamp), never the magnets.
 
-    v0.24c had the pad and the lip but no teeth, so nothing but friction stopped the
-    phone creeping or rotating in y between the jaws. The teeth are half-round ribs
-    running along z (the phone's thickness) at TOOTH_PITCH along y: rolling them out
-    of a cylinder centred ON the pad face leaves exactly half proud, which is both
-    the shape that bites and the shape TPU prints cleanly without support."""
-    cy = prod_cy(); s = 1 if side == "right" else -1
-    xe = s * 82.6                                  # phone short edge on this side
+    Two v0.24d datum errors are fixed here, both of which had quietly reduced the lip
+    to decoration (see the LIP_* block for the arithmetic):
+      * the lip sat at FACE_Z - LIP_T, i.e. 1.4mm INSIDE the phone body. Its underside
+        is now PHONE_FACE_Z — flush on the screen, which is the only place a hook that
+        is supposed to stop the phone leaving in +z can actually bear.
+      * its depth was measured from the NOMINAL phone-edge plane, but the pad and teeth
+        stand 2.4mm proud of that, so the phone's edge rests further inboard and the
+        real overhang was 0.4mm. Depth is now pad + teeth + LIP_OVER, so LIP_OVER is
+        overhang past the surface the phone actually touches.
+    The lip therefore stands (LIP_T - (FACE_Z - PHONE_FACE_Z)) proud of the keyboard
+    face — a bezel over the phone's edge, exactly as every commercial phone clamp has."""
+    cy = GRIP_PAD_CY; s = 1 if side == "right" else -1   # biased low — see GRIP_PAD_CY
+    xe = s * 82.6                                  # nominal phone edge plane on this side
     y0, y1 = cy - GRIP_PAD_LEN / 2, cy + GRIP_PAD_LEN / 2
     lo, hi = sorted((xe, xe - s * GRIP_PAD_T))     # protrudes INTO the well (phone compresses it)
     pad = _cq_from_poly(shp_box(lo, y0, hi, y1), RECESS_TOP, FACE_Z - RECESS_TOP)   # soft edge grip
     face = xe - s * GRIP_PAD_T                     # the pad face the phone presses on
-    n = int(GRIP_PAD_LEN // TOOTH_PITCH)           # 13 teeth, centred on the pad
+    n = int(GRIP_PAD_LEN // TOOTH_PITCH)           # teeth, centred on the pad
     for i in range(n):
         ty = cy - (n - 1) * TOOTH_PITCH / 2 + i * TOOTH_PITCH
         pad = pad.union(cq.Workplane("XY").workplane(offset=RECESS_TOP)
                         .center(face, ty).circle(TOOTH_R).extrude(FACE_Z - RECESS_TOP))
-    lo2, hi2 = sorted((xe, xe - s * CRADLE_LIP))
-    lip = _cq_from_poly(shp_box(lo2, y0, hi2, y1), FACE_Z - LIP_T, LIP_T)           # capture lip over the screen
-    # lead-in on the lip's top INBOARD edge: the phone snaps past a chamfer instead of
-    # having to be threaded in square, and the deep lip stays deep where it matters.
+    # The capture lip is TPU for its whole thickness: it is the only thing that touches
+    # the phone's front face, and it has to give when a thick case pushes into it. Its
+    # ROOT is capped by the shell's rigid retainer (_gripper_retainer) so this part can't
+    # be peeled off — but everything inboard of RETAIN_CLR is free to flex.
+    lo2, hi2 = sorted((xe, xe - s * lip_depth()))  # reaches LIP_OVER past the tooth crest
+    lip = _cq_from_poly(shp_box(lo2, y0, hi2, y1), PHONE_FACE_Z, LIP_T)
+    # lead-in on the lip's top INBOARD edge, so the phone cams past instead of being
+    # threaded in square. The UNDERSIDE stays dead flat: a chamfer there would turn the
+    # phone's weight into a force spreading the jaws.
     lip = lip.edges(f"|Y and {'<X' if s > 0 else '>X'} and >Z").chamfer(LIP_CHAM)
     return _to_trimesh(pad.union(lip), f"gripper_{side}")
 
@@ -1592,7 +1732,46 @@ def main():
             "a cable channel's divider rib fouls a spring lane"
         print(f"  lanes y: spring {SPRING_Y[0]} | flex {FLEX_Y} | power {POWER_Y} | spring {SPRING_Y[1]}"
               f"  (all on z={LANE_Z:.2f}, moving-shroud cavity {CAV_Z0:.2f}..{CAV_Z1:.2f}) ✅")
-        states = [("min", cfg.phone_span_min), ("nominal", None), ("max", cfg.phone_span_max)]
+        # v0.24e RETENTION invariants. A phone falling onto the user's face is the
+        # failure mode this whole clamp exists to prevent, so the geometry that stops it
+        # is asserted rather than eyeballed in a translucent render.
+        crest = 82.6 - GRIP_PAD_T - TOOTH_R          # where the CLAMPED phone edge really sits
+        over = crest - (82.6 - lip_depth())          # working overhang past that surface
+        assert abs(over - LIP_OVER) < 1e-6, f"lip overhang {over:.2f} != LIP_OVER {LIP_OVER}"
+        assert over >= 2.0, (f"capture lip only overhangs the clamped phone edge by {over:.2f}mm — "
+                             "too little to clear a phone case's front edge radius, so the lip "
+                             "would ride the case's chamfer and wedge the jaws open")
+        assert PHONE_FACE_Z >= RECESS_TOP + PHONE_TC - 1e-6, \
+            "the lip's underside is below the phone's front face — it would be buried in the phone"
+        assert lip_top() > FACE_Z, "the capture lip must stand proud of the keyboard face to hook anything"
+        # INSERTION: seat one edge on its tooth crest, translate the other past the far
+        # lip. Needs clamp_pos >= P + lip_depth() + (GRIP_PAD_T + TOOTH_R) — derived here
+        # from the lip geometry so deck.Config's figure can never silently drift from it.
+        head = cfg.clamp_open_max - cfg.phone_span_max
+        need = lip_depth() + GRIP_PAD_T + TOOTH_R
+        assert head >= need - 1e-6, (
+            f"insertion headroom {head:.1f}mm < {need:.1f}mm — a {cfg.phone_span_max:.0f}mm phone "
+            f"cannot be fitted past lips reaching {lip_depth():.1f}mm inboard. Raise "
+            f"deck.Config.clamp_insert_clr (and INNER_LEN, or the enclosure opens).")
+        # NOTHING RIGID MAY EVER SIT OVER THE PHONE. The lip that touches the screen is
+        # TPU so it can flex for phone+case thickness variance and can't scratch glass;
+        # the shell's retainer only caps that lip's root and must stop outboard of where
+        # the clamped phone edge actually sits.
+        assert abs(retain_tip("right")) - crest >= RETAIN_CLR - 1e-6, \
+            "the rigid retainer overhangs the clamped phone edge — hard plastic over the screen"
+        assert retain_top() > lip_top() > PHONE_FACE_Z, "the retainer must cap the TPU lip, not replace it"
+        free = abs(retain_tip("right")) - (82.6 - lip_depth())   # TPU still free to flex
+        assert free >= 2.0, (f"only {free:.1f}mm of the lip is free to flex — a thick case has "
+                             "nowhere to give")
+        assert GRIP_PAD_LEN <= _product()["phone"]["h"], "gripper is longer than the phone's short edge"
+        print(f"  retention: lip overhangs the clamped edge by {over:.1f}mm, underside z={PHONE_FACE_Z:.1f} "
+              f"(phone face), top z={lip_top():.1f} ({lip_top()-FACE_Z:+.1f} vs face); "
+              f"insertion headroom {head:.1f}mm; shelf {SHELF_H:.1f}mm ✅")
+        # v0.24e: the widest state is no longer the biggest PHONE — it is the jaw opened
+        # far enough to fit that phone past the capture lips. That is the real worst case
+        # for shroud overlap and cable enclosure, so it is what gets checked.
+        states = [("min", cfg.phone_span_min), ("nominal", None),
+                  ("max phone", cfg.phone_span_max), ("open", cfg.clamp_open_max)]
         anyclash = False
         for name, cp in states:
             A = assemble(cp)
@@ -1692,7 +1871,8 @@ def _render_parts(A):
               "bridge": "telescoping bridge — fixed tray (lane channels: spring | FFC | power | spring)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
-              "gripper_right": "right TPU gripper (toothed edge pad + capture lip)",
+              "gripper_right": "right TPU gripper (toothed edge pad + capture lip; the shell's "
+                               "retainer caps its root but never reaches over the phone)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
               "nub_cap": "nub cap — classic ThinkPad soft-dome replica (RED TPU, dot grid; genuine caps also fit)",
               "keymat_right": "right keymat (plungers + hinge web)"}
