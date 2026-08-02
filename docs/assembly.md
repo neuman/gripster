@@ -64,7 +64,7 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
    extension) for the clamp force, a 1S **403040** pouch LiPo (4.0 × 30 × 40 mm,
    ~450–500 mAh, JST-PH; the footprint is a hard limit — the cell lives inside
    the **left grip**, not the spine), 0.3 mm foam tape for the cell, Ø56 N52
-   MagSafe ring, **10 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 10 M3×10 DIN 965
+   **10 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 10 M3×10 DIN 965
    countersunk screws** (10 grip lids) + **2 short M3** for the bridge-to-grip
    bolts. (DIN 965 = 90° countersunk flat head, flush with the face.)
 
@@ -151,7 +151,7 @@ serviced through the left grip, not the panel).
    First power-up: leave the nub untouched for the first ~2 s (32-sample zero
    calibration); axis flips/swaps are DT properties in `thumbdeck.dts`, not
    code.
-8. **Grippers + MagSafe (v0.24):** **slide** the two **TPU grippers** in from the
+8. **Grippers (v0.24):** **slide** the two **TPU grippers** in from the
    **y end of each cradle, under the rigid retainer** — they are trapped by it, not
    pressed on, so don't push them straight in from the front and don't glue them. **Teeth face the phone** (half-round ribs down the pad's inner
    face — they bite the cased edge so the phone can't creep or rotate; a gripper in
@@ -171,9 +171,8 @@ serviced through the left grip, not the panel).
    can't fall out. **Very thick cases:** compliance is only what the TPU lip can flex,
    so a chunky rugged case may push the lip aside and lose positive capture — check the
    phone can't be lifted straight out before trusting it screen-down. Then
-   seat the **MagSafe ring** in the tray-centre recess (epoxy the annulus) — this
-   is a **secondary** snap only, not load-bearing, so exact alignment across phone
-   sizes doesn't matter. Servicing
+   (v0.25: there is no MagSafe ring any more — retention is entirely the spring clamp,
+   the toothed TPU grippers and the capture lips.)
    the battery means opening the **left grip** (5 screws, lid, keymat, board).
 
 ## 3. First flash (one-time SWD, then UF2 forever)

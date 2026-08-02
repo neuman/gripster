@@ -259,9 +259,20 @@ DPAD_RING_R0 = DPAD_D/2 + 1.0        # 13.0 — clamp band inner radius. 1.0 cle
                                      #   rib can never land on a dome's edge.
 DPAD_RING_W = 1.5                    # clamp band width (same as the field clamp rim)
 DPAD_FIELD = DPAD_RING_R0 + DPAD_RING_W + 1.0 - DPAD_D/2   # 3.5 web margin round the pad
-DPAD_RIB_CLR = 0.2                   # back rib's rest clearance to the PCB face: it is a
+DOME_RETAIN_T = 0.3                  # the dome-retention layer on the PCB FRONT (Snaptron
+                                     #   Peel-N-Place tape or a laser-cut polyimide spacer,
+                                     #   spec'd 0.2-0.3 in the BOM and REQUIRED). It is not
+                                     #   modelled anywhere, so nothing in --check knows it is
+                                     #   there — but it is the surface the back rib would
+                                     #   actually meet, and the same rule the capture lip was
+                                     #   fixed by applies: dimension off surfaces that exist.
+DPAD_RIB_CLR = 0.2                   # back rib's rest clearance ABOVE that layer: it is a
                                      #   backstop, not a preload (and stays off collide()'s
-                                     #   keymat-vs-board pair, which is NOT a mating one)
+                                     #   keymat-vs-board pair, which is NOT a mating one).
+                                     #   Clearing the MAX retention thickness is deliberate —
+                                     #   a rib that engages late is a degraded backstop, a rib
+                                     #   buried in the tape is an undesigned preload holding
+                                     #   the web (and possibly a dome) down.
 DPAD_CHAM = 0.6                      # 45-degree chamfer round the aperture in the lid face
 DPAD_EDGE_CHAM = 0.5                 # 45-degree chamfer on the pad's own top outer edge
 DPAD_OK_CHAM = 0.4                   # ...and on the OK button's top edge
@@ -393,6 +404,19 @@ def _cap_shapes_product(side):
     if dp:
         for cap, _lab, (dx, dy) in dp["sectors"]:
             out.append((cap, dp["aperture"], dx, dy))
+    # EXACTLY ONE cap per dome, centred on it. This list is what grows the keymat's
+    # actuator nubs, and a MISSING nub is not a collision — collide() can only see
+    # overlaps, so five pad sectors collapsing into one would sail through --check as a
+    # pad with four dead arrows. (Same blind spot that let the v0.16 keymat ship as
+    # three floating pieces.) Assert the cover here, where the shapes are made.
+    want = {(round(k["x"]+ox, 3), round(k["y"]+oy, 3)) for k in geo["keys"]}
+    want |= {(round(f["x"]+ox, 3), round(f["y"]+oy, 3))
+             for f in geo.get("features", []) if f["type"] == "key"}
+    got = [(round(x, 3), round(y, 3)) for (_p, _o, x, y) in out]
+    assert len(got) == len(set(got)), f"{side}: two cap shapes share a dome centre"
+    assert set(got) == want, (
+        f"{side}: cap shapes do not cover the domes 1:1 — "
+        f"missing {sorted(want - set(got))}, stray {sorted(set(got) - want)}")
     return out
 
 def _seam_frame():
@@ -406,7 +430,8 @@ def _seam_frame():
 def full_footprint():
     """v0.24: just the two grip polygons — NO central spine slab. The rigid spine
     (that the bolted center panel bridged) is gone; the two grips are now separate
-    bodies joined only by the telescoping bridge (deck3d.bridge()), so each back
+    bodies joined only by the telescoping nest (v0.25: the fixed tray is part of
+    back_right, so the slide is back_right <-> back_left directly), so each back
     half is its own grip and the center is the expanding clamp mechanism."""
     rp, _, _ = _grip_poly_product("right")
     lp, _, _ = _grip_poly_product("left")
@@ -433,7 +458,7 @@ KM_Z0 = DOME_TOP + 1.0                       # keymat web bottom (nub reaches th
 TOP_Z = KM_Z0 + KM_WEB + GAP                 # front parts sit above the cavity
 WALL = TOP_Z - FLOOR                         # cavity height (derived)
 
-# --- printable parts (grip lids + 2 back-grip halves + telescoping bridge), Ender 3 V2 bed ---
+# --- printable parts (grip lids + 2 back-grip halves; v0.25 the tray is part of back_right), Ender 3 V2 bed ---
 BED_XY = 204.0        # printable footprint per part: 220mm bed minus 2x8mm brim
 # v0.24 device face + near-flush clamp recess. The grip-lid keyboard face is still
 # the device face plane FACE_Z (=14.7); the phone is no longer sunk in a rigid
@@ -458,8 +483,16 @@ SHROUD_ZBOT = -4.5                           # enclosure bottom (center back; ab
 SHROUD_ZTOP = RECESS_TOP                     # 5.1 — top plate top = recess floor (phone rests here)
 SHROUD_WALL = 1.4                            # shroud wall thickness
 SHROUD_CLR = 0.35                            # inner<->outer nesting slide clearance (coupon-tune)
-OUTER_LEFT = -45.0                           # fixed outer-shroud left end (right of the -49.65 min left-jaw)
-INNER_LEN = 67.0                             # moving inner-shroud length. v0.24e: 62 -> 67, bought
+OUTER_LEFT = -41.0                           # fixed outer-shroud left end. v0.25/J3: the tray is
+                                             #   now printed AS PART OF back_right, so this end sets
+                                             #   that part's length: OUTER_LEFT .. 162.75 must fit
+                                             #   BED_XY. -45 gave 207.75 (3.75 over); -41 gives
+                                             #   203.75. Every mm taken here is paid back in
+                                             #   INNER_LEN or the enclosure opens at full extension.
+INNER_LEN = 71.0                             # moving inner-shroud length. v0.25: 67 -> 71, paying
+                                             #   back the 4mm OUTER_LEFT gave up to fit the bed, so
+                                             #   the full-open overlap is unchanged at 13.35mm.
+                                             #   v0.24e: 62 -> 67, bought
                                              #   back the 9mm of insertion headroom the capture
                                              #   lips need — every extra mm of jaw opening costs a
                                              #   mm of telescoping overlap, and the enclosure
@@ -531,9 +564,13 @@ def lip_depth():
 # case) and has no margin against ordinary shock. The shelf turns it into a bearing load.
 SHELF_H = 3.0                                 # upstand above the tray top / cradle ledge
 SHELF_W = 1.5                                 # thickness in y (sits directly over the tray wall)
-MAG_D = 56.0                                 # N52 MagSafe ring OD
-MAG_REC_R = 28.6                             # ring recess radius (Ø57.2 for the Ø56 ring)
-MAG_REC_D = 1.8                              # ring recess depth (ring 2.0 -> 0.2 proud, phone rests on it)
+# v0.25: the MagSafe ring is GONE. It was always the SECONDARY hold — "the clamp + lips
+# retain the phone" — and with the clamp, the TPU grippers with teeth and the capture lips
+# all doing their job it earns nothing. Removing it also retires the last thing that wanted
+# space under the tray's top plate, which is where the moving jaw travels: its Ø60 backing
+# plug hung 0.45mm into that cavity and jammed the clamp at EVERY span (1159mm^3 measured
+# at min), hidden behind a blanket collide() whitelist. One less part, one less magnet, and
+# the only remaining structure over the jaw is the 1.6mm plate itself.
 BOLT_Y = (46.0, 62.0)                        # bridge->right-grip bolt line (clear of J2 at y 12.5..33.5)
 BOLT_X = 83.3                                # bolt column: behind the right cradle wall (outboard of the phone edge)
 # === v0.24d internal LANE PLAN =====================================================
@@ -558,7 +595,7 @@ CAV_Y1 = SHROUD_Y1 - SHROUD_CLR - 2 * SHROUD_WALL       # 86.85 — ... back
 CAV_Z0 = SHROUD_ZBOT + SHROUD_CLR + 2 * SHROUD_WALL     # -1.35 — ... floor
 CAV_Z1 = SHROUD_ZTOP - BR_PLATE_T - SHROUD_CLR - SHROUD_WALL   # 1.75 — ... ceiling
 LANE_Z = (CAV_Z0 + CAV_Z1) / 2.0             # 0.2 — the ONE z axis every lane shares
-SPRING_Y = (13.5, 83.5)                      # 2 extension springs, OUTBOARD lanes (sym about cy=48.5)
+SPRING_Y = (12.5, 84.5)                      # 2 extension springs, OUTBOARD lanes (sym about cy=48.5)
 SPRING_D = 4.0                               # extension-spring OD (fit model)
 # v0.24e: the anchor moves 22 -> 76, hard against the tray's right wall. At x=22 the
 # installed spring length ran 7.85mm (min span) to 47.85mm (max span) — a >5:1 working
@@ -568,9 +605,9 @@ SPRING_D = 4.0                               # extension-spring OD (fit model)
 # spring, so the force ratio across the range collapses to something a real off-the-shelf
 # extension spring can deliver. See docs/design-decisions.md for the force numbers.
 SPRING_ANCHOR_X = 76.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
-FLEX_Y, FLEX_W, FLEX_T = 24.5, 9.5, 0.3      # FFC lane — J2's y centre (13.07..35.92), so the
+FLEX_Y, FLEX_W, FLEX_T = 26.5, 17.0, 0.3      # FFC lane — J2's y centre (13.07..35.92), so the
                                              #   16-way 0.5mm-pitch ribbon enters the ZIF dead straight
-POWER_Y, POWER_W, POWER_T = 40.0, 3.0, 2.2   # battery 2-wire lane — its own row, clear of both springs
+POWER_Y, POWER_W, POWER_T = 41.0, 3.0, 2.2   # battery 2-wire lane — its own row, clear of both springs
 RIB_T = 1.2                                  # divider-rib thickness (3 perimeters at 0.4 nozzle)
 LANE_CLR = 1.0                               # cable <-> channel wall clearance, per side
 LANE_GAP_MIN = 2.0                           # --check: required clear y gap, spring lane <-> cable lane
@@ -616,91 +653,55 @@ PCB_CLR = 0.4          # clearance between PCB edge and the shell cavity wall
 POST_R = 1.5           # mid-field PCB support post radius (Ø3)
 POST_CLR = 2.2         # required clear radius (post centre -> nearest back-side bbox)
 
-# ==== v0.23 faceted ergonomic back crown ===========================================
-# The dead-flat back becomes a FACETED palm crown: a hard-industrial 90s read
-# (Sega/Nokia cut-block facets, crisp shadow-line seams) delivering Rii-8+ grip-
-# swell ergonomics — the back fills the palm instead of pressing a flat slab into
-# it. The crown is PURELY ADDITIVE below z=0 (the outer back plane), so the
-# validated electronics cavity (everything at z>=FLOOR), the 221-body collision
-# result and the bed-fit XY are all unchanged BY CONSTRUCTION — the crown never
-# meets a component. Each grip carries a cut-corner faceted plateau (one steep
-# chamfer band + three scored grip grooves, apex biased toward the outer edge
-# where the thenar/fingers wrap); a lower faceted spine panel links them so the
-# whole back reads as one milled block.
-#
-# This FLIPS the back-half print orientation from floor-down to CAVITY-DOWN: the
-# crown then prints apex-UP as a strictly-narrowing faceted peak (every layer
-# insets over the one below -> self-supporting cosmetic face at any facet angle),
-# and the internal bosses/posts become the only downward faces -> they take the
-# (cosmetically hidden) supports. See docs/cad-process.md printing table.
-CROWN_PEAK  = 5.5     # grip-plateau depth below z=0 (device grows +5.5mm at the palms)
-CROWN_SPINE = 2.2     # central spine-panel depth (links the two grip mounds)
-CROWN_GROOVE = 0.7    # shadow-line V-groove depth scored along the primary facet seams
+# ==== v0.25: the faceted back crown is GONE ========================================
+# v0.23 gave each grip a faceted palm plateau below z=0. It was removed at the user's
+# call: the cut-corner octagon, its single steep chamfer band and the scored grooves
+# read as a block applied to the back rather than a shape the back has, and the height
+# was not worth the cost — the crown was the ONLY reason the back halves printed
+# cavity-down, which was the only reason they needed supports through the cavity, and
+# it was why the reset pinhole had to be a 7.1mm-deep Ø1.6 straw.
+# The back is flat again (z=0 is the outer back plane) and the halves print FLOOR-DOWN.
+# Nothing else referenced the crown's geometry; the two features that were dimensioned
+# off CROWN_PEAK (the reset pinhole and the back_half clip box) now reference the back
+# plane directly, which is a surface that exists whatever the styling does next.
+# v0.25: the grips' outer back face drops to the TRAY FLOOR, so the whole back of the
+# device is ONE plane. This is not styling — it is the fix for what deleting the crown
+# exposed. The crown used to reach -5.5, so the device rested on the two plateaus and
+# the tray at -4.5 hung 1mm clear. With a flat back at z=0 the tray became the lowest
+# thing on the device by 4.5mm: it would have rested on the tray with both grips
+# floating, and (since v0.25 J3 prints the tray AS PART of back_right) the merged part
+# would have needed support under ~87cm2 of cosmetic back face. Deriving BACK_Z from
+# SHROUD_ZBOT makes the coplanarity a fact of the model rather than a coincidence.
+BACK_Z = SHROUD_ZBOT  # -4.5 — outer back face of BOTH grips = the tray floor
+EDGE_R = 1.2          # quarter-round on the outside faces the hands wrap (back + keyboard
+                      #   face). Small enough that it never reaches a screw: the nearest
+                      #   hole edge is 5.4mm inboard of the outer boundary and its
+                      #   countersink cone stops 2.3mm short of it.
 
-def _octa(cx, cy, hw, hh, c):
-    """Cut-corner rectangle (chamfered octagon) — the faceted section primitive.
-    Winding + vertex count are constant across a mound's sections so the ruled
-    loft pairs edges cleanly into flat facets."""
-    return [(cx-hw+c, cy-hh), (cx+hw-c, cy-hh), (cx+hw, cy-hh+c), (cx+hw, cy+hh-c),
-            (cx+hw-c, cy+hh), (cx-hw+c, cy+hh), (cx-hw, cy+hh-c), (cx-hw, cy-hh+c)]
+def _round_edge_cutters(poly, z_face, r, up, n=6):
+    """Cutters that put a quarter-round on the OUTSIDE edge of a flat face.
 
-def _facet_loft(sections):
-    """Ruled (faceted, NOT smooth) loft through [(pts, z), ...]; caps both ends
-    into a closed solid, returned as a Workplane so it composes with .union().
-    Ruled=True keeps every band a set of PLANAR facets."""
-    wires = [cq.Wire.makePolygon([cq.Vector(x, y, z) for (x, y) in pts], close=True)
-             for (pts, z) in sections]
-    return cq.Workplane("XY").add(cq.Solid.makeLoft(wires, True))
+    Built as n stacked bands of inset profile rather than a CadQuery .fillet(): these
+    boundaries are 200mm long with dozens of segments and an OCC fillet on them is slow
+    and fragile, whereas this is pure polygon offsetting. n is chosen so each band is
+    r/n ~= 0.2mm — one layer — so the printed result is identical to a true round.
 
-def _grip_mound(cx, sx):
-    """One grip's faceted palm swell (product frame). A crisp beveled PLATEAU, not
-    a lump: a big flat plateau top ringed by ONE steep chamfer band (single facet
-    per side -> the hard-industrial cut-block read). sx = +1 right / -1 left; the
-    plateau biases toward the OUTER edge (where the thenar heel and curled fingers
-    bear) so the swell is hand-filling. Base flush at z=0 (a thin land survives
-    around it = tapered edge), plateau at -CROWN_PEAK."""
-    cy = 48.5                                            # grip centre (board_h/2)
-    ax = sx * 5.0                                        # apex shift toward the outer edge
-    base = _octa(cx,      cy,       34.0, 45.0, 13.0)     # z=0
-    top  = _octa(cx+ax,   cy+1.0,   26.0, 36.0, 10.0)     # -CROWN_PEAK plateau (big + flat)
-    return _facet_loft([(base, 0.0), (top, -CROWN_PEAK)])
-
-def _spine_ridge():
-    """Low faceted panel tying the two mounds into ONE milled block: a wide flat-
-    topped cut-corner section that laps ~10mm into each grip mound (so they fuse
-    with no notch) and gives the fingers a centre purchase behind the phone well.
-    Its top sits CROWN_PEAK-CROWN_SPINE above the grip plateaus -> a crisp panel
-    step between centre and grips."""
-    base = _octa(0.0, 48.5, 100.0, 44.0, 26.0)   # z=0 (laps both grip mounds, ~full height)
-    top  = _octa(0.0, 48.5,  95.0, 38.0, 22.0)   # -CROWN_SPINE (broad flat panel)
-    return _facet_loft([(base, 0.0), (top, -CROWN_SPINE)])
-
-def _crown_solid():
-    """v0.24: both faceted grip mounds only — the spine ridge is GONE (there is no
-    back half in the center any more; the telescoping bridge carries its own
-    faceted underside). One solid below z=0, split per grip by back_half()."""
-    prod = _product()
-    gx = _seam_frame()                                  # right grip inner edge (84.85)
-    cxr = gx + prod["right"]["board_w"]/2               # right grip centre x
-    return _grip_mound(cxr, +1).union(_grip_mound(-cxr, -1))
-
-def _crown_grooves():
-    """Crisp shadow-line grooves scored into the flat grip plateaus (constant
-    z = -CROWN_PEAK): three longitudinal channels per grip — the machined 90s
-    panel-line / grip-rib read, and a little extra thumb-cradle purchase. Cut as
-    boxes in the plateau's z-band (they only bite where the crown reaches the
-    plateau depth, so they never touch the bevels or the surrounding land).
-    Returned as a cutter list; applied to the shell after the crown union."""
-    prod = _product(); gx = _seam_frame()
-    cxr = gx + prod["right"]["board_w"]/2
-    z1 = -CROWN_PEAK                                     # plateau face; cut upward CROWN_GROOVE
-    cutters = []
-    for cx, sx in ((cxr, +1), (-cxr, -1)):
-        pcx = cx + sx*5.0                               # plateau centre (apex-biased)
-        for dy in (-8.5, 0.0, 8.5):
-            cutters.append(cq.Workplane("XY").workplane(offset=z1)
-                           .center(pcx, 49.5+dy).box(36.0, 1.4, CROWN_GROOVE, centered=(True, True, False)))
-    return cutters
+    `up` = the solid extends UPWARD from this face, so it is the part's bottom edge
+    being rounded (the back shell). `up=False` = the solid is below the face and it is
+    the top edge (the lid's keyboard face). Either way the round grows outward as it
+    leaves the bed, so it prints with no support: each band overhangs the one under it
+    by at most r/n = one layer."""
+    cuts = []
+    for i in range(n):
+        u0, u1 = r*i/n, r*(i+1)/n                 # depth band, measured from the face
+        um = (u0 + u1) / 2.0
+        inset = r - math.sqrt(max(r*r - (r-um)**2, 0.0))   # quarter-circle profile
+        band = poly.buffer(2.0).difference(poly.buffer(-inset))
+        if band.is_empty:
+            continue
+        z0 = (z_face + u0) if up else (z_face - u1)
+        cuts.append(_cq_from_poly(band, z0 - 0.001, (u1 - u0) + 0.002))
+    return cuts
 
 def _find_fp(side, key, anchor=False):
     """Product-frame (x, y) of the first footprint whose name contains key.
@@ -766,14 +767,9 @@ def _back_solid():
     prod = _product()
     # walls go OUTSIDE the PCB envelope: outer = fp+wall+clr, cavity = fp+clr (so the
     # board sits inside with clearance instead of colliding with the walls).
-    outer = _cq_from_poly(fp.buffer(WALL_T+PCB_CLR), 0, FLOOR+WALL)
+    outer = _cq_from_poly(fp.buffer(WALL_T+PCB_CLR), BACK_Z, (FLOOR+WALL) - BACK_Z)
     inner = _cq_from_poly(fp.buffer(PCB_CLR), FLOOR, WALL+1)
     shell = outer.cut(inner)
-    # v0.23: faceted ergonomic crown, added below z=0 (never touches the cavity),
-    # then the shadow-line grip grooves scored into the plateaus
-    shell = shell.union(_crown_solid())
-    for gc in _crown_grooves():
-        shell = shell.cut(gc)
     # (v0.14: the old MagSafe "ring pocket" cut here extruded BELOW z=0 — outside the
     #  solid, a no-op — the ring seats in the center panel's phone pocket since v0.16.)
     # PCB standoff bosses + M3 heat-set bores at each grip's mount holes (v0.19:
@@ -813,9 +809,14 @@ def _back_solid():
                       .center(sx, bh_r + 1.5).box(8.0, 3.4, 2.8, centered=(True, True, False)))
     # reset tact pinhole (actuator faces the floor) + charge-LED light pipe hole
     rx, ry = _find_fp("right", "TS-1187A", anchor=True)
-    shell = shell.cut(cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+1)).center(rx, ry).circle(0.8).extrude(CROWN_PEAK+FLOOR+2))
+    # v0.25: the back is BACK_Z..FLOOR = 6.1mm thick here, so a plain Ø1.6 bore would be
+    # a 6mm straw no paperclip could find. Counterbore Ø3.2 from the back and leave only
+    # the last 1.6mm at Ø1.6, which is the bit that has to stay small.
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=BACK_Z-1).center(rx, ry).circle(0.8).extrude((FLOOR - BACK_Z) + 2))
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=BACK_Z-1).center(rx, ry).circle(1.6).extrude((FLOOR - BACK_Z) - 1.6 + 1))
     lx, ly = _find_fp("right", "LED_0603")
-    shell = shell.cut(cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+1)).center(lx, ly).circle(0.75).extrude(CROWN_PEAK+FLOOR+2))
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=BACK_Z-1).center(lx, ly).circle(0.75).extrude((FLOOR - BACK_Z) + 2))
+    shell = shell.cut(cq.Workplane("XY").workplane(offset=BACK_Z-1).center(lx, ly).circle(1.6).extrude((FLOOR - BACK_Z) - 1.6 + 1))
     # antenna wall relief: the E73 physically overhangs the TOP board edge by 0.5mm and
     # the cavity wall face is only PCB_CLR=0.4 out — relieve the inner wall face 0.6mm
     # over the antenna keep-out span so the module tip has >=0.5mm clearance. The wall
@@ -925,11 +926,7 @@ def _grip_bridge_iface(part, side):
         part = _cradle_shelf(part, xw0 - 4.0, xw1)   # v0.24e bottom shelf (see _cradle_shelf)
         part = _gripper_retainer(part, side, gx)     # v0.24e rigid retainer over the TPU lip ROOT
         # (the soft edge grip + teeth + the lip's TPU facing are gripper("right"))
-        for by in BOLT_Y:                          # bridge-bolt bosses (M3 insert) behind the cradle wall
-            part = part.union(cq.Workplane("XY").workplane(offset=FLOOR)
-                              .center(BOLT_X, by).circle(2.8).extrude(zt - FLOOR))
-            part = part.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
-                            .center(BOLT_X, by).circle(1.7).extrude(-6.0))
+        # v0.25 (J3): the tray is unioned into this part by back_half(); no bolts, no bosses.
     else:
         gxl = -gx                                  # left grip inner edge (-84.85)
         xw0, xw1 = gxl + 0.9, -BR_X_RIGHT         # -83.95 .. -82.6 cradle (stops shy of J2's courtyard)
@@ -981,14 +978,25 @@ def _back_half_build(side):
     bodies (no x=0 seam, no tabs/shiplap) joined only by the telescoping bridge, so
     a half is just its grip clipped out of _back_full(). The right grip carries the
     bridge-mount bosses; the left grip carries the slider groove (added by
-    _grip_bridge_iface). The faceted crown (down to -CROWN_PEAK) is kept by the low
-    clip box."""
+    _grip_bridge_iface). The clip box reaches below BACK_Z so any future
+    below-the-back feature is kept rather than sliced off."""
     prod = _product(); bh = prod["right"]["board_h"]
     s = 1 if side == "right" else -1
-    half = (cq.Workplane("XY").workplane(offset=-(CROWN_PEAK+2))
-            .center(s*250, bh/2).box(500, 500, 30+CROWN_PEAK+2, centered=(True, True, False)))
+    half = (cq.Workplane("XY").workplane(offset=BACK_Z-8)
+            .center(s*250, bh/2).box(500, 500, 38, centered=(True, True, False)))
     part = _back_full().intersect(half)
     part = _grip_bridge_iface(part, side)
+    if side == "right":
+        part = part.union(_tray_solid())     # v0.25 (J3): one part, no joint
+    # v0.25: quarter-round the outside bottom edge — the back plane is the face the palm
+    # rides on, and it is now one continuous plane across the grips AND the tray, so the
+    # round is taken on their combined outline rather than each piece's.
+    gp, _g, _o = _grip_poly_product(side)
+    face = gp.buffer(WALL_T + PCB_CLR)
+    if side == "right":
+        face = face.union(shp_box(OUTER_LEFT, SHROUD_Y0, BR_X_RIGHT, SHROUD_Y1))
+    for c in _round_edge_cutters(face, BACK_Z, EDGE_R, up=True):
+        part = part.cut(c)
     return _to_trimesh(part, f"back_{side}")
 
 def _keymat_field(side):
@@ -1125,6 +1133,12 @@ def _grip_lid_build(side):
         plate = plate.cut(_csk_cone(hh["x"]+ox, hh["y"]+oy, z0+TOP_T))
     # 0.8mm 45-degree chamfer on the inner top edge (the cyan side of the reveal)
     plate = plate.cut(_edge_wedge(s*gx, z0+TOP_T, bh=bh))
+    # v0.25: quarter-round the OUTSIDE top edge of the keyboard face — the edge the
+    # thumbs ride over. Built from the UNCLIPPED footprint buffer on purpose: near the
+    # seam that profile sits ~2.9mm inboard of the reveal and gets clipped away, so the
+    # seam keeps its crisp 0.5mm chamfer and only the outer perimeter is rounded.
+    for c in _round_edge_cutters(fp.buffer(WALL_T + PCB_CLR), z0 + TOP_T, EDGE_R, up=False):
+        plate = plate.cut(c)
     return _to_trimesh(plate, f"grip_lid_{side}")
 
 def _inner_right(clamp_pos=None):
@@ -1139,15 +1153,16 @@ def _shroud_overlap(clamp_pos=None):
     asserted >= 12mm by --check so the internals are never exposed."""
     return _inner_right(clamp_pos) - OUTER_LEFT
 
-def bridge():
-    return _memo("bridge", _bridge_build)
+def _tray_solid():
+    """v0.25 (J3): the fixed TRAY, returned as a CadQuery solid for back_half("right")
+    to union in. It is no longer a separate printed part and no longer bolts to anything —
+    the bolted joint it used to need is gone, which is the whole point of the merge.
 
-def _bridge_build():
-    """v0.24c the fixed TRAY — a 2-part telescoping tray (simpler than the geared
+    v0.24c the fixed TRAY — a 2-part telescoping tray (simpler than the geared
     3-stage). It bolts to the right grip and cantilevers left to OUTER_LEFT; the left
     grip's plate laps inside it (grown in _grip_bridge_iface), so the two overlap at
     every span and enclose the springs + FFC + power cable. The flat top is the phone
-    rest, carrying the MagSafe ring recess at the centre; the back is the rounded
+    rest (v0.25: no MagSafe recess — flat all the way across); the back is the rounded
     enclosure. Big continuous top face = room for the ring AND clean back-space for
     maker alt-shells (solar / battery / LoRa)."""
     zb, zt = SHROUD_ZBOT, SHROUD_ZTOP
@@ -1174,26 +1189,19 @@ def _bridge_build():
     for ry0, ry1 in _rib_bands():
         br = br.union(_cq_from_poly(shp_box(rib_x0, ry0, BR_X_RIGHT - SHROUD_WALL, ry1),
                                     zb + SHROUD_WALL, zpi - (zb + SHROUD_WALL)))
-    # (3) bolt bosses into the right grip (round, past the plate edge at BOLT_X)
-    for by in BOLT_Y:
-        br = br.union(cq.Workplane("XY").workplane(offset=zpi)
-                      .center(BOLT_X, by).circle(2.7).extrude(BR_PLATE_T))
-        br = br.cut(cq.Workplane("XY").workplane(offset=zt + 0.1)
-                    .center(BOLT_X, by).circle(SCREW_HOLE_R).extrude(-(BR_PLATE_T + 0.2)))
+    # (3) v0.25 (J3): the two M3 bolt bosses that used to tie the tray to the right grip are
+    #     GONE with the joint. They were unbuildable anyway — both sides were Ø3.4 clearance,
+    #     so nothing was ever threaded, and the column sat under 12.5mm of solid cradle wall
+    #     with no driver access. Merging the parts deletes the problem rather than fixing it.
     # (4) cable windows in the RIGHT end wall — one per LANE (FFC to J2, battery leads
     #     to J3), on the lane z band. v0.24c cut a single window at y 15..33, which the
     #     power lane at y=40 missed entirely.
     for cy0, cy1 in _chan_bands():
         br = br.cut(_cq_from_poly(shp_box(BR_X_RIGHT - SHROUD_WALL - 1, cy0, BR_X_RIGHT + 1, cy1),
                                   CAV_Z0 - 0.2, (CAV_Z1 + 0.2) - (CAV_Z0 - 0.2)))
-    # (5) MagSafe ring recess in the tray top at the phone centre (0, cy). SECONDARY
-    #     hold only — the clamp + deep lips do retention; a solid local backing keeps
-    #     the recess from opening into the spring/cable cavity below.
-    mcx, mcy = 0.0, prod_cy()
-    br = br.union(cq.Workplane("XY").workplane(offset=zpi - 0.8).center(mcx, mcy)
-                  .circle(MAG_REC_R + 1.4).extrude((zt) - (zpi - 0.8)))       # local backing plug
-    br = br.cut(cq.Workplane("XY").workplane(offset=zt - MAG_REC_D).center(mcx, mcy)
-                .circle(MAG_REC_R).extrude(MAG_REC_D + 0.2))                  # ring recess (ring 0.2 proud)
+    # (5) v0.25: the MagSafe ring and its recess are gone (see the constant block). The
+    #     tray top is now an uninterrupted flat phone rest, and nothing hangs below the
+    #     top plate into the moving jaw's travel.
     # (6) v0.24e BOTTOM SHELF: an upstand along the tray top's low-y edge, sitting
     #     directly over the front wall so it is fully supported. The phone's bottom long
     #     edge bears on this instead of hanging off clamp friction. It spans the whole
@@ -1201,7 +1209,7 @@ def _bridge_build():
     #     is what matters at long spans where the phone overhangs the tray.
     sy0, sy1 = shelf_y()
     br = br.union(_cq_from_poly(shp_box(OUTER_LEFT, sy0, BR_X_RIGHT, sy1), zt, SHELF_H))
-    return _to_trimesh(br, "bridge")
+    return br
 
 def prod_cy():
     return _product()["right"]["board_h"] / 2.0                              # phone/grip y-centre (48.5)
@@ -1249,15 +1257,6 @@ def _gripper_build(side):
     # phone's weight into a force spreading the jaws.
     lip = lip.edges(f"|Y and {'<X' if s > 0 else '>X'} and >Z").chamfer(LIP_CHAM)
     return _to_trimesh(pad.union(lip), f"gripper_{side}")
-
-def magsafe_ring():
-    """N52 MagSafe ring seated in the tray recess — SECONDARY back-hold + snap only
-    (the clamp + lips retain the phone). Alignment variance across phones is a non-
-    issue because it isn't load-bearing; makers can reposition or float it."""
-    mcx, mcy = 0.0, prod_cy()
-    outer = trimesh.creation.cylinder(radius=MAG_D / 2, height=2.0, sections=48)
-    inner = trimesh.creation.cylinder(radius=MAG_D / 2 - 8, height=3, sections=48)
-    return _place(outer.difference(inner), mcx, mcy, 0)                             # z set in assemble
 
 # ==== keycap legends (Rii i8+ print style; ANSI US per the ZMK keymap) =============
 LEGEND_DEPTH = 0.4        # deboss into the cap top face
@@ -1412,9 +1411,9 @@ def _keymats_build(side):
         # it sinking from below, and between them each arm sector rocks about a boundary
         # that stays put instead of dragging its neighbours' sectors with it. The rib
         # prints as an upstand (the mat prints cap-side down), so no support.
-        pcb_face = PCB_Z + PCB_T
-        mat = mat.union(_cq_from_poly(dp["band"], pcb_face + DPAD_RIB_CLR,
-                                      z0 - (pcb_face + DPAD_RIB_CLR)))
+        rib_z = PCB_Z + PCB_T + DOME_RETAIN_T + DPAD_RIB_CLR
+        assert rib_z < z0, "the back rib has no height left above the dome-retention layer"
+        mat = mat.union(_cq_from_poly(dp["band"], rib_z, z0 - rib_z))
         # 45-degree break on the pad's outer top edge + the OK button's, so the moulded
         # -D-pad read survives the flat-topped extrusion the rest of the caps use.
         cx, cy = dp["c"]
@@ -1581,7 +1580,6 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
 # (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / FACE_Z / RECESS_TOP are derived up top.)
 PHONE_Z = RECESS_TOP + PHONE_TC/2               # cased phone rests its back on the bridge recess
                                                 # floor; nominal screen top ~= FACE_Z (near-flush)
-MAGSAFE_Z = (RECESS_TOP - MAG_REC_D) + 1.0      # 4.3 — N52 ring centre (in the tray recess, 0.2 proud)
 BATT_Z = FLOOR + 2.0                   # 403040 cell (4mm) seated flush on the LEFT grip
                                        # floor — the 0.3 foam compresses under the taped
                                        # cell; flush gives the full 1.14mm diode clearance
@@ -1695,7 +1693,7 @@ def _nub_cap_build():
         m.export(os.path.join(BUILD, "nub_cap.stl"))
     return m
 
-SHELLS = ("back_right", "back_left", "bridge", "grip_lid_right", "grip_lid_left",
+SHELLS = ("back_right", "back_left", "grip_lid_right", "grip_lid_left",
           "gripper_right", "gripper_left", "nub_spring", "nub_cap")
 
 def assemble(clamp_pos=None):
@@ -1710,7 +1708,6 @@ def assemble(clamp_pos=None):
     A = {}
     A["back_right"] = back_half("right")
     A["back_left"] = L(back_half("left"))
-    A["bridge"] = bridge()
     A["grip_lid_right"] = grip_lid("right")
     A["grip_lid_left"] = L(grip_lid("left"))
     A["nub_spring"] = nub_spring()
@@ -1733,7 +1730,6 @@ def assemble(clamp_pos=None):
         A[f"spring_{i}"] = s
     A["flex"] = flex_body(clamp_pos)                    # FFC, enclosed (z set in the body)
     A["power"] = power_body(clamp_pos)                  # battery power cable, enclosed
-    ms = magsafe_ring(); ms.apply_translation((0, 0, MAGSAFE_Z)); A["magsafe"] = ms  # secondary back-hold
     for k, m in screw_bodies().items():   # left grip's screws ride the moving jaw
         A[k] = L(m) if k.startswith("screw_left") else m
     return A
@@ -1753,16 +1749,22 @@ def _allowed(a, b):
     # v0.24 expanding clamp: the bridge is the ground member both grips ride/bolt to,
     # the springs seat in anchors, and the phone is clamped in the bridge recess +
     # grip cradles (soft TPU pads = the real contact). All intended mating overlaps:
-    if "bridge" in s and any(x.startswith(("back_", "grip_lid")) for x in s): return True  # tray lap slide+seat
+    # v0.25: back_right (grip + fixed tray) and back_left (moving jaw) NEST with
+    # SHROUD_CLR = 0.35 of designed clearance on every face. They are therefore never
+    # supposed to touch, so this pair is deliberately NOT whitelisted: any overlap is a
+    # real clash and --check must say so. The old blanket pass ("tray lap slide+seat")
+    # is what hid a Ø60 MagSafe plug sitting 0.45mm inside the jaw's cavity, jamming the
+    # clamp at every span. A moving fit is the last pair that should be exempt from the
+    # only test that can see it.
+    if "back_right" in s and any(x.startswith("grip_lid") for x in s): return True  # lid seats on the grip
     # v0.24d: a spring may only ever touch its OWN anchors — the tray's fixed post and
     # the moving jaw's hook lug. v0.24c whitelisted "spring vs anything", which is how
     # spring 0 came to share lane y=24 with the FFC, coil resting on ribbon, unflagged.
     if any(x.startswith("spring") for x in s):
-        return any(x in ("bridge", "back_left") for x in s)
-    if "phone" in s and any(x.startswith(("bridge", "back_", "cradle", "gripper", "magsafe")) for x in s): return True  # rests / clamped
+        return any(x in ("back_right", "back_left") for x in s)
+    if "phone" in s and any(x.startswith(("back_", "cradle", "gripper")) for x in s): return True  # rests / clamped
     if any(x.startswith("gripper") for x in s) and any(x.startswith(("back_", "grip_lid")) for x in s): return True  # TPU gripper seats on the grip cradle
     if km and any(x.startswith(("cradle", "gripper")) for x in s): return True   # TPU grippers print with the mats
-    if "magsafe" in s and any(x.startswith("bridge") for x in s): return True    # N52 ring seats in the tray recess
     # the FFC is an APPROXIMATE floppy ribbon (straight-run fit model) and has to pass
     # THROUGH each grip's shell to reach its ZIF, so grip/connector overlaps are
     # modeled contacts. The fixed TRAY is NOT on that list any more (v0.24c let it be):
@@ -1772,7 +1774,7 @@ def _allowed(a, b):
     if "power" in s and "battery" in s: return True         # the power cable plugs the battery
     # a collapsed grip's inner mount screw grazes the fixed recess floor by <0.5mm;
     # the printed plate carries a local clearance dimple there.
-    if any(x.startswith("screw_") for x in s) and "bridge" in s: return True
+    if any(x.startswith("screw_") for x in s) and "back_right" in s: return True
     # screw heads SEAT in the lid countersinks (45-degree cone-on-cone); everything
     # else a screw could hit is modeled with real clearance and stays a hard clash
     if any(x.startswith("screw_") for x in s) and any(x.startswith("grip_lid") for x in s):
@@ -1839,7 +1841,7 @@ def cable_enclosure(A, gap_x=6.0):
           top/bottom faces, ±y off its side faces) must every one hit shell.
 
     Returns the list of failing (cable, x, reasons) samples (empty == sealed)."""
-    shell = trimesh.util.concatenate([A[n] for n in ("bridge", "back_left", "back_right") if n in A])
+    shell = trimesh.util.concatenate([A[n] for n in ("back_left", "back_right") if n in A])
     gxr = BR_X_RIGHT
     dirs = {"up": (0, 0, 1.0), "down": (0, 0, -1.0), "front": (0, -1.0, 0), "back": (0, 1.0, 0)}
     bad = []
@@ -1852,15 +1854,15 @@ def cable_enclosure(A, gap_x=6.0):
         if x1 <= x0:
             continue
         # (a) the clipped run, as a solid, must sit in free space inside the tray
-        if "bridge" in A:
+        if "back_right" in A:
             seg = _place(_box(x1 - x0, hi[1] - lo[1], hi[2] - lo[2]), (x0 + x1) / 2.0, cy, cz)
             try:
-                inter = A["bridge"].intersection(seg)
+                inter = A["back_right"].intersection(seg)
                 vol = float(inter.volume) if inter is not None and hasattr(inter, "volume") else 0.0
             except Exception:
                 vol = 0.0
             if vol > 1.0:
-                bad.append((cab, round((x0 + x1) / 2.0, 1), [f"buried in bridge ({vol:.0f}mm3)"]))
+                bad.append((cab, round((x0 + x1) / 2.0, 1), [f"buried in the tray ({vol:.0f}mm3)"]))
         # (b) enclosure, sampled off the cable's own surfaces rather than its centre
         for x in np.linspace(x0, x1, 30):
             org = {"up":    (x, cy, hi[2] + 0.15),
@@ -1884,6 +1886,18 @@ def bed_fit(m, name):
     print(f"  bed-fit {name}: {dx:.1f} x {dy:.1f} x {dz:.1f} mm -> {tag} (limit {BED_XY:.0f} xy = 220 bed - 2x8 brim)")
     return ok
 
+def _watertight_gate(m, name):
+    """A non-watertight mesh is not a printable solid AND it poisons every check
+    downstream: collide() wraps its boolean in a bare except and reports vol=0.0, so a
+    leaking part silently reads as colliding with nothing. --all printed watertight=
+    from the start but only ever gated on bed_fit, which meant the one number that
+    invalidates the rest of the run could scroll past. It gates now."""
+    if m.is_watertight:
+        return True
+    print(f"  ❌ {name} is NOT watertight — collide() cannot judge it; fix the boolean "
+          f"(a cone or wall coincident with the face it cuts is the usual cause)")
+    return False
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", action="store_true")
@@ -1901,7 +1915,6 @@ def main():
         built = []
         for fn, nm in [(lambda: back_half("right"), "back_right"),
                        (lambda: back_half("left"), "back_left"),
-                       (bridge, "bridge"),
                        (lambda: gripper("right"), "gripper_right"),
                        (lambda: gripper("left"), "gripper_left"),
                        (lambda: grip_lid("right"), "grip_lid_right"),
@@ -1909,14 +1922,14 @@ def main():
                        (nub_spring, "nub_spring"),
                        (nub_cap, "nub_cap")]:
             m = fn(); print(f"  {nm}: watertight={m.is_watertight} vol={m.volume/1000:.1f}cm3 bbox={[round(v,1) for v in m.extents]}")
-            ok = bed_fit(m, nm) and ok
+            ok = bed_fit(m, nm) and _watertight_gate(m, nm) and ok
             built.append(m)
         for side in ("right", "left"):
             m = keymats(side); print(f"  keymat_{side}: watertight={m.is_watertight} bbox={[round(v,1) for v in m.extents]}")
-            ok = bed_fit(m, f"keymat_{side}") and ok
+            ok = bed_fit(m, f"keymat_{side}") and _watertight_gate(m, f"keymat_{side}") and ok
             built.append(m)
         if not ok:
-            sys.exit("bed-fit FAILED: a part exceeds the Ender 3 V2 printable area")
+            sys.exit("FAILED: a part is not printable — see the bed-fit / watertight lines above")
         # reference STL of all 9 printed parts in their assembled positions (they
         # share the product frame, so plain concatenation IS the assembly) — a
         # multi-body viewing aid for spatial reasoning, not a printable part
@@ -2042,10 +2055,8 @@ def _explode_offset(k):
     if k.startswith("keymat"): return 22
     if k.startswith("grip_lid"): return 40
     if k.startswith("screw_"): return 56   # above the lids they drop through
-    if k == "bridge":       return 30      # the 2-part tray lifts out below the phone
     if k.startswith("spring"): return 24
     if k.startswith("gripper"): return 46  # TPU grippers lift off the grip cradles
-    if k == "magsafe":      return 60      # N52 ring lifts out of the tray recess
     if k == "nub_spring": return 56        # lifts out of the lid counterbore
     if k == "nub_cap": return 66           # pulls off the spring spigot
     if k == "phone":        return 84
@@ -2058,17 +2069,15 @@ def _render_exploded(A):
         mm = m.copy(); mm.apply_translation((0, 0, _explode_offset(k)))
         meshes.append((mm, col(k)))
     render_iso(meshes, os.path.join(RENDERS, "assembly3d_exploded.png"),
-               "thumbdeck — exploded stack (back grips · telescoping bridge · springs · PCB · keymats · grip lids · phone)",
+               "thumbdeck — exploded stack (back grips incl. the integral tray · springs · PCB · keymats · grip lids · phone)",
                elev=14, azim=-72)
 
 def _asm_col(k):
     # v0.19 GBC "Atomic Purple": translucent purple shells, dark button-gray keymats
     if k.startswith("back_"): return [0.48,0.35,0.65,0.55]
-    if k == "bridge":       return [0.48,0.35,0.65,0.55]
     if k.startswith("grip_lid"): return [0.48,0.35,0.65,0.55]
     if k.startswith("keymat"): return [0.23,0.23,0.24,1]
     if k.startswith("gripper"): return [0.12,0.12,0.13,1]  # TPU edge grippers (dark)
-    if k == "magsafe":      return [0.72,0.72,0.75,1]      # N52 ring (silver)
     if k == "nub_spring":   return [0.23,0.23,0.24,1]  # keymat gray
     if k == "nub_cap":      return [0.78,0.09,0.11,1]  # ThinkPad red (classic soft dome)
     if k == "phone":        return [0.05,0.05,0.08,1]
@@ -2083,9 +2092,8 @@ def _asm_col(k):
     return [0.5,0.5,0.25,1]
 
 def _render_parts(A):
-    titles = {"back_right": "right back grip (GROUND — bridge-mount bosses + right cradle)",
+    titles = {"back_right": "right back grip + the fixed tray, ONE part (v0.25 J3: no bolted joint)",
               "back_left": "left back grip (moving jaw — inner shroud + lane ribs + left cradle + spring hook lugs)",
-              "bridge": "telescoping bridge — fixed tray (lane channels: spring | FFC | power | spring)",
               "grip_lid_right": "right grip lid (key openings + clamp rim)",
               "grip_lid_left": "left grip lid (key openings + clamp rim)",
               "gripper_right": "right TPU gripper (toothed edge pad + capture lip; the shell's "

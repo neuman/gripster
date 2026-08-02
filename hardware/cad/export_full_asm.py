@@ -22,7 +22,6 @@ object tree in Blender / any glTF viewer):
     │                      5 per grip lid) + 2 short M3 bridge-to-grip bolts
     ├── battery            403040 pouch in the left grip (sketch tan)
     ├── flex               FFC jumper in the enclosed tray channel (ribbon amber)
-    ├── magsafe_ring       N52 ring in the tray-centre recess (secondary hold)
     └── phone/             real Samsung S25 Ultra model (assets/s25_ultra.glb,
                            own materials incl. screen texture) — screen faces OUT
                            (+z), camera bump flush with the panel's well floor
@@ -238,7 +237,7 @@ def main():
         scene.graph.update(frame_to=grp, frame_from=root, matrix=np.eye(4))
 
     # shells + keymats (printed parts, GBC Atomic-Purple / button-gray materials)
-    for n in ("back_left", "back_right", "bridge",
+    for n in ("back_left", "back_right",
               "grip_lid_left", "grip_lid_right", "nub_spring"):
         _add(scene, _stl(n), n, "shells", material=SHELL_MAT)
     _add(scene, _stl("nub_cap"), "nub_cap", "shells", material=NUBCAP_MAT)
@@ -279,8 +278,6 @@ def main():
     _add(scene, deck3d.power_body(), "power", root, [217, 51, 40, 255]) # battery power cable (enclosed)
     for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs (enclosed)
         _add(scene, sp, f"spring_{i}", root, COL["ring"])
-    ms = deck3d.magsafe_ring(); ms.apply_translation((0, 0, deck3d.MAGSAFE_Z))
-    _add(scene, ms, "magsafe_ring", root, COL["ring"])                 # v0.24c secondary N52 ring
     _add_phone(scene, root, prod)
 
     os.makedirs(MODELS, exist_ok=True)

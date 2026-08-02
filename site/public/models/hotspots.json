@@ -3,7 +3,7 @@
   "id": "phone",
   "title": "Expanding tray + TPU grippers",
   "oneLiner": "The phone clamps by its short edges in a 2-part spring-loaded tray, held mechanically by toothed soft TPU grippers whose lips hook over the screen edge — safe even screen-down.",
-  "blurb": "v0.24 replaced the fixed flush-screen well with a 2-part telescoping tray — the simple Abxylute-S9 / 8BitDo approach, not a geared Kishi brace: the two grips slide on a spring-loaded bridge and pull together to grip the phone by its short edges over a 130–170 mm long-edge range, enough for a regular iPhone or Galaxy through the Ultra sizes. Retention is MECHANICAL: a soft TPU gripper on each inner edge hooks a lip over the phone's front face. The lip is deliberately TPU and not hard plastic — it has to flex for the thickness of whatever case you run, and printed plastic on cover glass is a scratch source — while a small rigid retainer on the shell caps the lip's root so the gripper can't peel off, stopping short of the screen entirely. Each pad carries a comb of half-round teeth (v0.24d) that bite the cased edge so the phone can't creep or rotate out of square, and a 3 mm shelf along the bottom of the well takes the phone's weight in normal use instead of leaving it to friction (v0.24e). A strong N52 MagSafe ring is back in the tray centre as a secondary snap-and-hold — a bonus, never the thing keeping the phone up. It collapses flat for a pocket and leaves back-space for alternative maker shells (battery, solar, LoRa).",
+  "blurb": "v0.24 replaced the fixed flush-screen well with a 2-part telescoping tray — the simple Abxylute-S9 / 8BitDo approach, not a geared Kishi brace: the two grips slide on a spring-loaded bridge and pull together to grip the phone by its short edges over a 130–170 mm long-edge range, enough for a regular iPhone or Galaxy through the Ultra sizes. Retention is MECHANICAL: a soft TPU gripper on each inner edge hooks a lip over the phone's front face. The lip is deliberately TPU and not hard plastic — it has to flex for the thickness of whatever case you run, and printed plastic on cover glass is a scratch source — while a small rigid retainer on the shell caps the lip's root so the gripper can't peel off, stopping short of the screen entirely. Each pad carries a comb of half-round teeth (v0.24d) that bite the cased edge so the phone can't creep or rotate out of square, and a 3 mm shelf along the bottom of the well takes the phone's weight in normal use instead of leaving it to friction (v0.24e). v0.25 removed the secondary MagSafe ring entirely: with the clamp, the teeth and the lips all doing their job it earned nothing, and its recess was the last thing occupying the moving jaw's travel. It collapses flat for a pocket and leaves back-space for alternative maker shells (battery, solar, LoRa).",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
@@ -82,7 +82,7 @@
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
-   "bridge__atomic_purple"
+   "back_right__atomic_purple"
   ]
  },
  {

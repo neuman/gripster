@@ -27,11 +27,13 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
   Abxylute/8BitDo-style): stretch it open, drop the phone in, and two springs clamp it by the short
   edges — ~130 to ~170 mm long, and it collapses flat for a pocket. The phone is held **mechanically** —
   trapped between the tray and **soft TPU grippers with deep capture lips** — so it stays put even
-  screen-down over your face like a Switch. **MagSafe is back** too (a strong N52 ring in the tray), but
-  as a *snap-and-hold-flat* bonus, never the thing keeping the phone up.
-- **The back is contoured to the hand.** A faceted 90s-industrial crown (Rii-8+ grip swells) rises up
-  to 5.5 mm below the back plane at each grip so the device fills the palm instead of pressing a flat
-  slab into it — thin at the edges, ~20 mm at the grips. (v0.23; the back halves print crown-up.)
+  screen-down over your face like a Switch. **No magnets at all** — v0.25 dropped the secondary MagSafe
+  ring: with the spring clamp, the toothed TPU grippers and the deep capture lips all doing their job it
+  earned nothing, and its recess was the last thing wanting space in the moving jaw's travel.
+- **The back is one flat plane.** v0.25 removed the v0.23 faceted crown and dropped both grips' backs
+  to the tray floor, so the grips and the centre tray are coplanar — the device sits flat instead of
+  rocking on its tray, and the back halves print straight on the bed with no supports. Every outside
+  edge the hands wrap gets a 1.2 mm quarter-round.
 - **No switches, no hand-soldering.** 78 Snaptron 7 mm metal snap domes press directly onto gold
   ENIG pads. Every soldered part is SMT on one side of each board — v0.21's pointing nub is a
   single SOT-23-6 hall sensor on the same reflow pass — so JLCPCB builds it 100 % turnkey,
@@ -99,7 +101,7 @@ Phones are the most capable computer most people carry and the worst thing to ty
 handheld shell that fixes the input half without replacing the phone: your phone stays the screen
 and the compute, and the deck around it becomes the keyboard.
 
-The phone mounts **landscape in the centre**, held by a MagSafe N52 ring and a moulded pocket, and it
+The phone mounts **landscape in the centre**, clamped by two springs against toothed TPU grippers, and it
 sits **down inside a well** — deep enough that the glass and the keyboard face form a single flat
 plane 14.7 mm off the back. Two contoured grips flank it. You hold it like a game controller and
 thumb-type a full split QWERTY: 78 keys on **metal snap domes**, the same clicky stainless discs used
@@ -281,7 +283,7 @@ in a ~1.2 mm thin case**, and the fit is tight by design because the screen has 
 phone is four numbers in the model (`phone_w`, `phone_h`, `phone_t`, `case_t` in
 [`hardware/scripts/deck.py`](hardware/scripts/deck.py)); change them, re-run the 3D generator, and
 you get shells for your phone. **The PCBs are unaffected** — only the printed parts change. Two
-caveats: your phone needs to support MagSafe or take a magnet ring, and the grip separation is
+caveats: the grip separation is
 derived straight from the cased phone envelope — a substantially **larger** phone pushes the grips
 further apart than is comfortable to thumb-type across (a smaller one brings them closer, which is
 fine ergonomically, you just get less screen). A large change also moves the FFC bridge connectors
@@ -349,7 +351,7 @@ gets stuck. After that it's drag-and-drop UF2 forever.
 
 **What will it cost?**
 The **~$150–250 for 5 sets** figure quoted below is **boards + JLCPCB assembly only**. It excludes
-domes, retention tape, the LiPo, FFC jumpers, MagSafe rings, M3 hardware, filament, a debug probe,
+domes, retention tape, the LiPo, FFC jumpers, M3 hardware, filament, a debug probe,
 shipping and any import duty. Re-quote at order time.
 
 **Can I buy one?**
@@ -364,7 +366,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 
 | | value |
 |---|---|
-| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **2-part telescoping tray** (v0.24, Abxylute/8BitDo-style — spring clamp, TPU edge grippers + deep capture lips, secondary N52 MagSafe ring); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
+| Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **2-part telescoping tray** (v0.24, Abxylute/8BitDo-style — spring clamp, TPU edge grippers + deep capture lips; v0.25 no magnets); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.25 flat one-plane back with rounded outer edges; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
 | Left grip | QWERT-half (6×6) + a **Ø24 integrated D-pad** (v0.25, Rii i8+ style: four arm sectors + a Ø9 centre OK behind one round lid aperture, over the same five domes) + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |
@@ -396,7 +398,7 @@ Everything below is generated from one parametric model
 
 ![Product view](renders/product.png)
 
-Phone landscape in the centre on the MagSafe ring; left grip = QWERT half + D-pad/OK + mouse buttons;
+Phone landscape in the centre, spring-clamped; left grip = QWERT half + D-pad/OK + mouse buttons;
 right grip = YUIOP half + PgUp/PgDn, with the Ebyte module and power front-end in the grip and the
 LiPo 403040 under the LEFT grip's PCB (v0.18 — the flush-screen phone well displaced it from the
 spine).
@@ -419,7 +421,7 @@ an animation. Scrolling down peels the device from the front face to the back. G
 <details>
 <summary><strong>Show all five layers</strong> (click to expand)</summary>
 
-**5 · Front layer** (2D concept — key openings, phone pocket, screw holes, MagSafe recess; the
+**5 · Front layer** (2D concept — key openings, phone pocket, screw holes; the
 v0.24 front is now two grip lids + the separate telescoping `bridge` tray, not a center panel).
 
 ![Front shell](renders/layer_5_front_shell.png)
@@ -462,13 +464,13 @@ model as the PCB ([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) via Ca
 openings land on dome pads and bosses land on mount holes *by construction*. The whole stack — back
 halves, PCB with **real-dimension** components (E73 module, USB-C, connectors, SOT-23s, 0402s,
 snap-domes), LiPo, FFC jumper, keymats, grip lids, the **`bridge` telescoping tray**, **TPU
-grippers**, MagSafe ring, phone — is assembled in one frame and **collision-checked at min /
+grippers**, phone — is assembled in one frame and **collision-checked at min /
 nominal / max clamp span**: `deck3d.py --check` reports **0 impossible overlaps** across the whole
 130–170 mm travel. Full method: [`docs/cad-process.md`](docs/cad-process.md).
 
 ![Full assembly](renders/assembly3d.png)
 
-**Exploded** — back halves · PCB + domes · keymats · grip lids · `bridge` tray · TPU grippers · MagSafe · phone:
+**Exploded** — back halves (right = grip + tray, one part) · PCB + domes · keymats · grip lids · TPU grippers · phone:
 
 ![Exploded assembly](renders/assembly3d_exploded.png)
 
@@ -476,7 +478,7 @@ The shell prints flat on a **220 × 220 mm Ender 3 V2 bed** — the old one-piec
 350-class printer. Since **v0.24** the rigid center panel is gone: the two back halves are the
 **grips themselves** — `back_right` is the fixed ground, `back_left` is the moving clamp jaw — and a
 separate **`bridge` telescoping tray** bolts to the right grip while the left grip's inner shroud
-laps inside it, enclosing the springs, FFC and power cable. The tray top carries the **MagSafe ring
+laps inside it, enclosing the springs, FFC and power cable. The tray top is an uninterrupted flat phone rest
 recess**; **TPU grippers** on each inner edge do the mechanical hold. Opening the left grip's five
 screws services the battery. v0.17
 keymats carry the **rectangular keycaps** (8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the
@@ -506,7 +508,7 @@ whole build as one glTF file with a **named object tree** (open it in Blender or
 — that model is this file): translucent **Atomic-Purple** shells + dark-gray keymats (real glTF PBR
 materials), **KiCad-generated boards** (real Edge.Cuts body + routed copper + soldermask + silkscreen
 from the `.kicad_pcb`s), every placed component and snap dome as its real-dimension body, plus the
-403040 battery, FFC jumper (in its floor channel), the M3 shell screws, MagSafe ring and the
+403040 battery, FFC jumper (in its floor channel), the M3 shell screws and the
 flush-mounted cased phone. All transforms are baked into the vertices, so the tree survives even
 minimal TRS-only viewers. Regenerate:
 `hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py`.
@@ -560,7 +562,7 @@ appear.
 | Item | Spec | Qty | Notes |
 |---|---|---|---|
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package exported by `gen_fab.py` into `hardware/kicad/generated/fab/`. |
-| Shell | 7 prints (2 back halves, 2 grip lids, v0.24 `bridge` tray, v0.21 nub spring + cap) + 2 **TPU grippers**, **MagSafe N52 ring** in the tray recess | 1 | Retention is mechanical (TPU grippers + capture lips + clamp); MagSafe is a secondary snap. All parts fit a 220 × 220 bed. |
+| Shell | **v0.25: 6 prints** (`back_right` = grip **+ fixed tray in one part**, `back_left`, 2 grip lids, nub spring + cap) + 2 **TPU grippers** | 1 | Retention is entirely mechanical (TPU grippers + capture lips + spring clamp) — no magnets. All parts fit a 220 × 220 bed. |
 | Pointing nub | **TMAG5273A1** hall sensor (C3716049, on the right board) + **Ø4 × 2 mm N52 disc magnet** in the printed spring | 1 + spare magnets | v0.21: the only added electronics is one SOT-23-6 — machine-placed with everything else. v0.22: the spring's post is a standard TrackPoint square platform — genuine classic caps fit; a red soft-dome replica prints in TPU. |
 | M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 10 + 10 | Heads flush with the face (v0.19). 5/grip lid; v0.24: the 4 center-panel screws are gone — the `bridge` tray bolts to the right grip with 2 short M3s into its cradle bosses. |
 
@@ -657,7 +659,7 @@ one `gen_fab.py` run away.
   PCB. Then seat each board on its 3 support posts + perimeter bosses; screw on each grip lid
   (5 × M3×10 CSK). v0.24: route the FFC + power cable through the tray, **bolt the `bridge` tray to
   the right grip** (2 × M3), lap the left grip's inner shroud into it, then press the TPU grippers +
-  MagSafe ring — the battery is serviced by opening the left grip. v0.24d: each cable threads its
+  battery is serviced by opening the left grip. v0.24d: each cable threads its
   **own walled channel** (FFC in the middle-front lane, power behind it, a spring in each outboard
   lane) — thread them before the shrouds are lapped together, and don't let a service loop sit
   across a divider rib. Full order:

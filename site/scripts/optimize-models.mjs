@@ -41,9 +41,9 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 })
 
 const SINGLE = new Set([
-  'back_left', 'back_right', 'bridge', 'gripper_left', 'gripper_right',
+  'back_left', 'back_right', 'gripper_left', 'gripper_right',
   'grip_lid_left', 'grip_lid_right', 'nub_spring', 'nub_cap',
-  'keymat_left', 'keymat_right', 'battery', 'flex', 'power', 'magsafe_ring',
+  'keymat_left', 'keymat_right', 'battery', 'flex', 'power',
 ])
 function moverOf(nodeName) {
   const base = nodeName.split('__')[0]
@@ -57,7 +57,7 @@ const LAYER = {
   pcb_right: -1, pcb_left: -1, bridge: -0.5,
   grip_lid_left: 1, grip_lid_right: 1, nub_spring: 1.3,
   keymat_left: 2, keymat_right: 2, gripper_left: 2.3, gripper_right: 2.3,
-  nub_cap: 2.6, magsafe_ring: 3, phone: 4,
+  nub_cap: 2.6, phone: 4,
 }
 const LEFT = new Set(['back_left', 'grip_lid_left', 'keymat_left', 'pcb_left', 'gripper_left'])
 const RIGHT = new Set(['back_right', 'grip_lid_right', 'keymat_right', 'pcb_right', 'nub_spring', 'nub_cap', 'gripper_right'])

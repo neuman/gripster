@@ -5,6 +5,66 @@ were made at the time and may name parts since replaced (Raytac → E73, Cirque 
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
 current design is rev-A / v0.25 (first entry).
 
+## v0.25 — flat one-plane back, and the tray joint deleted rather than fixed (2026-08-02, branch main)
+
+Two user calls in one pass, plus a consequence neither of them had alone.
+
+### The faceted crown is gone (option A)
+
+*"I appreciate everything you did to add the ergonomic 'cheeks' … but they are not working for me
+aesthetically."* Five options were rendered as hillshaded relief so the choice could be made on the
+shape rather than on a description; the call was **delete it**. Worth separating what was wrong: the
+5.5 mm of palm fill was doing real ergonomic work, but the *language* — a cut-corner octagon, one
+steep chamfer band, three scored grooves — read as a block applied to the back rather than a shape
+the back has. The crown was also the sole reason the back halves printed cavity-down and therefore
+needed tree supports through the cavity, and why the reset pinhole was a 7.1 mm Ø1.6 straw.
+
+### The tray-to-grip joint is deleted, not repaired (option J3)
+
+Measuring the joint to answer "is this the best design for strength and simplicity" turned up that
+**it could not be assembled at all**:
+
+- Both sides were **Ø3.4 M3 *clearance*** (`SCREW_HOLE_R` 1.7). No tapped hole, no heat-set bore, no
+  head seat anywhere in the joint — a bolt engaged nothing. Conspicuous, because the grips' own five
+  mount holes do it properly (Ø4.0 × 5.3 for an M3 insert, OD ~4.6).
+- A probe straight down the bolt column at x = 83.3 meets solid grip from z = 17.7 to 5.2 — the
+  cradle wall and capture retainer sit **12.5 mm** directly on top of it. No driver could reach it.
+
+`--check` passed it every time, because **assemblability is not a collision**. Rather than fix a
+joint whose whole job was to exist, the fixed tray is now unioned into `back_right`: one part,
+203.75 × 103.8 × 22.2 mm. It missed the 204 mm brim-safe gate by 3.75 mm as drawn, so `OUTER_LEFT`
+went −45 → **−41** and `INNER_LEN` 67 → **71** paid it back — full-open telescoping overlap is
+unchanged at 13.35 mm, which is the number the enclosure assertion actually cares about.
+
+### …and the two together broke the stance, which is why the back is now one plane
+
+`SHROUD_ZBOT` = −4.5 was chosen as "above the −5.5 grip crown": the device rested on the two crown
+plateaus with the tray hanging 1 mm clear. Delete the crown and the grips' backs are flat at z = 0,
+so **the tray became the lowest thing on the device by 4.5 mm** — it would have rested on the centre
+tray with both grips floating, and since J3 prints the tray as part of `back_right`, the merged part
+would have needed support under ~87 cm² of cosmetic back face.
+
+The fix is `BACK_Z = SHROUD_ZBOT`: both grips' outer backs drop to the tray floor, so the whole back
+of the device is **one flat plane**. Deriving it from `SHROUD_ZBOT` rather than writing −4.5 twice
+makes the coplanarity a fact of the model. The part now lies straight on the bed and prints with **no
+supports at all** — the cavity, its bosses and its posts all open upward.
+
+Consequences handled in the same pass: the back is 6.1 mm thick under the cavity there, so the reset
+pinhole and the LED pipe get a Ø3.2 counterbore from the back and keep only their last 1.6 mm narrow
+(otherwise the crown's 7 mm straw would have come straight back).
+
+### The outside edges the hands wrap get a 1.2 mm quarter-round
+
+`EDGE_R` = 1.2 on the back plane's outer edge and on the grip lids' keyboard-face outer edge —
+*"just a slight rounding … around the outside of the device where human hands will touch
+frequently."* Built as six ~0.2 mm bands of inset profile rather than a CadQuery `.fillet()`: these
+boundaries are 200 mm long with dozens of segments, an OCC fillet on them is slow and fragile, and at
+one band per layer the printed result is identical. Each band overhangs the last by one layer, so it
+prints with no support. The lid's round is built from the **unclipped** footprint on purpose — near
+the seam that profile sits 2.9 mm inboard and gets clipped away, so the reveal keeps its crisp 0.5 mm
+chamfer and only the outer perimeter is rounded. Nothing moves: the nearest screw hole edge is 5.4 mm
+inboard of the outer boundary and its countersink cone stops 2.3 mm short of the round.
+
 ## v0.25 — the nav cluster becomes one integrated D-pad (2026-08-01, branch main)
 
 User request, with the Rii i8+ nav cluster circled as the reference: *"adjust the 5

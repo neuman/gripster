@@ -29,7 +29,7 @@ const NODE_ANCHOR = {
 const MOVER_ANCHOR = {
   phone: 'phone',
   'nub-cap': 'nub_cap',
-  clamp: 'bridge',
+  clamp: 'back_right',
   battery: 'battery',
   bridge: 'flex',
   domes: 'keymat_right',
