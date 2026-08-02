@@ -81,6 +81,14 @@ def _draw_half(ax, geo, title):
                          edgecolor="#7fd1ff", lw=1.4, ls=":" if opt else "-", zorder=5))
             ax.text(f["x"], f["y"], "trackpad\n(opt)" if opt else "trackpad",
                     ha="center", va="center", fontsize=5.5, color="#7fd1ff", zorder=6)
+        elif f["type"] == "dpad":
+            # v0.25: the integrated nav pad. Drawn UNDER its five domes because that
+            # is the truth — the board still has five discrete switches; the pad is
+            # the keymat/lid cap that covers them.
+            ax.add_patch(Circle((f["x"], f["y"]), f["d"] / 2, facecolor="#2b2118",
+                         edgecolor="#f4a259", lw=1.4, ls="--", zorder=4))
+            ax.text(f["x"], f["y"] + f["d"] / 2 - 1.6, "D-pad", ha="center", va="center",
+                    fontsize=4.2, color="#f4a259", alpha=0.8, zorder=6)
         elif f["type"] == "hall_nub":
             ad = f.get("aperture_d", 10.0)
             ax.add_patch(Circle((f["x"], f["y"]), ad / 2, facecolor="#22333b",

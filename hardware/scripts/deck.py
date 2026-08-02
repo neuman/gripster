@@ -193,6 +193,12 @@ class Config:
     trackpad_h: float = 26.0
     cluster_pitch: float = 8.5    # D-pad / mouse-button spacing
     feat_key_d: float = 7.0       # cluster switch = same 7mm dome
+    # v0.25: the four NAV domes + OK are covered by ONE integrated round pad (the Rii
+    # i8+ / GBC read) instead of five scattered round buttons. The domes below it do
+    # NOT move — this is a keymat/grip-lid feature — but its footprint lives here so
+    # the 2D layout renders draw what the thumb actually meets and deck3d has a single
+    # place to read the diameter from.
+    dpad_d: float = 24.0          # integrated nav-pad outer diameter
 
 
 def _key_centers(c: Config, legends):
@@ -396,6 +402,11 @@ def _features(geo: dict, c: Config) -> list:
         # mouse-button dome courtyard inside the mirrored top-outer M3 boss (c-c 6.96
         # < 7.9). Offsets 32.3 / 62.5 reproduce the proven v0.17 positions exactly.
         cx = W - 32.3                                 # D-pad centre (inner-ish)
+        # v0.25: the five domes below are covered by one integrated pad. Advisory
+        # footprint only — nothing on the board reads it (every board/firmware
+        # consumer filters type == "key"), but the renders and deck3d do.
+        feats.append({"type": "dpad", "label": "NAV", "x": round(cx, 2),
+                      "y": round(cy_lo, 2), "d": c.dpad_d})
         feats.append({"type": "key", "label": "NAV_OK", "x": round(cx, 2), "y": round(cy_lo, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "NAV_U", "x": round(cx, 2), "y": round(cy_lo + p, 2), "d": c.feat_key_d})
         feats.append({"type": "key", "label": "NAV_D", "x": round(cx, 2), "y": round(cy_lo - p, 2), "d": c.feat_key_d})

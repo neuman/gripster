@@ -194,7 +194,11 @@ cavity stack above is untouched.
 - **Grip lids (`grip_lid_left` / `grip_lid_right`)** — per-grip face plates
   (77.9 × 103.8 mm), Atomic-Purple: **rounded-rect key openings at the exact
   dome centres** (cap + 0.2 mm/side; round for the cluster keys) and a **rim that clamps the keymat web with ~0.1 mm preload** so the
-  mat can't float or rattle; the **5 screw positions per grip are unchanged**
+  mat can't float or rattle; v0.25 adds, on the LEFT lid, a **single Ø24.4 aperture
+  with a 0.6 mm 45° dish** for the integrated D-pad plus a **closed clamp ring**
+  (r 13.0–14.5) that pins the pad's web all the way round — that ring, and the
+  keymat's matching back rib beneath it, are what keep the five presses discrete;
+  the **5 screw positions per grip are unchanged**
   from rev-A. The inner edge is cut straight at the grip boundary with a 0.8 mm
   top chamfer (its half of the reveal V). Print cosmetic-face-down. v0.21: the
   RIGHT lid additionally carries the **nub aperture** (Ø10 through) with an

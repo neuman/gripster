@@ -215,12 +215,163 @@ def _rrect(cx, cy, w, h, r=CAP_R):
     """Rounded-rect shapely polygon centred on (cx, cy)."""
     return shp_box(cx - w/2 + r, cy - h/2 + r, cx + w/2 - r, cy + h/2 - r).buffer(r)
 
+# ==== v0.25 integrated nav pad (Rii i8+ / GBC style) ================================
+# The left grip's nav cluster used to be five scattered Ø6.2 round buttons on 8.5mm
+# centres. It is now ONE round pad — a Ø24 disc cut by relief moats into four arm
+# sectors around a centre OK button, poking through a SINGLE round lid aperture.
+# NOTHING electrical moves: the same five Snaptron domes stay on the same 8.5mm
+# pitch, so deck.py's feature list, the matrix, the board and the keymap are all
+# untouched. This is a keymat + grip-lid story only.
+#
+# The thing an integrated pad has to buy back is DISCRETENESS — a press on one arm
+# must collapse exactly one dome. A one-piece rocker gets that from rigidity it
+# cannot have in TPU 95A, so it is bought here with four pieces of geometry:
+#   * MOAT     — every actuator is its own column right down to the web, so no cap
+#                material links neighbours. This is the primary isolator and the
+#                reason cross-talk is a web problem instead of a cap problem.
+#   * RELIEF   — and then the web is THINNED under every moat, because a moat alone
+#                does not isolate anything: the caps stop but the 0.8mm web runs
+#                straight on underneath. Over a short span that web is stiff (the
+#                coupling goes as t^3/L^3), so an un-relieved 1.0mm moat couples its
+#                actuators 3.4x STIFFER than the 1.5mm of full-thickness web between
+#                two ordinary keycaps, and a press would simply carry its neighbours
+#                down with it. The moat is 2.0 wide and the web under it drops to
+#                0.4, which lands ~19x LOOSER than that key pair — the calibration
+#                that matters, since the absolute stiffness of a printed TPU
+#                membrane is not something this model can honestly predict.
+#   * LID RING — an annular downstand outside the aperture pins the keymat web all
+#                the way round the pad, so a sector reacts against a clamped
+#                boundary instead of dragging the whole pad down with it. It sits
+#                1.0mm out from the pad edge: that 1.0mm of full-thickness web is
+#                each arm's hinge, soft enough to rock but short enough to locate.
+#   * BACK RIB — the matching rib on the keymat's underside, which backs that ring
+#                against the PCB face so the pinned web ring cannot just sink.
+# The moats read as the crisp seams of a moulded D-pad, so the pad still looks like
+# one part; the "ridges" doing the work are the relief and the ring/rib pair behind
+# the face.
+DPAD_D = deck.Config().dpad_d        # pad outer diameter (deck.py owns it, so the 2D
+                                     #   layout renders and this model cannot drift)
+DPAD_OK_D = 9.0                      # centre OK button
+DPAD_MOAT = 2.0                      # relief gap between actuators
+DPAD_WEB_RELIEF = 0.4                # web thickness left under a moat (2 layers at 0.2)
+DPAD_RING_R0 = DPAD_D/2 + 1.0        # 13.0 — clamp band inner radius. 1.0 clear of the
+                                     #   arm domes (Ø7 discs reach r 12.0), so the back
+                                     #   rib can never land on a dome's edge.
+DPAD_RING_W = 1.5                    # clamp band width (same as the field clamp rim)
+DPAD_FIELD = DPAD_RING_R0 + DPAD_RING_W + 1.0 - DPAD_D/2   # 3.5 web margin round the pad
+DPAD_RIB_CLR = 0.2                   # back rib's rest clearance to the PCB face: it is a
+                                     #   backstop, not a preload (and stays off collide()'s
+                                     #   keymat-vs-board pair, which is NOT a mating one)
+DPAD_CHAM = 0.6                      # 45-degree chamfer round the aperture in the lid face
+DPAD_EDGE_CHAM = 0.5                 # 45-degree chamfer on the pad's own top outer edge
+DPAD_OK_CHAM = 0.4                   # ...and on the OK button's top edge
+
+def _circle_poly(cx, cy, r, n=72):
+    """Regular n-gon approximating a circle — shapely's buffer() would do, but the
+    pad's polygons get differenced against each other and a shared vertex count
+    keeps those booleans exact."""
+    return Polygon([(cx + r*math.cos(t), cy + r*math.sin(t))
+                    for t in np.linspace(0, 2*math.pi, n, endpoint=False)])
+
+def _dpad_zone(side):
+    """This grip's integrated nav pad: the five NAV dome centres in the product
+    frame, or None for a grip that has no NAV cluster. The domes are read straight
+    out of deck.py — the pad is derived from the board, never the other way round."""
+    prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
+    nav = {f["label"]: (f["x"]+ox, f["y"]+oy) for f in geo.get("features", [])
+           if f["type"] == "key" and f["label"].startswith("NAV_")}
+    if not nav:
+        return None
+    assert set(nav) == {"NAV_U", "NAV_D", "NAV_L", "NAV_R", "NAV_OK"}, \
+        f"{side} grip has NAV keys {sorted(nav)} — the pad is built for the 4+OK cross"
+    cx, cy = nav["NAV_OK"]
+    arm_r = max(math.hypot(x-cx, y-cy) for lab, (x, y) in nav.items() if lab != "NAV_OK")
+    # the pad has to cover its domes, and its clamp band has to sit off them
+    assert DPAD_D/2 >= arm_r + 2.5, \
+        f"pad Ø{DPAD_D} cannot cover arm domes at r={arm_r:.1f}"
+    assert DPAD_OK_D/2 + DPAD_MOAT + 2.0 <= arm_r, \
+        f"OK button Ø{DPAD_OK_D} + moat leaves no arm sector inboard of r={arm_r:.1f}"
+    assert DPAD_RING_R0 >= arm_r + DOME_D/2 + 0.5, \
+        (f"clamp band at r={DPAD_RING_R0} lands within 0.5mm of an arm dome "
+         f"(dome edge r={arm_r + DOME_D/2:.1f}) — the back rib would sit on the dome")
+    # COUPLING CALIBRATION. What decides whether the pad reads as five keys or as one
+    # mushy button is how stiffly the web ties neighbouring actuators together, and a
+    # thin-strip coupling goes as t^3/L^3. The absolute number for a printed TPU
+    # membrane is not something this model can honestly predict, so the pad is held to
+    # a RELATIVE bar instead: never stiffer than the plain full-thickness web that
+    # already separates two ordinary keys and is assumed to work.
+    c = geo["config"]
+    key_gap = min(c["pitch_x"] - c["key_w"], c["pitch_y"] - c["key_h"])
+    ref, pad = KM_WEB**3 / key_gap**3, DPAD_WEB_RELIEF**3 / DPAD_MOAT**3
+    assert 0.4 <= DPAD_WEB_RELIEF < KM_WEB, \
+        f"moat relief {DPAD_WEB_RELIEF} must leave 2 printable layers and thin the {KM_WEB} web"
+    assert pad <= ref, (
+        f"pad actuators couple {pad/ref:.1f}x STIFFER than an ordinary key pair "
+        f"({DPAD_WEB_RELIEF}mm web over a {DPAD_MOAT}mm moat vs {KM_WEB} over {key_gap}) "
+        f"— widen DPAD_MOAT or thin DPAD_WEB_RELIEF, or the presses stop being discrete")
+    # ...and it must not swallow a neighbouring cluster key
+    for f in geo.get("features", []):
+        if f["type"] != "key" or f["label"].startswith("NAV_"):
+            continue
+        d = math.hypot(f["x"]+ox - cx, f["y"]+oy - cy)
+        assert d >= DPAD_D/2 + DPAD_FIELD + f.get("d", 7.0)/2, \
+            (f"the Ø{DPAD_D} pad's web reaches {f['label']} ({d:.1f}mm away) — shrink "
+             f"DPAD_D or move the cluster")
+    # ...and the web it needs must stay clear of the grip's cavity wall, since the mat
+    # is meant to be clamped by the lid rim, not pinched against the shell
+    poly, _g, _o = _grip_poly_product(side)
+    assert poly.buffer(-1.0).contains(_circle_poly(cx, cy, DPAD_D/2 + DPAD_FIELD)), \
+        (f"the Ø{DPAD_D} pad's web disc reaches the {side} grip's cavity wall — the "
+         f"upper zone would have to grow, and that IS a board change")
+    return {"c": (cx, cy), "domes": nav}
+
+def _dpad_plan(side):
+    """Plan geometry of the integrated pad: the five cap polygons (four arm sectors
+    + the centre OK button) with the dome each one presses, and the single lid
+    aperture they all share. None on a grip without a NAV cluster."""
+    from shapely.ops import unary_union
+    from shapely.affinity import rotate as shp_rotate
+    z = _dpad_zone(side)
+    if z is None:
+        return None
+    cx, cy = z["c"]; R = DPAD_D/2
+    outer = _circle_poly(cx, cy, R)
+    ok = _circle_poly(cx, cy, DPAD_OK_D/2)
+    # ring = pad minus the OK button and its moat, then split on the diagonals
+    ring = outer.difference(_circle_poly(cx, cy, DPAD_OK_D/2 + DPAD_MOAT))
+    slot = shp_box(cx - DPAD_MOAT/2, cy, cx + DPAD_MOAT/2, cy + R + 1.0)
+    ring = ring.difference(unary_union([shp_rotate(slot, a, origin=(cx, cy))
+                                        for a in (45, 135, 225, 315)]))
+    arms = list(ring.geoms) if ring.geom_type == "MultiPolygon" else [ring]
+    assert len(arms) == 4, f"{side} pad split into {len(arms)} arms, not 4 — check DPAD_MOAT"
+    sectors = []
+    for lab in ("NAV_U", "NAV_D", "NAV_L", "NAV_R"):
+        dome = Point(*z["domes"][lab])
+        arm = next((g for g in arms if g.contains(dome)), None)
+        assert arm is not None, f"{lab}'s dome is not inside any arm sector"
+        sectors.append((arm, lab, z["domes"][lab]))
+    sectors.append((ok, "NAV_OK", z["domes"]["NAV_OK"]))
+    # every actuator nub must land under its own cap, not out in a moat where the
+    # web is relieved and would just fold instead of pressing the dome
+    for cap, lab, (dx, dy) in sectors:
+        assert cap.contains(Point(dx, dy).buffer(NUB_R)), \
+            (f"{lab}'s Ø{2*NUB_R} nub is not fully under its cap — widen the sector "
+             f"(smaller DPAD_OK_D / DPAD_MOAT, or a bigger DPAD_D)")
+    return {"c": (cx, cy), "sectors": sectors, "outer": outer,
+            "aperture": outer.buffer(CAP_CLR),
+            "moat": outer.difference(unary_union([c for c, _l, _d in sectors])),
+            "band": (_circle_poly(cx, cy, DPAD_RING_R0 + DPAD_RING_W)
+                     .difference(_circle_poly(cx, cy, DPAD_RING_R0)))}
+
 def _cap_shapes_product(side):
     """v0.17 keycap geometry per key, product frame: [(plunger_poly, opening_poly,
     x, y)]. GRID keys carry the rectangular 8.5 x 7.0 caps (2u space 18.5) the user
     feels — the plunger IS the cap, poking through a matching rounded-rect lid
     opening (+CAP_CLR/side). CLUSTER feature keys stay round (Ø6.2 plunger through
-    a Ø7.8 opening, the proven v0.16 pair)."""
+    a Ø7.8 opening, the proven v0.16 pair). v0.25: the five NAV keys are no longer
+    among them — they are the sectors of the integrated pad, and every sector
+    SHARES one aperture so the lid keeps a clean round hole instead of growing
+    0.5mm-wide ribs between the moats."""
     prod = _product(); geo = prod[side]; ox, oy = prod[f"{side}_origin"]
     c = geo["config"]
     out = []
@@ -228,8 +379,9 @@ def _cap_shapes_product(side):
         w = (k.get("w", 1) - 1) * c["pitch_x"] + c["key_w"]
         cap = _rrect(k["x"]+ox, k["y"]+oy, w, c["key_h"])
         out.append((cap, cap.buffer(CAP_CLR), k["x"]+ox, k["y"]+oy))
+    dp = _dpad_plan(side)
     for f in geo.get("features", []):
-        if f["type"] != "key":
+        if f["type"] != "key" or (dp and f["label"].startswith("NAV_")):
             continue
         x, y = f["x"]+ox, f["y"]+oy
         pl = Polygon([(x+KM_PL_D/2*math.cos(t), y+KM_PL_D/2*math.sin(t))
@@ -238,6 +390,9 @@ def _cap_shapes_product(side):
         op = Polygon([(x+(d/2+0.4)*math.cos(t), y+(d/2+0.4)*math.sin(t))
                       for t in np.linspace(0, 2*math.pi, 24)])
         out.append((pl, op, x, y))
+    if dp:
+        for cap, _lab, (dx, dy) in dp["sectors"]:
+            out.append((cap, dp["aperture"], dx, dy))
     return out
 
 def _seam_frame():
@@ -271,6 +426,7 @@ GAP = 0.5
 KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.9, 6.2   # keymat web / plunger height / plunger dia
                                            # (v0.19: 3.5 -> 3.9 keeps caps 1.0 proud of
                                            #  the face after TOP_T grew 0.4)
+NUB_R = 1.4                                # actuator nub radius (Ø2.8, under each dome)
 PCB_Z = FLOOR + STANDOFF                     # grip-local PCB z=0 maps here
 DOME_TOP = PCB_Z + PCB_T + DOME_H            # top of a seated snap dome
 KM_Z0 = DOME_TOP + 1.0                       # keymat web bottom (nub reaches the dome)
@@ -844,7 +1000,11 @@ def _keymat_field(side):
     FLOATING islands (a latent v0.16 bug: PgUp/PgDn and the mouse-button pair sat
     outside the 2.0mm buffer's reach — the 'one-piece' keymat printed as 3+
     pieces). Asserts single-piece connectivity. Shared by keymats() and the grip
-    lids' clamp rims so they line up exactly."""
+    lids' clamp rims so they line up exactly.
+
+    v0.25: the nav pad's own margin is DPAD_FIELD, not the general 2.0 — the web has
+    to carry the clamp band (ring above, back rib below) all the way round the pad
+    with land to spare, and buffering the sectors alone would stop 1.5mm short of it."""
     from shapely.ops import unary_union
     from shapely.geometry import LineString
     shapes = _cap_shapes_product(side)
@@ -859,7 +1019,9 @@ def _keymat_field(side):
         if others:
             no = min(others, key=lambda o: (o[0]-f[0])**2 + (o[1]-f[1])**2)
             strips.append(LineString([f, no]).buffer(1.5))
-    field = unary_union([pl.buffer(2.0) for (pl, _op, _x, _y) in shapes] + strips)
+    dp = _dpad_plan(side)
+    pad = [dp["outer"].buffer(DPAD_FIELD)] if dp else []
+    field = unary_union([pl.buffer(2.0) for (pl, _op, _x, _y) in shapes] + strips + pad)
     # v0.19: Ø5.4 clearance discs at the mount-hole shanks — with the GBC outline
     # the outer screw column moved to 0.3mm from the web's buffered edge, too tight
     # for a flexible TPU mat riding over Ø3 shanks
@@ -915,6 +1077,14 @@ def _grip_lid_build(side):
     web_top = KM_Z0 + KM_WEB
     field, _ = _keymat_field(side)
     rim = field.buffer(-0.15).difference(field.buffer(-1.65))
+    # v0.25: the integrated nav pad gets its own closed clamp ring INSIDE the field.
+    # The perimeter rim only pins the web where the field's edge happens to run, and
+    # the pad sits well inboard of it — without this ring a press on one arm would
+    # lift the web the neighbouring arms stand on, and the moats alone would not keep
+    # the presses discrete. Backed from below by the keymat's matching rib.
+    dp = _dpad_plan(side)
+    if dp:
+        rim = rim.union(dp["band"])
     plate = plate.union(_cq_from_poly(rim, web_top - 0.1, z0 - (web_top - 0.1)))
     # key openings at every cap (v0.17: rounded-rect for grid keys, round for the
     # cluster), cut AFTER the rim union, deep enough to keep the full plunger bore
@@ -922,6 +1092,18 @@ def _grip_lid_build(side):
     from shapely.ops import unary_union
     openings = [op for (_p, op, _x, _y) in _cap_shapes_product(side)]
     plate = plate.cut(_cq_from_poly(unary_union(openings), web_top - 0.2, TOP_T + (z0 - web_top) + 0.4))
+    # ...and the pad's aperture gets a 45-degree dish in the face, so the pad reads as
+    # ONE round control sunk into the lid (the i8+ look) instead of a disc standing in
+    # a punched hole. The cone opens upward, so it still prints clean face-down.
+    if dp and DPAD_CHAM > 0:
+        cx, cy = dp["c"]
+        ra = DPAD_D/2 + CAP_CLR
+        # the cone starts BELOW the face and inboard of the bore (r-0.3) so its flank
+        # crosses r=ra in open air: a cone based exactly on the bore wall is a
+        # coincident-face boolean, and OCC hands back a non-watertight shell for it.
+        h = DPAD_CHAM + 0.7
+        plate = plate.cut(cq.Solid.makeCone(ra - 0.3, ra + DPAD_CHAM + 0.4, h,
+                                            cq.Vector(cx, cy, z0 + TOP_T - DPAD_CHAM - 0.3)))
     # v0.21 (Bean-style hall nub): a plain round aperture — ONLY the printed
     # nub emerges; the face stays flat (no pod, no exposed mechanism). The
     # spring's flange is captured in an underside counterbore: it drops in
@@ -1175,12 +1357,17 @@ def _legend_cutters(side):
             fs = FN_FS if len(FN_LEGENDS[lab]) == 1 else FN_WORD_FS
             cuts.append(_text_cutter(FN_LEGENDS[lab], fs,
                                      x + w/2 - 0.8, y - c["key_h"]/2 + 0.7, anchor="br"))
+    dp = _dpad_plan(side)
     for f in geo.get("features", []):
         if f["type"] != "key":
             continue
         lab = f["label"]; x, y = f["x"]+ox, f["y"]+oy
         if lab.startswith("NAV_") and lab != "NAV_OK":
-            cuts.append(_poly_cutter(_tri(x, y, lab[-1])))
+            # v0.25: on the integrated pad an arrow has a whole sector to itself, so it
+            # grows from the 3.2 that fitted a Ø6.2 button to a 4.6 the thumb can read
+            cuts.append(_poly_cutter(_tri(x, y, lab[-1], s=4.6 if dp else 3.2)))
+        elif lab == "NAV_OK" and dp:  # the pad's centre button is Ø9, not Ø6.2
+            cuts.append(_text_cutter(PRIM_WORDS[lab], WORD_FS, x, y, max_w=DPAD_OK_D - 2.6))
         elif lab in FN_LEGENDS:      # PgUp/PgDn: primary high + FN word low
             cuts.append(_text_cutter(PRIM_WORDS[lab], 2.4, x, y + 1.2, max_w=4.6))
             cuts.append(_text_cutter(FN_LEGENDS[lab], FN_WORD_FS, x, y - 1.6, max_w=4.2))
@@ -1206,10 +1393,40 @@ def _keymats_build(side):
     caps = unary_union([pl for (pl, _o, _x, _y) in shapes])
     mat = mat.union(_cq_from_poly(caps, z0 + KM_WEB, KM_PL_H))
     # actuator nubs underneath (reach down to press each dome centre)
-    nubs = unary_union([Polygon([(x+1.4*math.cos(t), y+1.4*math.sin(t))
+    nubs = unary_union([Polygon([(x+NUB_R*math.cos(t), y+NUB_R*math.sin(t))
                                  for t in np.linspace(0, 2*math.pi, 16)])
                         for (_p, _o, x, y) in shapes])
     mat = mat.union(_cq_from_poly(nubs, z0 - 1.0, 1.0))
+    dp = _dpad_plan(side)
+    if dp:
+        # v0.25 MOAT RELIEF: thin the web under every moat. Without this the moats only
+        # separate the CAPS — the web runs on underneath at full 0.8 and couples the
+        # actuators more stiffly than an ordinary key pair, which is the one way an
+        # integrated pad quietly stops being five discrete keys. Cut from the web's top
+        # face, so in the print (cap-side down) it is an open channel, not a bridge.
+        mat = mat.cut(_cq_from_poly(dp["moat"], z0 + DPAD_WEB_RELIEF,
+                                    KM_WEB - DPAD_WEB_RELIEF + 0.2))
+        # v0.25 nav-pad BACK RIB: an annular downstand under the web, directly beneath
+        # the lid's clamp ring, reaching to DPAD_RIB_CLR above the PCB face. It is a
+        # backstop, not a preload — the ring pins the web ring from above, the rib stops
+        # it sinking from below, and between them each arm sector rocks about a boundary
+        # that stays put instead of dragging its neighbours' sectors with it. The rib
+        # prints as an upstand (the mat prints cap-side down), so no support.
+        pcb_face = PCB_Z + PCB_T
+        mat = mat.union(_cq_from_poly(dp["band"], pcb_face + DPAD_RIB_CLR,
+                                      z0 - (pcb_face + DPAD_RIB_CLR)))
+        # 45-degree break on the pad's outer top edge + the OK button's, so the moulded
+        # -D-pad read survives the flat-topped extrusion the rest of the caps use.
+        cx, cy = dp["c"]
+        for r, c in ((DPAD_D/2, DPAD_EDGE_CHAM), (DPAD_OK_D/2, DPAD_OK_CHAM)):
+            # the wedge starts 0.2 below the chamfer and 0.2 OUTBOARD of the cap wall,
+            # so the cone flank crosses r in open air — same coincident-face trap the
+            # lid's aperture dish had to dodge
+            z_b = CAP_TOP - c - 0.2
+            ring = (cq.Workplane("XY").workplane(offset=z_b)
+                    .center(cx, cy).circle(r + 0.6).extrude(c + 0.4))
+            keep = cq.Solid.makeCone(r + 0.2, r - c - 0.2, c + 0.4, cq.Vector(cx, cy, z_b))
+            mat = mat.cut(ring.cut(keep))
     # debossed keycap legends: one compound cut of every glyph on this grip
     t0 = time.time()
     cutters = _legend_cutters(side)
@@ -1875,7 +2092,9 @@ def _render_parts(A):
                                "retainer caps its root but never reaches over the phone)",
               "nub_spring": "nub flexure spring (Bean-style: flange + spiral arms + magnet hub)",
               "nub_cap": "nub cap — classic ThinkPad soft-dome replica (RED TPU, dot grid; genuine caps also fit)",
-              "keymat_right": "right keymat (plungers + hinge web)"}
+              "keymat_right": "right keymat (plungers + hinge web)",
+              "keymat_left": "left keymat (plungers + hinge web + the v0.25 integrated "
+                             "D-pad: 4 arm sectors + centre OK, relieved moats, back rib)"}
     for nm, title in titles.items():
         if nm not in A:
             continue

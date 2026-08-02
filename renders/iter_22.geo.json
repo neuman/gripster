@@ -566,12 +566,23 @@
       "phone_t": 8.2,
       "case_t": 1.2,
       "magsafe_d": 56.0,
+      "phone_span_min": 130.0,
+      "phone_span_max": 170.0,
+      "clamp_insert_clr": 9.0,
       "trackpad_w": 34.0,
       "trackpad_h": 26.0,
       "cluster_pitch": 8.5,
-      "feat_key_d": 7.0
+      "feat_key_d": 7.0,
+      "dpad_d": 24.0
     },
     "features": [
+      {
+        "type": "dpad",
+        "label": "NAV",
+        "x": 42.7,
+        "y": 79.0,
+        "d": 24.0
+      },
       {
         "type": "key",
         "label": "NAV_OK",
@@ -1206,10 +1217,14 @@
       "phone_t": 8.2,
       "case_t": 1.2,
       "magsafe_d": 56.0,
+      "phone_span_min": 130.0,
+      "phone_span_max": 170.0,
+      "clamp_insert_clr": 9.0,
       "trackpad_w": 34.0,
       "trackpad_h": 26.0,
       "cluster_pitch": 8.5,
-      "feat_key_d": 7.0
+      "feat_key_d": 7.0,
+      "dpad_d": 24.0
     },
     "features": [
       {

@@ -3,7 +3,88 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.24e (first entry).
+current design is rev-A / v0.25 (first entry).
+
+## v0.25 — the nav cluster becomes one integrated D-pad (2026-08-01, branch main)
+
+User request, with the Rii i8+ nav cluster circled as the reference: *"adjust the 5
+circles directional pad to instead be a traditional integrated d pad like in the rii.
+The idea is for it to be a circle with some sort of ridges internally or in the back to
+enable the clicks to be cleanly discrete between up down left right and center. I think
+this can be a change to the keymat and shell only."*
+
+It can, and it is. The left grip's nav cluster was five scattered Ø6.2 buttons on 8.5 mm
+centres poking through five Ø7.8 holes. It is now **one Ø24 pad** — four arm sectors
+around a Ø9 centre OK, split by 2.0 mm relief moats — standing in a **single Ø24.4 lid
+aperture** with a 0.6 mm dished lip. `deck.py` still emits the same five `NAV_*` dome
+features at the same coordinates, so **the board, the matrix, the routing and the ZMK
+keymap are byte-for-byte untouched**; the whole change lives in `deck3d.py`'s keymat and
+grip-lid builders (`_dpad_zone` / `_dpad_plan`).
+
+### Discreteness is bought with geometry, not with rigidity
+
+A faithful one-piece rocker — a rigid cross on a centre pivot, rocking to press one dome
+at a time — is the obvious answer and the wrong one here. It needs a stiff cap, and the
+keymat is **TPU 95A** (E ≈ 30 MPa, ~80× softer than the PETG shells): a 24 mm TPU disc
+does not transmit a corner press to a pivot, it just squashes locally. Worse, a centre
+pivot has nowhere to react against except the **OK dome**, so every direction press would
+land force on OK. Rocking was rejected; four cheaper pieces of geometry do the job:
+
+- **Moats** (keymat). Each of the five actuators is its own column all the way down to
+  the 0.8 mm web, so no cap material links neighbours at all. This is the primary
+  isolator and it is *geometric*, not stiffness-dependent — which is why cross-talk
+  becomes a web problem instead of a cap problem.
+- **Moat relief** (keymat) — *the part that is easy to miss.* A moat on its own isolates
+  nothing: the caps stop but the web runs straight on underneath at full thickness, and
+  over a short span that web is **stiff**, because a thin-strip coupling goes as
+  `t³/L³`. The first cut of this design used a 1.0 mm moat over the unmodified 0.8 mm
+  web — **3.4× stiffer** than the 1.5 mm of web that separates two ordinary keycaps, i.e.
+  a pad that would have pressed its neighbours along with the key you meant. The moat is
+  now 2.0 mm wide and the web beneath it is thinned to **0.4 mm** (two 0.2 layers), which
+  lands **~19× looser** than that key pair. `_dpad_zone` asserts that ratio rather than trusting a
+  number: the absolute stiffness of a printed TPU membrane is not something this model
+  can honestly predict, but "no stiffer than the geometry we already assume works" is a
+  bar it can hold.
+- **Clamp ring** (grip lid). The perimeter clamp rim only pins the web where the field's
+  edge happens to run, and the pad sits well inboard of it. A closed annular downstand at
+  **r 13.0 → 14.5** pins the web all the way round the pad, so a sector reacts against a
+  clamped boundary instead of lifting the web its neighbours stand on. Its 1.0 mm standoff
+  from the pad edge leaves each arm a short full-thickness hinge — soft enough to rock
+  (≈ 32 N·mm/rad, an order more travel than the 0.4 mm a dome wants) but short enough to
+  locate the arm.
+- **Back rib** (keymat). The matching annulus on the web's underside, reaching to 0.2 mm
+  above the PCB face, so the pinned ring cannot simply sink instead of clamping. It is a
+  **backstop, not a preload** — 0.2 mm of rest clearance keeps it off `collide()`'s
+  keymat-vs-board pair, which is not a mating one.
+
+r 13.0 is not arbitrary: the arm domes are Ø7 discs centred at r 8.5, so their edges
+reach r 12.0. `_dpad_zone` asserts the band starts ≥ 0.5 mm outside that, or the back rib
+would come down on a dome's edge. It also asserts the pad covers its domes, that the OK
+button plus moat leaves an arm sector to press, that the pad's web does not swallow
+`MB_L`/`MB_R`, and that the web disc stays 1.0 mm inside the grip cavity — because
+growing the upper zone to fit a bigger pad *is* a board change, and it should fail loudly
+rather than quietly re-derive `board_h`.
+
+### Notes
+
+- The moats read as the seams of a moulded D-pad rather than as five gaps, which is the
+  Rii/GBC look. A seamless top skin over hidden rear moats was considered and dropped for
+  the same `t³/L³` reason the relief exists: a skin thin enough to fold over a 2 mm moat
+  is ~0.4 mm, and bridging 0.4 mm of soft TPU across an enclosed slot is a print gamble
+  where an open moat is not.
+- The pad's outer edge and the OK button's each get a 45° break (0.5 / 0.4 mm) so the
+  flat-topped extrusion the other caps use still reads as a moulded control, and the lid
+  aperture gets a 0.6 mm 45° dish so the pad sits *in* the face rather than standing in a
+  punched hole. Every one of those cones is based *outside* the wall it chamfers — a cone
+  based exactly on the wall is a coincident-face boolean, and OCC returns a
+  **non-watertight** shell for it (caught by `--all`, which prints watertightness).
+- The NAV arrows grow 3.2 → 4.6 mm now that each has a whole sector, and `OK` is sized to
+  the Ø9 button instead of the old Ø6.2 one. `_dpad_plan` asserts each Ø2.8 actuator nub
+  still lands fully under its own cap — with the moat at 2.0 mm the arms start at r 6.5
+  and the nubs at r 8.5 keep 0.6 mm of margin.
+- `deck.Config.dpad_d` owns the diameter so `layout_gen.py` (which draws the pad as a
+  dashed footprint *under* its five domes — the board really does still have five
+  switches) and `deck3d.py` cannot drift apart.
 
 ## v0.24e — the capture lip actually captures (2026-07-30, branch main)
 

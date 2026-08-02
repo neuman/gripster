@@ -366,7 +366,7 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 |---|---|
 | Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **2-part telescoping tray** (v0.24, Abxylute/8BitDo-style — spring clamp, TPU edge grippers + deep capture lips, secondary N52 MagSafe ring); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.23 faceted 90s-industrial back crown; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
-| Left grip | QWERT-half (6×6) + **4-way D-pad + OK** + **mouse L/R** buttons — fully passive (diodes + FFC only) |
+| Left grip | QWERT-half (6×6) + a **Ø24 integrated D-pad** (v0.25, Rii i8+ style: four arm sectors + a Ø9 centre OK behind one round lid aperture, over the same five domes) + **mouse L/R** buttons — fully passive (diodes + FFC only) |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |
 | Modifiers | **mirrored** (v0.20): Ctrl at each grip's bottom-outside corner, Shift directly above it, Alt beside each Space — a thumb can't cross the phone gap, so every mod+same-side-key chord holds the mod with the opposite thumb (right emits RCTRL/RSHFT/RALT). `\` and `\|` moved to FN+`]` / FN+`[`; **no sticky keys — all chords are plain holds** |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals, UF2-flashable after a one-time SWD bootloader flash |
@@ -482,7 +482,12 @@ screws services the battery. v0.17
 keymats carry the **rectangular keycaps** (8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the
 space bars and the right H-row's Rii-style Enter, round cluster keys) on the same living-hinge web
 (TPU 95A), now with **debossed Rii-style legends** (primary, shifted-symbol and FN-layer); the grip
-lids get matching rounded-rect openings.
+lids get matching rounded-rect openings. v0.25 replaces the left grip's five separate nav buttons
+with **one Ø24 integrated D-pad** — four arm sectors and a Ø9 centre OK, split by 2.0 mm relief
+moats, through a single dished Ø24.4 lid aperture. The five domes underneath do not move, so no
+board or firmware changes; the presses stay discrete because the web is **thinned to 0.4 mm under
+each moat** and pinned all the way round the pad by a **clamp ring** on the lid backed by a **rib**
+on the mat.
 Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, `bridge` tray
 ~131 × 83, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
 
