@@ -7,13 +7,11 @@ import content from './content.json'
 import { GripsterViewer, type Hotspot } from './viewer/GripsterViewer'
 
 const REPO = 'https://github.com/neuman/custom-thumb-keyboard'
-const SKETCHFAB = 'https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279'
 const LINKS = {
   github: REPO,
   buildGuide: `${REPO}/blob/main/README.md#build-guide`,
   bom: `${REPO}/blob/main/docs/bill-of-materials.md`,
   firmware: `${REPO}/tree/main/firmware`,
-  sketchfab: SKETCHFAB,
   license: `${REPO}/blob/main/LICENSE`,
 }
 
@@ -148,6 +146,17 @@ const hero = el(
 app.append(hero)
 
 // -- story sections ----------------------------------------------------------
+type StoryFigure = { images: { src: string; alt: string }[]; caption: string }
+
+// one or two reference images plus a caption, rendered inline between paragraphs
+function storyFigure(f: StoryFigure): HTMLElement {
+  const fig = el('figure', { class: `story-figure story-figure--${f.images.length}` })
+  const frame = el('div', { class: 'story-figure-imgs' })
+  for (const im of f.images) frame.append(el('img', { src: im.src, alt: im.alt, loading: 'lazy' }))
+  fig.append(frame, el('figcaption', {}, f.caption))
+  return fig
+}
+
 const story = el('main', { class: 'story', id: 'story' })
 const byKey = new Map(content.sections.map((s: any) => [s.key, s]))
 for (const key of content.sectionOrder) {
@@ -156,7 +165,11 @@ for (const key of content.sectionOrder) {
   const sec = el('section', { class: 'section' })
   sec.append(el('h2', {}, s.heading))
   sec.append(el('p', { class: 'dek' }, s.dek))
-  for (const p of s.paragraphs) sec.append(el('p', {}, p))
+  // a section body is prose, with figure blocks ({images, caption}) interleaved
+  for (const p of s.paragraphs) {
+    if (typeof p === 'string') sec.append(el('p', {}, p))
+    else sec.append(storyFigure(p))
+  }
   if (s.links?.length) {
     const ul = el('ul', { class: 'section-links' })
     for (const l of s.links) {
@@ -200,7 +213,6 @@ const footer = el(
     el('a', { href: LINKS.buildGuide, target: '_blank', rel: 'noopener' }, 'Build guide'),
     el('a', { href: LINKS.bom, target: '_blank', rel: 'noopener' }, 'Bill of materials'),
     el('a', { href: LINKS.firmware, target: '_blank', rel: 'noopener' }, 'Firmware'),
-    el('a', { href: LINKS.sketchfab, target: '_blank', rel: 'noopener' }, 'Sketchfab'),
   ),
   el(
     'p',

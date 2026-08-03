@@ -111,6 +111,49 @@
       ]
     },
     {
+      "key": "why",
+      "heading": "Why I built this",
+      "dek": "Physical keyboards are better. Phones are heavy in the wrong place. Mobile gaming already solved that exact problem.",
+      "paragraphs": [
+        "Physical keyboards are just better than typing on a screen. I think a lot of us have felt that way for a long time. And as phones have become more and more central to how we lead our lives, being able to interface with them has only gotten more important — many of us are doing all of our writing, our work, our communication through a phone. When all of that has to go through swipe typing, the phone becomes a bottleneck on your own thoughts. That's not something we have to live with anymore.",
+        "I've been strapping physical keyboards to the sides of phones for a long time, and one problem kept coming up over and over again. No matter what I did, it never equalled the quality of what I had in the Sidekick era.",
+        {
+          "images": [
+            { "src": "./story/rii-i8.webp", "alt": "A Rii i8 mini wireless keyboard with a trackpad" },
+            { "src": "./story/two-keyboards-mock.webp", "alt": "Mock-up of two mini keyboards flanking a phone in landscape" }
+          ],
+          "caption": "Where this started: a pair of Rii i8 mini keyboards, one on each side of the phone."
+        },
+        "The problem is that phones are just too heavy. The Sidekick's form factor worked because the battery, the compute, and the keyboard were all in the bottom part of the phone, and the screen that slid up was the light part — so the weight rested naturally in the bottom of your hand.",
+        "When you strap a keyboard to the bottom or the side of a phone, the weight is always wrong. It's always in the top half. And if you weight the bottom of the keyboard, you don't really fix it — you just end up with something so heavy that it drags your hands down.",
+        "Interestingly enough, this problem has already been solved. The exact same problem existed in the mobile gaming community about ten years back, and about six years ago we arrived at the real resolution for it: a Switch-style controller, or what you may think of as a Backbone-style controller. It solves all of these problems.",
+        {
+          "images": [{ "src": "./story/backbone.webp", "alt": "A Backbone-style mobile controller: two grips joined by a telescoping bridge" }],
+          "caption": "The mobile-gaming answer: phone in the middle, weight between your hands."
+        },
+        "The trick is to place the phone in the middle, in between the two hand grips, so that the weight is centred. This may seem like a trivial improvement. But centring that weight between your hands turns something that is impossible to balance — something that creates immense finger and wrist strain, that you can't really use at all, let alone for long — into a device that can be used comfortably for hours on end.",
+        "The mission of Gripster is to take exactly that approach and apply it to the mobile keyboard problem. I've actually been sending sketches and specs for precisely this device over the course of the last decade. I've rarely gotten responses, and I certainly haven't seen any of the mobile keyboard companies produce any of the things I've asked for.",
+        {
+          "images": [{ "src": "./story/sketch-gripster.webp", "alt": "Hand-drawn concept sketch: a split QWERTY keyboard on two grips with the phone held in the middle" }],
+          "caption": "One of those sketches — keys on the grips, phone in the middle. The centre magnet has since been dropped for a mechanical clamp."
+        }
+      ],
+      "links": [
+        {
+          "label": "The original concept sketches",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/sketches"
+        },
+        {
+          "label": "Reference notes — the devices this borrows from",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/reference-notes.md"
+        },
+        {
+          "label": "Design decisions — every version, and why",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md"
+        }
+      ]
+    },
+    {
       "key": "interesting",
       "heading": "A few things it does differently",
       "dek": "Four ideas that make it more than a phone case with buttons glued on.",
@@ -196,6 +239,35 @@
       ]
     },
     {
+      "key": "ai",
+      "heading": "Full disclosure: this is a heavily AI-developed project",
+      "dek": "In goes a prompt, out comes an output — and a test that doesn't rely on AI decides whether it's any good.",
+      "paragraphs": [
+        "I have never before designed a piece of hardware at this level. I don't have an education in PCB design or in electrical engineering. I have previously been a project manager for hardware/software integration projects to the tune of billions of dollars, at major corporations like Microsoft and Axon. But without the aid of AI coding models, this would not have been possible.",
+        "My aim here was to see if AI coding models could be applied to solve problems in the real world, in a manner emulating what we've developed for software: in goes a prompt, out comes some output, a test that does not rely on AI determines whether or not that output is good, and the feedback from that test goes back into the AI. Only when the tests are passing is the output deemed good enough to even be viewed by a person.",
+        "That's why so much of this repo is checks rather than drawings. The matrix is proven ghost-free by walking about 68,500 multi-key combinations; the boards are held to a clean KiCad DRC; every printed part is tested for watertightness, for collisions against the whole assembly, and for fitting a stock Ender 3 V2 bed. None of those judgements are made by a model — they're made by a script the model has to satisfy.",
+        "All of the systems and flows that I used to create this are open source and freely available on GitHub. My hope is that, in addition to scratching my own itch of wanting this very special thing to come into the world to solve my very particular problem, this project can also help kickstart a wave of open-source hardware that we can all iterate on together. Contributions are welcome — I would love to see this project take on a life of its own. Please get in touch if you have any questions."
+      ],
+      "links": [
+        {
+          "label": "Fab-readiness evaluation — what's machine-verified, and what isn't",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/evaluation.md"
+        },
+        {
+          "label": "The ghost-proof matrix simulation",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/sim_matrix.py"
+        },
+        {
+          "label": "docs/cad-process.md — the generate-and-check loop",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/cad-process.md"
+        },
+        {
+          "label": "Contributing",
+          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/CONTRIBUTING.md"
+        }
+      ]
+    },
+    {
       "key": "build",
       "heading": "Build one",
       "dek": "It's open hardware — the boards, the shells, the firmware, and the model that generates them all.",
@@ -238,9 +310,11 @@
   },
   "sectionOrder": [
     "lede",
+    "why",
     "interesting",
     "how",
     "parametric",
+    "ai",
     "build"
   ]
 }

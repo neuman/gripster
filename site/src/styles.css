@@ -193,6 +193,25 @@ img { max-width: 100%; display: block; }
 }
 .section-links a:hover { text-decoration: none; border-color: var(--accent); }
 
+/* inline story figures — reference photos and sketches between paragraphs */
+.story-figure { margin: 1.6rem 0 1.8rem; }
+.story-figure-imgs {
+  display: grid; gap: 0.6rem; grid-template-columns: 1fr;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  background: var(--surface-2); padding: 0.6rem;
+}
+.story-figure--2 .story-figure-imgs { grid-template-columns: 1fr 1fr; align-items: center; }
+.story-figure img { width: 100%; height: auto; border-radius: 7px; }
+/* two-up: cap height so images of different aspect read at the same scale */
+.story-figure--2 img { max-height: 180px; width: auto; max-width: 100%; margin: 0 auto; }
+.story-figure figcaption {
+  font: 500 0.84rem var(--sans); color: var(--text-dim);
+  margin-top: 0.6rem; padding-left: 0.1rem;
+}
+@media (max-width: 560px) {
+  .story-figure--2 .story-figure-imgs { grid-template-columns: 1fr; }
+}
+
 /* renders gallery */
 .render-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin-top: 1.2rem; }
 .render-grid figure { margin: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
