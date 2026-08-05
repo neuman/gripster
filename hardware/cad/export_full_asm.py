@@ -87,6 +87,7 @@ COL = {
     "comp":   [56, 56, 62, 255],     # component bodies
     "conn":   [88, 88, 96, 255],     # connectors (J1/J2/J3)
     "screw":  [186, 189, 195, 255],  # M3 flush-countersunk shell screws (steel)
+    "magnet": [176, 180, 188, 255],  # NiCuNi-plated NdFeB nub magnet (bright nickel)
 }
 
 def _kicad_glb(side):
@@ -274,6 +275,11 @@ def main():
     # loose bodies
     bt = deck3d.battery_body(); bt.apply_translation((0, 0, deck3d.BATT_Z))
     _add(scene, bt, "battery", root, COL["battery"])
+    # v0.26: the nub magnet is a BOUGHT part, not a printed one, so it comes from
+    # deck3d directly rather than from an STL — but it is a real body in the product
+    # and belongs in the tree (it was previously represented only by the hole cut for
+    # it in nub_spring, i.e. not at all).
+    _add(scene, deck3d.nub_magnet(), "nub_magnet", root, COL["magnet"])
     _add(scene, deck3d.flex_body(), "flex", root, COL["flex"])          # FFC (enclosed)
     _add(scene, deck3d.power_body(), "power", root, [217, 51, 40, 255]) # battery power cable (enclosed)
     for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs (enclosed)

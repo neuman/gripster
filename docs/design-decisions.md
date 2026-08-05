@@ -3,7 +3,165 @@
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
 IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.25 (first entry).
+current design is rev-A / v0.26 (first entry).
+
+## v0.26 — the nub magnet becomes real, and the flexure gets a spec (2026-08-03, branch main)
+
+The magnet had a **pocket** in `nub_spring` since v0.21 but never a **body**: it was in no
+STL, no GLB, no render and no collision check. Adding it turned into an audit of the whole
+pointing stack, because once you draw the magnet you have to say exactly where it sits, and
+that number had never been written down.
+
+### The magnet: a part you can actually order
+
+The BOM said "Ø4 × 2 mm N52 disc, axially magnetized" with no supplier, no plating and no
+tolerance. It now names **supermagnete `S-04-02-N`** (Ø4 × 2 mm, **N45**, Ni-Cu-Ni, axial,
+Br 1.32–1.37 T) with a US part (totalElement `D4X2MMN52-250PK`) and an engineering-grade
+alternative (Radial 9039 = Digi-Key `469-1072-ND`, N35SH, 150 °C, magnetization angle sorted
+to ≤ 3°).
+
+- **Grade drops N52 → N45.** N52 has the **lowest** service temperature of the common grades
+  (≤ 65 °C vs ≤ 80 °C). This device clamps a phone, sits in sunlight and rides in cars. Past
+  that limit the loss is irreversible and the driver's boot-zero *cannot* recover it — it
+  re-zeros a weaker magnet and pointing goes quietly sluggish forever. N45 costs ~8 % of Br,
+  which the firmware gain absorbs without noticing.
+- **"(Bean spec)" was false.** The code comment credited the Ø4 × 2 size to the Ploopy Bean.
+  The Bean's hardware appendix actually specifies **Ø6 × 2**, which our Ø7.0 hub cannot carry
+  (the wall would drop to 0.5 mm). Ø4 × 2 is our own choice, made because it is a genuine
+  mass-stock size that the hub *can* carry. The Bean also mounts its magnet **N away** from
+  the sensor — the opposite of ours — so the polarity note is ours to own too.
+- **Order by SKU, not description.** A Ø4 × 2 mm *diametrically* magnetized disc is also a
+  cataloged product and is the wrong part.
+- **The pocket was never a press fit.** It was drawn Ø4.10 for a Ø4.00 ±0.10 magnet, so a
+  +tolerance magnet exactly equals the nominal bore — and FDM prints holes undersize. That is
+  an interference fit being driven into a 1.45 mm wall by hand, and NdFeB is brittle. The bore
+  opens to **Ø4.20** and retention becomes a drop of cyanoacrylate against the pocket ceiling.
+
+### The gap nobody had computed
+
+The docstring said the magnet sits "~2.6 mm over the back-side TMAG5273". That is the distance
+to the **package**, and the package is not what measures anything. Per TI SLYS045C Figure 6-2,
+the hall element sits **0.73 mm below the moulded top face** — and U4 is back-mounted, so its
+mould face points *away* from the board and that 0.73 mm is *toward* the PCB. The real
+magnet-face-to-die distance is **3.33 mm**:
+
+```
+magnet face 10.45 | 0.95 air | 1.60 FR4 | 0.06 solder | 0.72 package | die 7.12
+```
+
+`deck3d.py --report` now prints and asserts this whole stack instead of leaving it in a
+comment. Modelled SOT-23-6 height also went 1.1 → **1.45 mm** (the real DBV figure), because
+the die reference is measured off a face the model was placing 0.35 mm wrong.
+
+At 3.33 mm a Ø4 × 2 N45 disc puts **~52 mT** on the die. Nothing saturates: the driver enables
+**X and Y only**, and the axial field never enters a measured channel.
+
+- **The X/Y range was wrong in the safe direction.** It was set to ±80 mT for "headroom vs the
+  close nub magnet" — but X/Y only ever see the *transverse* field, which peaks around 12 mT
+  including the static misalignment offset. v0.26 uses **±40 mT**, doubling resolution to
+  1.2207 µT/count for free.
+- **The hall element is 0.418 mm off the package axis** (+0.40 along the body, −0.12 across),
+  and `gen_board` centres U4's *footprint* on the nub axis, so the die is off-axis by that much.
+  This is left **uncompensated, deliberately**: it costs a static transverse offset the boot-zero
+  removes and **under 1 %** response asymmetry once the flexure is stiff enough to stay in its
+  linear range. Correcting it would mean either a board respin or de-coupling the mechanical nub
+  from the feature that places the sensor. Recorded here so the next board spin can shift U4
+  0.418 mm and take the 17 % of full scale back.
+
+### The flexure: the arms were already right, but for no stated reason
+
+The user's ask was a "ThinkPad-like experience of tension / pressure / travel", so the arms were
+modelled properly for the first time. **Four** independent beam models got built — two here, two
+adversarial — and the honest result is that **they agree on stress and disagree on stiffness by
+7×.** That disagreement is itself the finding, so it is recorded rather than averaged away.
+
+The reason is a boundary condition, not a modelling error. The arm is a 1.2 mm ribbon spiralling
+r 3.6 → 5.9, so its first ~22 % is buried in the Ø7 hub and its last ~30 % in the flange bore.
+Treat the whole 100° arc as a free beam and you get 2.6 N/mm; clamp it rigidly at both embedments
+(48° free) and you get 18.3 N/mm. Neither is true — the hub is genuinely stiff, the 1 mm flange
+ring is not — and no beam model can tell you where in between the real part sits.
+
+What that bracket *can* settle is the design question, because the two candidates fall on opposite
+sides of it. Against a target of **350–600 µm of cap travel at 150 gf** (the TrackPoint IV spec —
+0–150 gf usable, 320 gf working — adapted to a hall nub, which unlike a strain gauge must actually
+move to be read):
+
+| arm thickness | cap travel at 150 gf | verdict |
+|---|---|---|
+| **0.8 mm (as built)** | **474 µm** (free-span) … **285 µm** (hub clamped) | **straddles the band** |
+| 1.2 mm | 158 µm … 94 µm | below it under *every* assumption — nearly rigid |
+
+So **`NUB_ARM_T` stays at 0.8.** An earlier pass of this same work had thickened it to 1.2 on the
+strength of the softest model alone; correcting the embedment assumption reversed that. The v0.21
+value was right — it simply had no stated reason, no target band, and no calibration procedure
+attached to it. It now has all three, and arm thickness is documented as a **coupon-calibrated
+parameter**: print at 0.7/0.8/0.9, hang 50/100/150 gf laterally off the cap, measure with a dial
+indicator, and take the one nearest 350–600 µm. Do not trust a beam model here, including ours.
+
+Peak arm stress at 150 gf is **23–29 MPa** against PETG's ~50 MPa yield — first yield around
+300 gf. That is a thinner margin than one would choose, which is what the first change below is for.
+
+Two changes the arms did need, both **independent of the stiffness argument**:
+
+- **Root fillets.** The arm was a constant-width ribbon meeting the hub and the flange at a square
+  re-entrant T-junction, and *every* model built — including the ones that disagreed about
+  everything else — put peak stress at exactly that corner. The arm is now a two-sided offset
+  polygon whose half-width swells 0.5 mm at both ends, shaped `(2s−1)^6` so the swell stays inside
+  the last ~15 % — the zone where the arm is merging into the hub or flange anyway, so it costs no
+  free slot at mid-arc. Peak stress drops ~19 % (28.6 → 23.1 MPa at 150 gf) and the peak migrates
+  off the corner. This is the fix the stress numbers actually supported; thickening was not.
+- **A plunge stop.** Nothing limited *axial* travel: the hub could sink the full 0.90 mm to the
+  PCB, and because the magnet approaches the die over that stroke, Bz swung 52 → 92 mT and the
+  pointing gain rose with it. The cursor sped up when you pressed harder **at constant tilt** —
+  precisely the squishy, non-isometric feel a TrackPoint avoids. Three pads on the hub underside
+  now bottom out at **0.35 mm**. (Note the stop is directionally uneven — it engages sooner toward
+  a pad than between pads. Widening or adding pads is the follow-up if that reads as notchy.)
+
+**Correction to v0.22.** That entry claims the cap skirt hitting the Ø10 aperture wall is the
+"first tilt-stop" and that it keeps peak arm strain under 3.5 %. It does neither. The skirt has
+1.1 mm of radial clearance and the cap moves ~54 µm/N laterally, so reaching that wall takes
+**~20 N** — nothing a thumb will ever do. There is no tilt stop in the lid, and there never was.
+What does bound overload is the v0.26 plunge pads (they ground out on the PCB in tilt as well as
+in plunge) plus the arms' own ~300 gf first-yield margin. The "<3.5 % peak arm strain" acceptance
+criterion should also be retired rather than re-used: PETG's yield strain is ~2.5 % (50 MPa /
+2.0 GPa), so a 3.5 % budget is already past it. Judge stress against yield directly instead.
+
+### Firmware is half of the feel, so it moved with the spring
+
+`gain-div` is not independent of the arms — it converts field into cursor speed, so it inherits
+the flexure's stiffness and the sensor's range. Two of the three changes here are unambiguous:
+
+- **X/Y range ±80 → ±40 mT.** The old setting was justified as "headroom vs the close nub magnet",
+  which conflates the axial field with the channels being measured. `MAG_CH_EN` enables X and Y
+  only, and those never see more than ~12 mT. Halves the count size for free.
+- **deadzone 150 → 100 counts.** Forced by the above: the range change halved the microtesla value
+  of a count, so keeping 150 would have *doubled* the physical deadband. 100 counts = 0.122 mT ≈
+  9.5 gf, about 2.8× the noise floor at 8× averaging.
+- **`MAG_TEMPCO` → NdFeB (0.12 %/°C)** — a free register field left at "no compensation" for a
+  magnet that is, in fact, NdFeB.
+
+**gain-div 3500 → 1054 is a bracket, not a measurement**, and is labelled as such in the binding.
+It inherits the flexure's 7× stiffness uncertainty: targeting full speed at 150 gf gives 615 at the
+stiff end of the bracket and 1807 at the soft end. 1054 is the geometric mean, and across the
+bracket the curve spans:
+
+| thumb force | cursor speed |
+|---|---|
+| 25 gf | 8 – 35 px/s |
+| 50 gf | 57 – 191 px/s |
+| 100 gf | 289 – 876 px/s |
+| 150 gf | 701 – 1200 px/s (clamp) |
+
+The binding carries the formula to re-derive it from a measured count at 150 gf. It stays a
+first-article item for two further reasons: printed arm stiffness varies with material and layer
+bonding, and the sensor is spec'd to ±20 % sensitivity error, which this quadratic curve squares
+into ±44 % of cursor speed.
+
+### Also fixed
+
+The site's "TI TMAG5273A1 Hall Sensor" hotspot was anchored to **`pcb_right__U2`** — the
+MCP73831 **charger**, 13.5 mm away. The TMAG5273 is U4, and it was not even preserved as a node
+in the web export. Both fixed, and the magnet is now its own explodable part.
 
 ## v0.25 — flat one-plane back, and the tray joint deleted rather than fixed (2026-08-02, branch main)
 
@@ -515,6 +673,13 @@ Two user-feedback items on the v0.21 print/renders.
   on the flexure (peak arm strain drops below ~3.5%). Sensor gap, magnet,
   arms, legs and clamp are untouched; the GLB paints the cap
   `trackpoint_red`.
+  > **⚠ Superseded by v0.26 — the tilt-stop claim in this paragraph is wrong.** Reaching
+  > the aperture wall takes ~20 N of thumb force, so it is not a stop at all, and the
+  > "<3.5 % peak arm strain" criterion is past PETG's ~2.5 % yield strain anyway. v0.26
+  > re-derived the flexure against the TrackPoint IV spec and **kept the 0.8 mm arms** (they
+  > were already in the target band), but added a root fillet and a 0.35 mm plunge stop, so
+  > "arms, legs and clamp are untouched" no longer holds. Neither does "sensor gap ...
+  > untouched": the gap was never 2.6 mm — that measured to the package, not the die.
 
 ## v0.21 — right-grip pointing nub: Bean-style TMAG5273 hall sensor (2026-07-23, branch feature/right-joystick)
 

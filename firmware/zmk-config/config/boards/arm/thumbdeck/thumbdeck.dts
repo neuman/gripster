@@ -78,9 +78,15 @@
         compatible = "thumbdeck,tmag5273-nub";
         reg = <0x35>;
         sampling-hz = <100>;
-        deadzone = <150>;
+        /* v0.26: retuned for the +/-40 mT range (was +/-80), which halved the
+         * microtesla value of a count — so deadzone had to come down with it or
+         * the physical deadband would have doubled. gain-div targets full speed
+         * at 150 gf. These three are ONE calibration, not three, and gain-div is
+         * a bracketed estimate (615..1807) pending a coupon measurement — see the
+         * binding yaml for how to measure it. */
+        deadzone = <100>;
         gain-num = <1>;
-        gain-div = <3500>;
+        gain-div = <1054>;
         max-out = <12>;
         calib-samples = <32>;
         /* axis orientation is a first-article calibration: flip/swap here */

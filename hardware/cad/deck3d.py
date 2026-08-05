@@ -36,7 +36,33 @@ SOLDER = 0.06          # estimated solder/paste standoff
 #      whose bbox is inflated by keep-out drawings carry a "body" override (dx,dy),
 #      modeled centred on the footprint ANCHOR instead. Matched by substring against
 #      the footprint name (first hit wins). h=0 -> skipped (bare pads). -------------
+# --- v0.26: TMAG5273 in the SOT-23-6 (TI DBV) package -------------------------------
+# The nub's whole magnetic design hangs off where the HALL ELEMENT actually is, which is
+# not the package outline and not the PCB surface. From TI SLYS045C §6.3.2 Figure 6-2
+# ("Location of X, Y, Z Hall Elements") plus package drawing 4214840/G:
+TMAG_PKG_H = 1.45        # DBV body height A (max; drawing 4214840/G). deck3d used to model
+                         #   every SOT-23 at 1.1, which put the mould face 0.35mm shy of
+                         #   where it is — and the die reference is measured off that face.
+TMAG_DIE_DEPTH = 0.73    # hall element depth BELOW the moulded top face (SLYS045C Fig 6-2).
+                         #   U4 is BACK-mounted, so its mould face points AWAY from the board:
+                         #   in product z the mould top is the package's MINIMUM z, and the die
+                         #   is TMAG_DIE_DEPTH *above* it. (1.45 − 0.73 = 0.72 also puts the die
+                         #   ~0.73 above the seating plane, so the two derivations agree.)
+TMAG_DIE_XY_OFF = 0.418  # the die is NOT on the package axis: +0.40mm along the body length
+                         #   (away from the pin-1/6 end) and −0.12mm across the width (toward
+                         #   the pins-1/2/3 side) => 0.418mm radial. gen_board centres U4's
+                         #   FOOTPRINT on the nub axis, so the die sits 0.418mm off it.
+                         #   DELIBERATELY UNCOMPENSATED — see nub_report() for the cost.
+SENSE_XY_TOL = 0.35      # allowed nub-axis vs U4-anchor error. Sized to swallow the pin-1 silk
+                         #   bbox artefact (~0.09mm) and nothing else — a real placement drift
+                         #   still trips it.
+NUB_GAP_LO, NUB_GAP_HI = 3.05, 3.65   # design band for the magnet-face -> hall-element gap.
+                         #   Centre ~3.33mm: a Ø4×2 N45 disc puts ~53mT of Bz on the die there,
+                         #   which is 66% of the ±80mT full scale and leaves the TRANSVERSE
+                         #   channels (the only ones the driver reads) working at a few mT.
+
 SPECS = [
+    ("SOT-23-6", {"h": TMAG_PKG_H}),                       # U4 TMAG5273 / U3 USBLC6 (DBV)
     ("E73-2G4M08S1C", {"h": 2.2, "body": (13.0, 18.0)}),   # Ebyte module; bbox incl. antenna keepout
     ("USB_C_Receptacle_HRO", {"h": 3.3}),                  # J1 body 3.26
     ("ffc_afa07", {"h": 2.0}),                             # J2 FFC ZIF 16P (Molex 200528 pattern)
@@ -62,7 +88,36 @@ DOME_D, DOME_H = 7.0, 0.5   # Snaptron 7mm snap dome (dia, height above pad)
 KNOB = (3.0, 1.5, 2.0)      # MSK12C02 slide knob (w, protrusion toward the nearest edge — derived from rot, h)
 # v0.21 Bean-style hall nub (printed flexure spring + magnet over a back-side
 # TMAG5273; architecture adapted from the Ploopy Bean, CERN-OHL-S v2):
-NUB_MAGNET_D, NUB_MAGNET_H = 4.0, 2.0    # N42/N52 disc, press-fit N-up (Bean spec)
+NUB_MAGNET_D, NUB_MAGNET_H = 4.0, 2.0    # Ø4×2 N45 disc, AXIALLY magnetized, N face DOWN.
+                                         #   v0.26: the size is NOT "the Bean spec" as this line
+                                         #   used to claim — the Ploopy Bean's hardware appendix
+                                         #   calls for Ø6×2, which will not fit our Ø7.0 hub
+                                         #   (1.45mm wall would drop to 0.5). Ø4×2 is chosen here
+                                         #   because it is a genuine mass-stock size AND it is what
+                                         #   the Ø7 hub can carry; see docs/design-decisions.md.
+                                         #   Grade is N45, not N52: N52 has the LOWEST service
+                                         #   temperature of the common grades (≤65°C vs ≤80°C), and
+                                         #   this device clamps a phone and lives in cars. Above it
+                                         #   the loss is irreversible — boot-zero cannot recover a
+                                         #   partially demagnetized magnet, it just re-zeros a
+                                         #   weaker one and the pointer goes permanently sluggish.
+NUB_MAGNET_FIT = 0.10                    # radial pocket clearance -> Ø4.20 bore. v0.26: was 0.05
+                                         #   (Ø4.10). Stock Ø4 discs are sold at ±0.10, so a
+                                         #   +tolerance magnet is Ø4.10 — exactly the nominal bore —
+                                         #   and FDM prints holes UNDER size. That is an
+                                         #   interference fit driven into a 1.45mm hub wall by
+                                         #   hand, i.e. a split hub. Ø4.20 + a drop of cyanoacrylate
+                                         #   is the retention (a press fit in a printed part relaxes
+                                         #   anyway, and this magnet lives over a steel-free cavity
+                                         #   with nothing to pull it out).
+NUB_POCKET_Z0 = 10.30                    # magnet pocket cut start (opens DOWNWARD, through the
+                                         #   hub's bottom face at 10.40 — the magnet loads from below)
+NUB_POCKET_TOP = NUB_POCKET_Z0 + NUB_MAGNET_H + 0.15     # 12.45 — pocket ceiling (0.15 depth slop)
+NUB_MAGNET_Z = NUB_POCKET_TOP - NUB_MAGNET_H             # 10.45 — SEATED magnet bottom face
+                                         #   (pressed fully home against the ceiling). This is the
+                                         #   datum the whole magnetic design is dimensioned from:
+                                         #   everything below it (air gap, FR4, package) is what the
+                                         #   sensor has to see through. See nub_report().
 NUB_HUB_D = 7.0                          # flexure hub / post through the aperture
 # v0.22 TrackPoint-compatible mount: the hub tops out in a 4.4mm-square x 2.5
 # platform (genuine classic full-size TrackPoint caps have a ~4.5mm square
@@ -72,7 +127,75 @@ NUB_POST_SQ, NUB_POST_H = 4.4, 2.5       # square platform (genuine-cap socket: 
 NUB_CAP_D, NUB_CAP_H = 7.8, 5.0          # classic soft-dome replica: OD x height (cap top 4.3mm proud)
 NUB_HUB_TOP = 14.0                       # hub/platform base z (0.7 below the 14.7 face)
 NUB_SPRING_FLANGE_D = 14.8               # flange captured in the lid's counterbore
-NUB_ARM_T = 0.8                          # flexure arm thickness (print-tune = feel)
+# --- v0.26 flexure tuning: the arms ARE the pointing feel -----------------------------
+# A ThinkPad TrackPoint is ISOMETRIC — you push against it and it barely moves (its whole
+# travel is ~0.2-0.5mm at the cap); speed comes from FORCE, not from displacement. A hall
+# nub cannot be zero-travel (it has to move to be read), so the adapted target is
+# 350-600um of cap travel at 150gf, the top of the TrackPoint IV usable range.
+#
+# THICKNESS STAYS AT 0.8, and that is a finding, not an omission. Four independent beam
+# models were built (two here, two adversarial) and they agree on stress but NOT on
+# stiffness, because the answer is dominated by a boundary condition none of them can
+# settle: how much of the arm is really free. The arm is a 1.2mm-wide ribbon spiralling
+# r3.6 -> r5.9, so its first ~22% is buried in the Ø7 hub and its last ~30% in the flange
+# bore. Model it as a free 100-degree beam and you get 2.6 N/mm; clamp it rigidly at both
+# embedments (48 degrees free) and you get 18.3 N/mm. Same geometry, 7x apart.
+#
+#   cap travel at 150gf, t=0.8 + root fillet:   474um (free-span)  ..  285um (hub clamped)
+#   the same arm at t=1.2:                      158um             ..   94um
+#
+# The target band is 350-600um — the TrackPoint IV spec (0-150gf usable, ~zero travel)
+# adapted to a hall nub, which must move to be read. t=0.8 straddles that band under
+# every plausible assumption; t=1.2 is below it under ALL of them, i.e. thickening would
+# have made the nub nearly rigid. The v0.21 value was right; it just had no stated reason.
+# Peak stress at 150gf is 23-29 MPa against PETG's ~50 MPa yield, so first yield is
+# around 300gf — thin margin, which is what NUB_ARM_ROOT below is for.
+#
+# ARM THICKNESS IS A COUPON-CALIBRATED PARAMETER. Print nub_spring at 0.7 / 0.8 / 0.9,
+# hang 50/100/150gf laterally off the cap and measure cap-top deflection with a dial
+# indicator; pick the one nearest 350-600um at 150gf, then re-derive the firmware
+# gain-div from it (the formula is in the DT binding). Do not trust a number from a beam
+# model here, including this one.
+#
+# WIDTH cannot move regardless: the arm spirals through a 2.3mm annulus, and at mid-arc a
+# 1.2mm-wide arm already leaves only 0.65mm of slot inboard and 0.45mm outboard. At 1.6
+# the outer slot falls to 0.25mm and at 2.0 to 0.05mm — at which point the arm is fused to
+# the flange along its length and is not a beam at all.
+NUB_ARM_T = 0.8                          # flexure arm thickness (z) — bends about the WEAK
+                                         #   axis, so this is the dominant tilt term (~t^3)
+NUB_ARM_W = 1.2                          # flexure arm width (in-plane) — printability-capped
+NUB_ARM_ROOT = 0.5                       # extra half-width blended in at BOTH arm ends (a
+                                         #   root fillet). The v0.21 arm was a constant-width
+                                         #   ribbon meeting the hub and the flange at a square
+                                         #   re-entrant T-junction, and every model built for
+                                         #   v0.26 — including the two that disagreed about
+                                         #   everything else — put the peak stress at exactly
+                                         #   that corner. Blending it drops peak stress ~19%
+                                         #   (28.6 -> 23.1 MPa at 150gf) and moves the peak off
+                                         #   the corner and out along the arm. Unlike the
+                                         #   thickness, this is model-INDEPENDENT: it removes a
+                                         #   stress raiser without meaningfully changing the
+                                         #   compliance the part exists to provide.
+                                         #   The swell is shaped (2s-1)^6, so it is confined to
+                                         #   the last ~15% at each end — the zone where the arm
+                                         #   is merging into the hub/flange anyway, so it costs
+                                         #   NO free slot at mid-arc.
+NUB_ARM_R0, NUB_ARM_R1 = 3.6, 5.9        # spiral inner/outer radius
+NUB_ARM_SWEEP = 100.0                    # degrees of arc per arm
+NUB_ARMS = 3                             # arm count. At 3 x 100 degrees the arms are
+                                         #   SEQUENTIAL arcs (0-100, 120-220, 240-340) with 20
+                                         #   degrees of clear gap, not nested spirals, so they
+                                         #   never approach each other. Raising the count (or
+                                         #   the sweep past 120) makes them nest, at which
+                                         #   point the root swell above can merge neighbours.
+NUB_PLUNGE_MAX = 0.35                    # v0.26 hard plunge stop. Nothing used to limit AXIAL
+                                         #   travel: the hub bottom (10.40) could sink the full
+                                         #   0.90mm to the PCB face, and over that stroke Bz at
+                                         #   the die swings 53 -> 94mT and the transverse gain
+                                         #   with it, so the cursor sped up when you pressed
+                                         #   harder at constant tilt — the exact squishy,
+                                         #   non-isometric behaviour a TrackPoint avoids. Three
+                                         #   pads on the hub underside now bottom out at 0.35mm.
 
 
 def _box(dx, dy, dz):
@@ -1542,7 +1665,10 @@ def height_report(side="right"):
     zmax = max(m.bounds[1][2] for m in parts.values())
     zmin = min(m.bounds[0][2] for m in parts.values())
     print(f"  z extent: {zmin:.2f} .. {zmax:.2f} mm  (front stack {zmax-PCB_T:.2f} above board, back {abs(zmin):.2f} below)")
-    watch = ["U1", "J1", "J2", "J3", "U2"] + [n for n in parts if n.endswith(("_pwr", "_rst"))]
+    # v0.26: U4 (the nub's TMAG5273) joins the watch list. It was the one part whose z
+    # actually drives a design parameter — the magnet gap — and it was the one part the
+    # height report never printed.
+    watch = ["U1", "J1", "J2", "J3", "U2", "U4"] + [n for n in parts if n.endswith(("_pwr", "_rst"))]
     for n in watch:
         if n in parts:
             bb = parts[n].bounds
@@ -1555,6 +1681,72 @@ def height_report(side="right"):
           f"bridge recess floor {RECESS_TOP} | "
           f"nominal cased phone {PHONE_Z-PHONE_TC/2:.1f}..{PHONE_Z+PHONE_TC/2:.1f} "
           f"(screen ~flush with lids @ {FACE_Z})")
+
+
+def nub_report():
+    """v0.26: the pointing nub's ALIGNMENT and AIR GAP, asserted rather than assumed.
+
+    The nub is four concentric things stacked through three different coordinate
+    frames — the deck.py feature, the KiCad footprint for U4 (which round-trips
+    through a Y-flip and a back-side Flip()), the grip lid's aperture, and the
+    printed spring's magnet pocket. Nothing checked that they still landed on the
+    same axis, and nothing stated what the magnet-to-die distance actually was; the
+    only record was a "~2.6mm" comment in a docstring. Both are load-bearing: a
+    lateral error puts a static offset field on the sensor that the boot-zero hides
+    until it runs out of range, and the gap sets the whole signal scale.
+
+    Prints the stack and returns (dx, dy, gap_air, gap_to_die)."""
+    nz = _nub_zone("right")
+    assert nz, "no hall_nub feature on the right grip"
+    prod = _product(); ox, oy = prod["right_origin"]
+    parts, _ = pcb_assembly("right")
+    assert "U4" in parts, ("U4 (TMAG5273) is not in the right PCB assembly — the nub has "
+                           "no sensor. Check gen_board.py's hall_nub block.")
+    b = parts["U4"].bounds
+    ux, uy = (b[0][0]+b[1][0])/2 + ox, (b[0][1]+b[1][1])/2 + oy
+    # U4 is BACK-mounted: its seating plane faces the board (MAX z) and its moulded top
+    # face points away into the cavity (MIN z). The die reference is the MOULD face — get
+    # this backwards and the gap is wrong by a whole package height.
+    seating, mould = b[1][2] + PCB_Z, b[0][2] + PCB_Z
+    dx, dy = ux - nz["x"], uy - nz["y"]
+    # NB: U4's placement ANCHOR is exactly the feature point; (dx,dy) here is measured
+    # off the footprint's BOUNDING BOX centre, which is pulled off-centre by the pin-1
+    # silk marker. It is reported (not asserted to 0) so a real placement drift still
+    # shows up, with SENSE_XY_TOL sized to swallow the bbox artefact only.
+    z_die = mould + TMAG_DIE_DEPTH
+    gap_air = NUB_MAGNET_Z - (PCB_Z + PCB_T)        # magnet face -> PCB front face
+    gap_die = NUB_MAGNET_Z - z_die                  # magnet face -> hall element
+    hub_to_board = (NUB_POCKET_Z0 + 0.1) - (PCB_Z + PCB_T)   # 0.90 mm of raw headroom
+    print("== v0.26 pointing-nub stack (right grip) ==")
+    print(f"  XY  nub feature / lid aperture / spring pocket / magnet : ({nz['x']:.3f}, {nz['y']:.3f})")
+    print(f"      U4 TMAG5273 footprint anchor                       : ({ux:.3f}, {uy:.3f})"
+          f"   offset ({dx:+.3f}, {dy:+.3f}) mm")
+    print(f"      ...but the HALL ELEMENT is {TMAG_DIE_XY_OFF:.3f} mm off the package axis "
+          f"(TI Fig 6-2) — uncompensated;")
+    print(f"         it costs a static transverse offset the driver's boot-zero removes, and "
+          f"<1% response asymmetry.")
+    print(f"  Z   magnet Ø{NUB_MAGNET_D}×{NUB_MAGNET_H} seated        : {NUB_MAGNET_Z:.2f} .. "
+          f"{NUB_MAGNET_Z+NUB_MAGNET_H:.2f}  (pocket Ø{NUB_MAGNET_D+2*NUB_MAGNET_FIT:.2f}, "
+          f"{NUB_POCKET_Z0:.2f}..{NUB_POCKET_TOP:.2f})")
+    print(f"      air gap  magnet face -> PCB front                   : {gap_air:.2f} mm")
+    print(f"      hub underside -> PCB front  {hub_to_board:.2f} mm raw, but the v0.26 plunge "
+          f"pads stop it at {NUB_PLUNGE_MAX:.2f} mm")
+    print(f"      FR4                                                 : {PCB_T:.2f} mm  "
+          f"(µr≈1 — magnetically transparent)")
+    print(f"      U4 package, BACK-mounted: mould face {mould:.2f} .. seating {seating:.2f}")
+    print(f"      hall element (mould face + {TMAG_DIE_DEPTH:.2f})              : {z_die:.2f}")
+    print(f"      ==> MAGNET FACE TO HALL ELEMENT                     : {gap_die:.2f} mm")
+    assert abs(dx) <= SENSE_XY_TOL and abs(dy) <= SENSE_XY_TOL, (
+        f"U4 is {dx:+.3f},{dy:+.3f} mm off the nub axis (tol ±{SENSE_XY_TOL}) — the sensor "
+        f"would read a static transverse field the boot-zero has to eat")
+    assert gap_air >= 0.5, (f"only {gap_air:.2f}mm of air under the magnet — the spring "
+                            f"plunges as well as tilts and would strike the board")
+    assert NUB_GAP_LO <= gap_die <= NUB_GAP_HI, (
+        f"magnet-to-die gap {gap_die:.2f}mm is outside the {NUB_GAP_LO}..{NUB_GAP_HI}mm design "
+        f"band — re-run the field math before moving it (see docs/design-decisions.md v0.26)")
+    print(f"  ✅ concentric within ±{SENSE_XY_TOL}mm; gap {gap_die:.2f}mm inside the "
+          f"{NUB_GAP_LO}..{NUB_GAP_HI}mm band")
+    return dx, dy, gap_air, gap_die
 
 
 def render_iso(meshes, path, title, elev=32, azim=-60):
@@ -1591,12 +1783,17 @@ def nub_spring():
 
 def _nub_spring_build():
     """v0.21 Bean-style printed flexure spring: an OD14.8 flange (captured in the
-    right lid's underside counterbore) joined to a central hub by 3 spiral
-    flexure arms. The hub carries the N42/52 magnet in a downward pocket
-    (~2.6mm over the back-side TMAG5273, through the FR4) and rises through the
-    lid aperture as the nub post. Arm thickness NUB_ARM_T is the print-tune
-    stiffness parameter (the pointing FEEL). Print hub-down with a brim.
-    Architecture adapted from the Ploopy Bean (CERN-OHL-S v2)."""
+    right lid's underside counterbore) joined to a central hub by NUB_ARMS spiral
+    flexure arms. The hub carries the magnet in a downward pocket and rises through
+    the lid aperture as the nub post. Arm thickness NUB_ARM_T is the stiffness
+    parameter — it IS the pointing feel. Print hub-down with a brim.
+    Architecture adapted from the Ploopy Bean (CERN-OHL-S v2) — though NOT its
+    dimensions: the Bean specifies a Ø6×2 magnet, which our Ø7 hub cannot carry.
+
+    The magnet sits 3.33mm from the HALL ELEMENT, not the ~2.6mm this docstring
+    used to claim. 2.6mm is the distance to the package's outer face; the die is a
+    further 0.73mm inside it, and it is the die that sets the field. The full stack
+    is printed and asserted by nub_report() — run `deck3d.py --report`."""
     from shapely.geometry import LineString
     from shapely.ops import unary_union
     nz = _nub_zone("right")
@@ -1605,14 +1802,45 @@ def _nub_spring_build():
     # flange ring in the lid counterbore (z 12.3..13.3): 12.35..13.35, 0.05 clamp
     flange = (cq.Workplane("XY").workplane(offset=12.35).center(x, y)
               .circle(NUB_SPRING_FLANGE_D/2).circle(5.8).extrude(1.0))
-    # 3 spiral flexure arms, 1.2 wide x NUB_ARM_T thick, r 3.6 -> 5.9
+    # NUB_ARMS spiral flexure arms, NUB_ARM_W wide x NUB_ARM_T thick, r R0 -> R1, each
+    # swept NUB_ARM_SWEEP degrees from its own start angle. At 3 arms x 100 degrees the
+    # arms are SEQUENTIAL arcs (0-100, 120-220, 240-340), not nested spirals, so they
+    # never approach each other — the only clearance that matters is the slot each arm
+    # leaves to the hub OD and the flange bore at mid-arc.
+    #
+    # Width is not constant: NUB_ARM_ROOT of extra half-width is blended in at both ends
+    # as a root fillet (see the constant). Built as an explicit two-sided offset polygon
+    # rather than a LineString buffer, since a buffer can only do constant width.
+    dr = NUB_ARM_R1 - NUB_ARM_R0
+    sweep_rad = math.radians(NUB_ARM_SWEEP)
     arms = []
-    for k in range(3):
-        a0 = k * 2*math.pi/3
-        pts = [(x + (3.6 + 2.3*t/100.0) * math.cos(a0 + math.radians(t)),
-                y + (3.6 + 2.3*t/100.0) * math.sin(a0 + math.radians(t)))
-               for t in range(0, 101, 10)]
-        arms.append(LineString(pts).buffer(0.6))
+    for k in range(NUB_ARMS):
+        a0 = k * 2*math.pi/NUB_ARMS
+        left, right = [], []
+        for s in np.linspace(0.0, 1.0, 81):
+            r = NUB_ARM_R0 + dr*s
+            ang = a0 + sweep_rad*s
+            ca, sa = math.cos(ang), math.sin(ang)
+            # unit tangent of the spiral r(theta) = R0 + (dr/sweep)*theta
+            tx, ty = (dr/sweep_rad)*ca - r*sa, (dr/sweep_rad)*sa + r*ca
+            tn = math.hypot(tx, ty); tx, ty = tx/tn, ty/tn
+            nx, ny = -ty, tx                       # in-plane normal
+            h = NUB_ARM_W/2 + NUB_ARM_ROOT * (2.0*s - 1.0)**6
+            left.append((x + r*ca + h*nx, y + r*sa + h*ny))
+            right.append((x + r*ca - h*nx, y + r*sa - h*ny))
+        arms.append(Polygon(left + right[::-1]).buffer(0))
+    # Arms sit on the flange's BOTTOM face (12.35), not its top. This matters: the lid's
+    # counterbore CEILING is at 13.3 and reaches inboard to r5.0, which is over the arms'
+    # outer half (they run r3.6..5.9). The flange top at 13.35 is *meant* to interfere with
+    # that ceiling by 0.05 — that is the clamp preload — but an arm that reached the same
+    # height would be clamped too, and a clamped flexure is not a flexure. Growing the arms
+    # downward from 12.35 keeps their top at 12.35+t <= 13.35 with real air above.
+    # collide() cannot catch this for us: nub_spring<->grip_lid_right is whitelisted
+    # precisely so the flange preload does not read as a clash, and that whitelist would
+    # swallow an arm buried in the ceiling too. Hence the assert.
+    assert 12.35 + NUB_ARM_T <= 13.30, (
+        f"NUB_ARM_T={NUB_ARM_T} puts the arm top at {12.35+NUB_ARM_T:.2f}, into the lid "
+        f"counterbore ceiling at 13.30 — the arms would be clamped, not free")
     spring = flange.union(_cq_from_poly(unary_union(arms), 12.35, NUB_ARM_T))
     # hub: magnet stub down toward the PCB, post up through the aperture,
     # O5 cap spigot on top
@@ -1637,10 +1865,50 @@ def _nub_spring_build():
             .center(x + 6.6 * math.cos(a), y + 6.6 * math.sin(a))
             .circle(0.7).extrude(12.35 - 9.5))  # r0.7: 0.1 inside both flange
             # edges (r5.8/7.4) — tangent legs tessellate non-watertight
-    # magnet pocket, opening downward (press-fit, N up — compass-check!)
-    spring = spring.cut(cq.Workplane("XY").workplane(offset=10.3).center(x, y)
-                        .circle(NUB_MAGNET_D/2 + 0.05).extrude(NUB_MAGNET_H + 0.15))
+    # v0.26 PLUNGE STOP: 3 pads on the hub underside that bottom on the PCB front face
+    # after NUB_PLUNGE_MAX of axial travel. Without them the only axial limit was the hub
+    # itself hitting the board 0.90mm down — far past a TrackPoint's entire stroke — and
+    # because the magnet approaches the die over that stroke, the pointing GAIN rose with
+    # how hard you pressed. They sit between the Ø4.2 pocket wall (r2.1) and the Ø7 hub
+    # OD (r3.5), so they clear both, and they land on the front face where the spring's
+    # own legs already bear. U4 is on the BACK, so this face is free.
+    _stop_drop = (NUB_POCKET_Z0 + 0.1) - (PCB_Z + PCB_T)   # hub bottom -> PCB face = 0.90
+    _stop_h = _stop_drop - NUB_PLUNGE_MAX                  # pad height = 0.55
+    assert _stop_h > 0.2, f"plunge-stop pad would be {_stop_h:.2f} tall — unprintable"
+    for k in range(3):
+        a = math.radians(90 + 120 * k)
+        spring = spring.union(
+            cq.Workplane("XY").workplane(offset=10.4 - _stop_h)
+            .center(x + 2.8 * math.cos(a), y + 2.8 * math.sin(a))
+            .circle(0.4).extrude(_stop_h + 0.05))     # +0.05 to weld into the hub
+    # magnet pocket, opening DOWNWARD (the magnet loads from below, N face down —
+    # compass-check!). Dimensioned off the NUB_POCKET_* constants so the pocket and
+    # the nub_magnet() body it receives can never drift apart.
+    spring = spring.cut(cq.Workplane("XY").workplane(offset=NUB_POCKET_Z0).center(x, y)
+                        .circle(NUB_MAGNET_D/2 + NUB_MAGNET_FIT)
+                        .extrude(NUB_POCKET_TOP - NUB_POCKET_Z0))
     return _to_trimesh(spring, "nub_spring")
+
+
+def nub_magnet():
+    """v0.26: the pointing nub's MAGNET, as a real body — the one part of the hall
+    stack that had geometry cut for it (the pocket) but no solid of its own, so it was
+    invisible in every render, GLB and collision check. It is a bought part, not a
+    printed one, so it is NOT in SHELLS and never reaches --sync-models; it exists so
+    the assembly shows what is actually in the product and so collide() can see it.
+
+    Ø4 × 2 mm N52 axially-magnetized disc, seated against the pocket CEILING (pressed
+    fully home from below) — NUB_MAGNET_Z is that seated bottom face. Its N pole faces
+    DOWN, toward the sensor. See docs/bill-of-materials.md for the orderable part."""
+    return _memo("nub_magnet", _nub_magnet_build)
+
+def _nub_magnet_build():
+    nz = _nub_zone("right")
+    assert nz, "nub_magnet needs the right grip's hall_nub feature"
+    m = trimesh.creation.cylinder(radius=NUB_MAGNET_D/2, height=NUB_MAGNET_H, sections=48)
+    m.apply_translation((nz["x"], nz["y"], NUB_MAGNET_Z + NUB_MAGNET_H/2))
+    m.visual.face_colors = [176, 180, 188, 255]      # NiCuNi plating (bright nickel)
+    return m
 
 def nub_cap():
     return _memo("nub_cap", _nub_cap_build)
@@ -1712,6 +1980,7 @@ def assemble(clamp_pos=None):
     A["grip_lid_left"] = L(grip_lid("left"))
     A["nub_spring"] = nub_spring()
     A["nub_cap"] = nub_cap()
+    A["nub_magnet"] = nub_magnet()
     A["keymat_right"] = keymats("right")
     A["keymat_left"] = L(keymats("left"))
     A["gripper_right"] = gripper("right")                 # TPU edge grip + lip (fixed grip)
@@ -1746,6 +2015,10 @@ def _allowed(a, b):
     if s == {"nub_spring", "grip_lid_right"}: return True  # counterbore ceiling clamps the flange (0.05 preload)
     if "nub_spring" in s and any("pcb_right" in x for x in s): return True  # spring legs bear on the PCB face
     if s == {"nub_cap", "nub_spring"}: return True         # cap press-fits the spigot
+    if s == {"nub_magnet", "nub_spring"}: return True      # magnet press-fits the hub pocket
+    # NB: nub_magnet is whitelisted against the spring ONLY. It must clear the lid, the
+    # keymat and the PCB (incl. U4 itself) by real air — an overlap with any of those is
+    # a genuine clash, and the magnet-to-die air gap is the whole magnetic design.
     # v0.24 expanding clamp: the bridge is the ground member both grips ride/bolt to,
     # the springs seat in anchors, and the phone is clamped in the bridge recess +
     # grip cradles (soft TPU pads = the real contact). All intended mating overlaps:
@@ -1788,7 +2061,10 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
     keymat, phone, battery, flex) keep 3.0mm^3 to absorb STL-tessellation noise on
     large curved contact faces. Returns (clashes, contacts, checked); contacts are
     whitelisted pairs with measurable overlap (reported, not failed)."""
-    shells = SHELLS
+    # nub_magnet is a bought part (not in SHELLS, never printed) but it IS a clean
+    # cylinder boolean like the printed parts, so it earns the tight tolerance rather
+    # than the 3.0mm^3 tessellation allowance meant for organic//curved contact faces.
+    shells = SHELLS + ("nub_magnet",)
     def tol(a, b):
         if (a in shells and ":" in b) or (b in shells and ":" in a):
             return tol_shell
@@ -1910,6 +2186,7 @@ def main():
     os.makedirs(BUILD, exist_ok=True)
     if args.report:
         height_report("right"); height_report("left")
+        nub_report()
     ok = True
     if args.all:
         built = []
@@ -1937,6 +2214,12 @@ def main():
         asm.export(os.path.join(BUILD, "assembled_printed.stl"))
         print(f"  assembled_printed.stl: all 9 printed parts in place, bbox={[round(v,1) for v in asm.extents]}")
     if args.check:
+        # v0.26: the nub's alignment + magnet-to-die gap, asserted first. It is pure
+        # arithmetic over the placement export, so a regression here fails in under a
+        # second instead of after the four-span mesh sweep below — and unlike a collision,
+        # a drifted sensor gap is invisible to collide() by construction (nothing is
+        # touching; the field just quietly goes wrong).
+        nub_report()
         # v0.24: the clamp is a MECHANISM — check it at min / nominal / max span so
         # nothing clashes anywhere in the travel and the rails stay engaged.
         cfg = deck.Config()
@@ -2057,6 +2340,7 @@ def _explode_offset(k):
     if k.startswith("screw_"): return 56   # above the lids they drop through
     if k.startswith("spring"): return 24
     if k.startswith("gripper"): return 46  # TPU grippers lift off the grip cradles
+    if k == "nub_magnet": return 50        # drops out of the hub pocket, below the spring
     if k == "nub_spring": return 56        # lifts out of the lid counterbore
     if k == "nub_cap": return 66           # pulls off the spring spigot
     if k == "phone":        return 84

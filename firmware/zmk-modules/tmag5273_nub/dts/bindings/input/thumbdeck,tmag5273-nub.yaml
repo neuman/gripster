@@ -18,11 +18,18 @@ properties:
 
   deadzone:
     type: int
-    default: 150
+    default: 100
     description: |
-      Raw sensor LSB counts (at the +/-80 mT range, ~2.44 uT/LSB) the field
+      Raw sensor LSB counts (at the +/-40 mT range, 1.2207 uT/LSB) the field
       must move from the boot-calibrated zero before the cursor moves. Covers
-      flexure hysteresis, sensor noise and MagSafe-ring ambient drift.
+      flexure hysteresis and sensor noise.
+      v0.26: 150 -> 100. The range change from +/-80 to +/-40 mT halved the
+      microtesla value of a count, so the old 150 would have DOUBLED the
+      physical deadband. 100 counts = 0.122 mT = 9.5 gf of thumb force = 31 um
+      of cap motion, which is 2.8x the ~44 uT RMS noise floor at 8x averaging.
+      The old figure also cited "MagSafe-ring ambient drift", which stopped
+      existing in v0.25 when the ring was deleted (and was never more than a
+      rounding error at ~90 mm anyway).
 
   gain-num:
     type: int
@@ -31,10 +38,39 @@ properties:
 
   gain-div:
     type: int
-    default: 3500
+    default: 1054
     description: |
       Denominator of the quadratic velocity curve. Velocity in 1/256 px per
       poll = excess_counts^2 * gain-num / gain-div, clamped to max-out px.
+
+      v0.26: 3500 -> 1054, targeting the cursor's 1200 px/s clamp at 150 gf of
+      thumb force — the top of the TrackPoint IV specification's usable range.
+
+      THIS NUMBER IS A BRACKET, NOT A MEASUREMENT. It depends on the printed
+      flexure's stiffness, and that could not be pinned down analytically: how
+      much of the spiral arm is actually free (rather than buried in the hub and
+      the flange bore) is the dominant term, and it swings the honest answer
+      from gain-div 615 to 1807. 1054 is the geometric mean. Across that bracket
+      the curve spans:
+
+           25 gf ->     8 ..    35 px/s
+           50 gf ->    57 ..   191 px/s
+          100 gf ->   289 ..   876 px/s
+          150 gf ->   701 ..  1200 px/s
+
+      TO CALIBRATE, measure rather than model. Hang 50/100/150 gf laterally off
+      the cap, read cap-top deflection with a dial indicator, then:
+
+          gain-div = (counts_at_150gf - deadzone)^2 / (max-out * 256)
+
+      where counts_at_150gf is the raw delta the driver logs at that force.
+      Aim for 350-600 um of cap travel at 150 gf; if the print is outside that,
+      change NUB_ARM_T in deck3d.py (0.7/0.8/0.9 coupons) before touching this.
+
+      Two more reasons to treat it as a first-article item, like the axis flips:
+      printed arm stiffness varies with material, temperature and layer bonding,
+      and the sensor is spec'd to +/-20 % sensitivity error, which this quadratic
+      curve squares into +/-44 % of cursor speed.
 
   max-out:
     type: int

@@ -33,7 +33,7 @@ OUT = os.path.join(MODELS, "thumbdeck_web_raw.glb")
 
 # leaf nodes that ARE their own mover (single printed/loose part)
 SINGLE = ("back_left", "back_right", "grip_lid_left",
-          "grip_lid_right", "nub_spring", "nub_cap", "keymat_left",
+          "grip_lid_right", "nub_spring", "nub_cap", "nub_magnet", "keymat_left",
           "keymat_right", "gripper_left", "gripper_right",
           "battery", "flex", "power")
 
@@ -41,9 +41,13 @@ SINGLE = ("back_left", "back_right", "grip_lid_left",
 # to them precisely; they still ride the pcb_right mover during explode.
 PRESERVE = {
     "pcb_right/components/U1": "pcb_right__U1",   # nRF52840 module (E73)
-    "pcb_right/components/U2": "pcb_right__U2",   # TMAG5273 hall sensor (nub)
+    "pcb_right/components/U4": "pcb_right__U4",   # TMAG5273 hall sensor (nub)
     "pcb_right/components/J1": "pcb_right__J1",   # USB-C receptacle
 }
+# v0.26: this said U2 and carried the comment "TMAG5273 hall sensor (nub)" — but U2 is
+# the MCP73831 CHARGER; gen_board.py places the TMAG5273 as U4. The site's "nub-sensor"
+# hotspot was therefore pinned to the charger IC, ~10mm away on the other side of the
+# board, and the sensor itself was merged into the anonymous pcb_right blob.
 
 # The KiCad board layers are exported COPLANAR with the FR4 body surface, which
 # z-fights in a realtime viewer. Lift each surface layer a few hundredths of a

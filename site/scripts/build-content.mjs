@@ -22,13 +22,16 @@ const BLOB = 'https://github.com/neuman/custom-thumb-keyboard/blob/main'
 // hotspot id -> explicit component node(s) (else fall back to a whole mover)
 const NODE_ANCHOR = {
   module: ['pcb_right__U1'],
-  'nub-sensor': ['pcb_right__U2'],
+  // v0.26: was 'pcb_right__U2' — but U2 is the MCP73831 CHARGER. The TMAG5273 is U4
+  // (gen_board.py), so the "hall sensor" pin was landing on the charge controller.
+  'nub-sensor': ['pcb_right__U4'],
   usb: ['pcb_right__J1'],
 }
 // hotspot id -> mover whose nodes the pin tracks (for part-level hotspots)
 const MOVER_ANCHOR = {
   phone: 'phone',
   'nub-cap': 'nub_cap',
+  'nub-magnet': 'nub_magnet',
   clamp: 'back_right',
   battery: 'battery',
   bridge: 'flex',

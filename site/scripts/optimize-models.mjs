@@ -54,13 +54,13 @@ function moverOf(nodeName) {
 // physical z-stack (back shells → boards → face lids/keymats → phone).
 const LAYER = {
   back_left: -3, back_right: -3, screws: -2, battery: -2.4, flex: -1.8, power: -1.8,
-  pcb_right: -1, pcb_left: -1, bridge: -0.5,
+  pcb_right: -1, pcb_left: -1, bridge: -0.5, nub_magnet: 0.7,
   grip_lid_left: 1, grip_lid_right: 1, nub_spring: 1.3,
   keymat_left: 2, keymat_right: 2, gripper_left: 2.3, gripper_right: 2.3,
   nub_cap: 2.6, phone: 4,
 }
 const LEFT = new Set(['back_left', 'grip_lid_left', 'keymat_left', 'pcb_left', 'gripper_left'])
-const RIGHT = new Set(['back_right', 'grip_lid_right', 'keymat_right', 'pcb_right', 'nub_spring', 'nub_cap', 'gripper_right'])
+const RIGHT = new Set(['back_right', 'grip_lid_right', 'keymat_right', 'pcb_right', 'nub_spring', 'nub_cap', 'nub_magnet', 'gripper_right'])
 
 function perNodeBounds(doc) {
   const out = {}

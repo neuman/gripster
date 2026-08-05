@@ -87,6 +87,16 @@
     "flex__vc"
    ]
   },
+  "nub_magnet": {
+   "offset": [
+    45.57,
+    0,
+    19.119
+   ],
+   "nodes": [
+    "nub_magnet__vc"
+   ]
+  },
   "battery": {
    "offset": [
     0,
@@ -130,7 +140,7 @@
    "nodes": [
     "pcb_right__J1",
     "pcb_right__U1",
-    "pcb_right__U2",
+    "pcb_right__U4",
     "pcb_right__body",
     "pcb_right__components",
     "pcb_right__copper",

@@ -39,13 +39,26 @@ LOG_MODULE_REGISTER(tmag5273_nub, CONFIG_INPUT_LOG_LEVEL);
 
 #define TMAG_MANUFACTURER_ID      0x5449 /* "TI" */
 
-/* DEVICE_CONFIG_1: CRC off, 8x conversion averaging, standard I2C reads */
+/* DEVICE_CONFIG_1: CRC off, 8x conversion averaging, standard I2C reads.
+ * v0.26 also selects MAG_TEMPCO = 01b (bits [6:5]) = 0.12%/degC, the NdFeB
+ * coefficient. The magnet IS NdFeB and loses ~0.12%/degC of remanence, so
+ * leaving this at "no compensation" let the pointer gain drift with hand and
+ * ambient temperature. It is a free register field. */
 #define TMAG_CONV_AVG_8           (3u << 2)
+#define TMAG_TEMPCO_NDFEB         (1u << 5)
 /* SENSOR_CONFIG_1[7:4] MAG_CH_EN: 0x3 = X and Y channels */
 #define TMAG_MAG_CH_EN_XY         (0x3u << 4)
-/* SENSOR_CONFIG_2 bit1: X/Y range 1 = +/-80mT (A1 variant; headroom vs the
- * close nub magnet — ~2.44 uT/LSB, still thousands of counts of signal) */
-#define TMAG_XY_RANGE_80MT        (1u << 1)
+/* SENSOR_CONFIG_2 bit1: X/Y range. 0 = +/-40mT (the A1 reset default), 1 = +/-80mT.
+ *
+ * v0.26 uses the +/-40mT range, i.e. this bit is left CLEAR. The old code set it
+ * and justified it as "headroom vs the close nub magnet" — but that conflates the
+ * AXIAL field with the channels actually being measured. MAG_CH_EN above enables
+ * X and Y only; Z is never converted, so the ~52mT sitting on the magnet's axis
+ * never enters a measured channel. X/Y only ever see the TRANSVERSE field, which is
+ * the tilt signal (<= ~4.3mT even at a 320gf abuse push) plus the static offset from
+ * the die's 0.418mm in-package misalignment (~6.7mT). Worst case is under 12mT — 30%
+ * of the +/-40mT scale — so the wider range bought nothing and cost half the
+ * resolution. At +/-40mT a count is 1.2207uT instead of 2.4414uT. */
 /* DEVICE_CONFIG_2[1:0] operating mode: 1 = sleep, 2 = continuous measure */
 #define TMAG_OP_MODE_SLEEP        0x1u
 #define TMAG_OP_MODE_CONTINUOUS   0x2u
@@ -173,14 +186,15 @@ static int nub_configure(const struct device *dev)
 	int ret;
 
 	ret = i2c_reg_write_byte_dt(&cfg->i2c, TMAG_REG_DEVICE_CONFIG_1,
-				    TMAG_CONV_AVG_8);
+				    TMAG_CONV_AVG_8 | TMAG_TEMPCO_NDFEB);
 	if (ret == 0) {
 		ret = i2c_reg_write_byte_dt(&cfg->i2c, TMAG_REG_SENSOR_CONFIG_1,
 					    TMAG_MAG_CH_EN_XY);
 	}
 	if (ret == 0) {
-		ret = i2c_reg_write_byte_dt(&cfg->i2c, TMAG_REG_SENSOR_CONFIG_2,
-					    TMAG_XY_RANGE_80MT);
+		/* X/Y range stays at the +/-40mT reset default (bit 1 clear) — see the
+		 * SENSOR_CONFIG_2 comment above for why the wider range was wrong. */
+		ret = i2c_reg_write_byte_dt(&cfg->i2c, TMAG_REG_SENSOR_CONFIG_2, 0x00);
 	}
 	if (ret == 0) {
 		ret = i2c_reg_write_byte_dt(&cfg->i2c, TMAG_REG_DEVICE_CONFIG_2,

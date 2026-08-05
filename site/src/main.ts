@@ -7,6 +7,8 @@ import content from './content.json'
 import { GripsterViewer, type Hotspot } from './viewer/GripsterViewer'
 
 const REPO = 'https://github.com/neuman/custom-thumb-keyboard'
+// Substack publication the signup forms subscribe to (no trailing slash).
+const SUBSTACK_URL = 'https://REPLACE-ME.substack.com'
 const LINKS = {
   github: REPO,
   buildGuide: `${REPO}/blob/main/README.md#build-guide`,
@@ -74,6 +76,59 @@ if (SHOT) document.documentElement.classList.add('shot-mode')
 // build the page
 const app = document.getElementById('app')!
 
+// -- newsletter signup -------------------------------------------------------
+// Substack has no CORS-friendly subscribe API, so we hand the address to its own
+// subscribe page (which pre-fills from ?email=) and let it finish the opt-in.
+// `place` only distinguishes the two instances for ids/analytics.
+function signup(place: 'top' | 'bottom'): HTMLElement {
+  const input = el('input', {
+    class: 'signup-input',
+    id: `signup-email-${place}`,
+    type: 'email',
+    name: 'email',
+    required: '',
+    placeholder: 'you@example.com',
+    autocomplete: 'email',
+    'aria-label': 'Email address',
+  })
+  const form = el(
+    'form',
+    { class: 'signup-form', novalidate: '' },
+    input,
+    el('button', { class: 'btn btn-primary', type: 'submit' }, 'Subscribe'),
+  )
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+    if (!input.checkValidity()) return input.reportValidity()
+    window.open(
+      `${SUBSTACK_URL}/subscribe?email=${encodeURIComponent(input.value)}`,
+      '_blank',
+      'noopener',
+    )
+  })
+
+  return el(
+    'section',
+    { class: `signup signup--${place}`, 'aria-labelledby': `signup-h-${place}` },
+    el('div', { class: 'signup-inner' },
+      el('p', { class: 'eyebrow' }, 'Newsletter'),
+      el('h2', { id: `signup-h-${place}` }, 'Get the build news by email'),
+      el(
+        'p',
+        { class: 'signup-dek' },
+        'Design updates, fabrication notes, and firmware progress on the Gripster — posted to my Substack as the build moves.',
+      ),
+      form,
+      el(
+        'p',
+        { class: 'signup-note' },
+        'Free. Unsubscribe anytime. ',
+        el('a', { href: SUBSTACK_URL, target: '_blank', rel: 'noopener' }, 'Read past issues →'),
+      ),
+    ),
+  )
+}
+
 // -- hero + viewer -----------------------------------------------------------
 const viewerEl = el('div', { class: 'viewer', id: 'viewer' })
 const loading = el('div', { class: 'viewer-loading' }, el('span', { class: 'spinner' }), 'loading model…')
@@ -93,7 +148,7 @@ const heroCopy = el(
   el(
     'div',
     { class: 'hero-cta' },
-    el('a', { class: 'btn btn-primary', href: '#story' }, content.hero.primaryCtaLabel),
+    el('a', { class: 'btn btn-primary', href: '#why' }, content.hero.primaryCtaLabel),
     el('a', { class: 'btn btn-ghost', href: LINKS.github, target: '_blank', rel: 'noopener' }, 'View on GitHub'),
   ),
 )
@@ -144,6 +199,7 @@ const hero = el(
   card,
 )
 app.append(hero)
+app.append(signup('top'))
 
 // -- story sections ----------------------------------------------------------
 type StoryFigure = { images: { src: string; alt: string }[]; caption: string }
@@ -162,7 +218,9 @@ const byKey = new Map(content.sections.map((s: any) => [s.key, s]))
 for (const key of content.sectionOrder) {
   const s: any = byKey.get(key)
   if (!s) continue
-  const sec = el('section', { class: 'section' })
+  // id = the section key, so anything can deep-link to a specific section
+  // (the hero CTA points at #why). Keys are already unique — they index byKey above.
+  const sec = el('section', { class: 'section', id: key })
   sec.append(el('h2', {}, s.heading))
   sec.append(el('p', { class: 'dek' }, s.dek))
   // a section body is prose, with figure blocks ({images, caption}) interleaved
@@ -201,6 +259,7 @@ for (const [src, cap] of [
 gallery.append(grid)
 story.append(gallery)
 app.append(story)
+app.append(signup('bottom'))
 
 // -- footer ------------------------------------------------------------------
 const footer = el(

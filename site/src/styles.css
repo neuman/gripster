@@ -179,6 +179,27 @@ img { max-width: 100%; display: block; }
 .card-blurb { color: var(--text-dim); font-size: 0.92rem; margin: 0.6rem 0 0; }
 .card-more { display: inline-block; margin-top: 0.9rem; font-weight: 600; font-size: 0.9rem; }
 
+/* ---- newsletter signup --------------------------------------------------- */
+.signup { border-top: 1px solid var(--border); background: var(--bg); }
+.signup--bottom { border-bottom: 1px solid var(--border); }
+.signup-inner {
+  max-width: 46rem; margin: 0 auto;
+  padding: clamp(2.2rem, 5vw, 3.2rem) 1.3rem;
+}
+.signup h2 { font-size: clamp(1.35rem, 3vw, 1.85rem); letter-spacing: -0.02em; margin: 0 0 0.4rem; }
+.signup-dek { color: var(--text-dim); margin: 0 0 1.2rem; max-width: 34rem; }
+.signup-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.signup-input {
+  flex: 1 1 16rem; min-width: 0;
+  padding: 0.62rem 0.9rem; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font: 500 0.95rem var(--sans);
+}
+.signup-input::placeholder { color: var(--text-dim); }
+.signup-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.signup-form .btn { flex: 0 0 auto; }
+.signup-note { color: var(--text-dim); font-size: 0.84rem; margin: 0.8rem 0 0; }
+
 /* ---- story --------------------------------------------------------------- */
 .story { max-width: 46rem; margin: 0 auto; padding: clamp(3rem, 8vw, 6rem) 1.3rem; }
 .section { padding: clamp(1.6rem, 4vw, 2.6rem) 0; border-top: 1px solid var(--border); }
@@ -229,6 +250,7 @@ img { max-width: 100%; display: block; }
 .shot-mode .hotspot-card,
 .shot-mode .viewer-loading,
 .shot-mode .story,
+.shot-mode .signup,
 .shot-mode .footer { display: none !important; }
 .shot-mode, .shot-mode body { background: #0f1216; }
 .shot-mode .hero { height: 100vh; }
