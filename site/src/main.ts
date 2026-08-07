@@ -247,10 +247,10 @@ const gallery = el(
 )
 const grid = el('div', { class: 'render-grid' })
 for (const [src, cap] of [
-  ['./renders/assembly3d.png', 'Assembled deck'],
-  ['./renders/assembly3d_exploded.png', 'Exploded layers'],
+  ['./renders/collapsed.png', 'Assembled deck'],
+  ['./renders/exploded.png', 'Exploded layers'],
   ['./renders/fab_view.png', 'Fabrication view'],
-  ['./renders/iter_22.png', 'Generated layout'],
+  ['./renders/iter_23.png', 'Generated layout'],
 ] as const) {
   grid.append(
     el('figure', {}, el('img', { src, alt: cap, loading: 'lazy' }), el('figcaption', {}, cap)),

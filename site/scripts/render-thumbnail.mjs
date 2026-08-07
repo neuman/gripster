@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
-// render-thumbnail.mjs — render the social card straight from the live Three.js
-// viewer so it always matches the current model. Spins up a headless Vite dev
-// server, loads the site in ?shot mode (dark, centred, static) in headless
-// Chromium, waits for the full-res GLB to load, and screenshots the canvas to
-// public/renders/og-card.png. Run as the last step of `npm run models`.
+// render-thumbnail.mjs — render a candidate social card straight from the live
+// Three.js viewer so it always matches the current model. Spins up a headless
+// Vite dev server, loads the site in ?shot mode (dark, centred, static) in
+// headless Chromium, waits for the full-res GLB to load, and screenshots the
+// canvas. Run as the last step of `npm run models`.
+//
+// ⚠ It writes og-card-auto.png, NOT og-card.png. The card the meta tags actually
+// publish (public/renders/og-card.png) is hand-picked — currently the 3/4 hero
+// shot from renders/collapsed.png — and this script must not clobber it. If you
+// want the auto-rendered one to go live, copy it over og-card.png deliberately
+// and update og:image:width/height in index.html to match.
 //
 // Requires Chromium: `npx playwright install chromium` (one time).
 
@@ -14,7 +20,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SITE = resolve(__dirname, '..')
-const OUT = resolve(SITE, 'public/renders/og-card.png')
+const OUT = resolve(SITE, 'public/renders/og-card-auto.png')
 const PORT = 4189
 // 1200x630 is the canonical OG size; render at 2x for crisp retina previews.
 const WIDTH = 1200
