@@ -17,7 +17,7 @@ const CONTENT = resolve(SITE, 'src/content.json')
 const EXPLODE = resolve(SITE, 'public/models/explode.json')
 const OUT = resolve(SITE, 'public/models/hotspots.json')
 
-const BLOB = 'https://github.com/neuman/custom-thumb-keyboard/blob/main'
+const BLOB = 'https://github.com/neuman/gripster/blob/main'
 
 // hotspot id -> explicit component node(s) (else fall back to a whole mover)
 const NODE_ANCHOR = {

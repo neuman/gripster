@@ -4,11 +4,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://github.com/neuman/custom-thumb-keyboard/tree/main/docs
+    url: https://github.com/neuman/gripster/tree/main/docs
     about: Eleven engineering documents — design decisions, assembly, sourcing, matrix, power, routing and CAD process. Most questions are answered here.
   - name: Assembly guide
-    url: https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/assembly.md
+    url: https://github.com/neuman/gripster/blob/main/docs/assembly.md
     about: The full build procedure. Note that nobody has ever executed it — it is derived from the design, not from a build that happened.
   - name: Contributing guide
-    url: https://github.com/neuman/custom-thumb-keyboard/blob/main/CONTRIBUTING.md
+    url: https://github.com/neuman/gripster/blob/main/CONTRIBUTING.md
     about: How the generated pipeline works, the toolchain, and the acceptance gate every change is held to.

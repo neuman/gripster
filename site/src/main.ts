@@ -6,7 +6,7 @@ import './styles.css'
 import content from './content.json'
 import { GripsterViewer, type Hotspot } from './viewer/GripsterViewer'
 
-const REPO = 'https://github.com/neuman/custom-thumb-keyboard'
+const REPO = 'https://github.com/neuman/gripster'
 // Substack publication the signup forms subscribe to (no trailing slash).
 const SUBSTACK_URL = 'https://ericneuman.substack.com'
 const LINKS = {

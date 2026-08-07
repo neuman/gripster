@@ -54,7 +54,7 @@ def main():
     draw(axes[0], left, f"LEFT fab view — Edge.Cuts + placement ({left['board_w']:.0f}x{left['board_h']:.0f}mm)")
     draw(axes[1], right, f"RIGHT fab view — Edge.Cuts + placement ({right['board_w']:.0f}x{right['board_h']:.0f}mm)")
     fig.suptitle(f"thumbdeck {deck.VERSION} — FABRICATION VIEW (matches .kicad_pcb)  "
-                 "· switch footprint provisional until datasheet-verified",
+                 "· snap-dome contact pads, no switch footprints",
                  fontsize=11, color="#ffd60a", y=0.98)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     os.makedirs(OUT, exist_ok=True)

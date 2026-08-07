@@ -4,16 +4,16 @@
 landscape in the middle on a spring-loaded expanding bridge (Kishi/Backbone style, fits 130–170 mm
 phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal snap domes over Bluetooth.
 
-[![Gripster — 3/4 view of the assembled deck: translucent Atomic-Purple shells, dark-gray keymats, a phone clamped landscape in the middle](renders/sketchfab_grab.png)](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279)
+[![Gripster — 3/4 view of the assembled deck: translucent Atomic-Purple shells, dark-gray keymats, a phone clamped landscape in the middle](renders/collapsed.png)](https://neuman.github.io/gripster/)
 
-<sub>☝️ **This image is a link — click it to spin the real assembly in 3D on Sketchfab.**</sub>
+<sub>☝️ **This image is a link — click it to spin the real assembly in 3D, pull it apart with the explode slider, and read the build story.**</sub>
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-rev--A%20v0.21%20%C2%B7%20never%20physically%20built-orange)
+![Status](https://img.shields.io/badge/status-rev--A%20v0.27%20%C2%B7%20never%20physically%20built-orange)
 ![Hardware](https://img.shields.io/badge/KiCad-9-brightgreen?logo=kicad&logoColor=white)
 ![DRC](https://img.shields.io/badge/DRC-0%20violations%20%C2%B7%200%20unconnected-brightgreen)
 ![Firmware](https://img.shields.io/badge/firmware-ZMK%20v0.3.0-blue)
-[![View in 3D](https://img.shields.io/badge/Sketchfab-view%20in%203D-1CAAD9?logo=sketchfab&logoColor=white)](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279)
+[![View in 3D](https://img.shields.io/badge/live%20site-view%20in%203D-7c5cff)](https://neuman.github.io/gripster/)
 
 > **Naming, once, so nothing is confusing later:** the project is called **Gripster** in prose. Every
 > *internal* identifier — the ZMK board id `thumbdeck`, the board files `thumbdeck_right.kicad_pcb` /
@@ -54,9 +54,9 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
 > **No physical Gripster has ever existed.** Every image *of this device* is a render or a generated
 > layout — the only photographs in the repo are of the Rii i8+ that was studied as a reference
 > ([`references/`](references/)), alongside the original hand drawings in [`sketches/`](sketches/).
-> rev-A (v0.21) is complete on paper: both boards routed and DRC-clean, the fab package
-> exports cleanly, all 9 printed parts watertight and bed-fit-checked for an Ender 3 V2. (CI is
-> stale for v0.21 — re-run it; the last green build predates the nub module.) Nothing has been ordered, printed, pressed, flashed or typed on.
+> rev-A (v0.27) is complete on paper: both boards routed and DRC-clean, the fab package
+> exports cleanly, all 10 printed parts watertight and bed-fit-checked for an Ender 3 V2. (CI is
+> stale — re-run it; the last green build predates the nub module.) Nothing has been ordered, printed, pressed, flashed or typed on.
 >
 > **Unmeasured and unknown:** ergonomics, dome feel and dome life, BLE range with a phone
 > centimetres away and a hand around the antenna, real battery life, and every print tolerance.
@@ -79,9 +79,8 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
 - [Hardware](#hardware)
   - [At a glance](#at-a-glance)
   - [Why a module, not chip-down](#why-a-module-not-chip-down)
-  - [Product view](#product-view)
   - [Per-grip layout](#per-grip-layout)
-  - [Assembly layers — front face to back](#assembly-layers--front-face-to-back)
+  - [The boards, as routed](#the-boards-as-routed)
   - [The 3D model — printable shells + keymats](#the-3d-model--printable-shells--keymats)
   - [Parts list (BOM)](#parts-list-bom)
 - [Firmware & software](#firmware--software)
@@ -137,9 +136,9 @@ the shell opening, the keycap and the firmware matrix transform all move with it
 
 ## Where to start
 
-**Just browsing?** Spin the
-[3D model on Sketchfab](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279),
-then skim [At a glance](#at-a-glance) and the [FAQ](#faq).
+**Just browsing?** Open [the live site](https://neuman.github.io/gripster/) — spin the
+model, drag the explode slider, tap the hotspots — then skim [At a glance](#at-a-glance) and the
+[FAQ](#faq).
 
 **Thinking about building one?** Read [Project status & roadmap](#project-status--roadmap) first — it
 will either talk you out of it or tell you exactly what you are signing up for — then
@@ -161,7 +160,7 @@ will either talk you out of it or tell you exactly what you are signing up for �
 | [`hardware/layout/`](hardware/layout/) | [`keymat.json`](hardware/layout/keymat.json), the original sketch digitization. Historical only; the live layout is the `LEGENDS` tables in `deck.py`. |
 | [`firmware/zmk-config/`](firmware/zmk-config/) | ZMK v0.3.0 config with a real board definition ([`config/boards/arm/thumbdeck/`](firmware/zmk-config/config/boards/arm/thumbdeck/)) — a unibody board, not a shield, not a split. |
 | [`docs/`](docs/) | Eleven engineering documents, plus [`docs/diagrams/`](docs/diagrams/). Table below. |
-| [`renders/`](renders/) | Every image in this README, all generated. [`history/`](renders/history/) keeps the (superseded) iteration log. |
+| [`renders/`](renders/) | Every image in this README, all generated — CAD isometrics from `deck3d.py`, board renders from the `.kicad_pcb`s, and the two hero shots captured from the live viewer. [`history/`](renders/history/) keeps the superseded iteration log. |
 | [`sketches/`](sketches/) · [`references/`](references/) | The original concept drawings, and Rii i8+ reference photos used during the design. |
 | [`.github/workflows/`](.github/workflows/) | The self-contained ZMK build that produces `thumbdeck-zmk.uf2`. |
 
@@ -184,7 +183,7 @@ will either talk you out of it or tell you exactly what you are signing up for �
 
 ## Project status & roadmap
 
-**rev-A (v0.21). Designed to the point of being orderable. Never built.**
+**rev-A (v0.27). Designed to the point of being orderable. Never built.**
 
 ### Done
 
@@ -193,9 +192,9 @@ will either talk you out of it or tell you exactly what you are signing up for �
 | Both PCBs | Fully placed and **autorouted**, **0 DRC violations / 0 unconnected items** (KiCad 9, `kicad-cli 9.0.9`, error severity; both boards re-routed and re-verified for **v0.27**'s 20-way bridge, in the same commit that regenerated them — right board 75 nets / 114 footprints / 30 GND escape vias, left board 60 nets) |
 | Fab package | 4-layer gerbers + JLC-format BOM + CPL export cleanly to `hardware/kicad/generated/fab/` via `gen_fab.py`; the exporter refuses to run unless DRC is clean. (That directory is a build artifact and is **not committed** — regenerate it, see [Reproduce the design](#reproduce-the-design).) |
 | BOM | Every part real, LCSC-stocked and machine-placeable; no hand-soldered components |
-| 3D | 221 bodies assembled and collision-checked (`deck3d.py --check` → 0 impossible overlaps); all 7 shell parts (incl. the v0.21 nub spring + cap) + 2 keymats fit a 220 × 220 mm Ender 3 V2 bed (204 mm brim-safe limit) |
+| 3D | 221 bodies assembled and collision-checked at **every clamp position** (`deck3d.py --check` → 0 impossible overlaps at 130 / nominal / 170 / 179 mm open, cable enclosure sealed at each); all 6 shell parts (incl. the v0.21 nub spring + cap) + 2 TPU grippers + 2 keymats fit a 220 × 220 mm Ender 3 V2 bed (204 mm brim-safe limit) |
 | Matrix proof | `sim_matrix.py` proves the full 78-key matrix is ghost-free with a diode per key |
-| Firmware | Real ZMK v0.3.0 board definition; keymap and matrix transform generated from the model. CI last built green on 2026-07-15, **before the v0.21 nub module — re-run the workflow to validate v0.21**. Never flashed; no hardware exists. |
+| Firmware | Real ZMK v0.3.0 board definition; keymap and matrix transform generated from the model. CI last built green on 2026-07-15, **before the v0.21 nub module — re-run the workflow to validate the current design**. Never flashed; no hardware exists. |
 
 ### Not done — read this before spending money
 
@@ -401,68 +400,51 @@ Everything below is generated from one parametric model
 ([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) — regenerate with the
 [pipeline](#reproduce-the-design).
 
-### Product view
-
-![Product view](renders/product.png)
-
-Phone landscape in the centre, spring-clamped; left grip = QWERT half + D-pad/OK + mouse buttons;
-right grip = YUIOP half + PgUp/PgDn, with the Ebyte module and power front-end in the grip and the
-LiPo 403040 under the LEFT grip's PCB (v0.18 — the flush-screen phone well displaced it from the
-spine).
-
 ### Per-grip layout
 
-![Layout, both grips](renders/iter_21.png)
+![Layout, both grips](renders/iter_23.png)
 
 6-col grid of rectangular 8.5 × 7 mm keys at 10 × 9 mm pitch per grip (bottom row = a 2u space bar;
 the right H-row ends in a Rii-style 2u Enter — `H J K L + ENT`, `'` on FN+`;`), plus the cluster
 features. The E73 + power front-end sit in the top zone with the antenna up off the top edge;
 PgUp/PgDn sit beside the pointing nub as the mouse-button pair's mirror (v0.21).
 
-### Assembly layers — front face to back
+### The boards, as routed
 
-Five renders on an **identical canvas** (2400×1050) that overlay pixel-for-pixel or flip through as
-an animation. Scrolling down peels the device from the front face to the back. Generate with
-`python3 hardware/scripts/render_layers.py`.
+Rendered straight from the committed `.kicad_pcb` files — this is the copper that would be
+fabricated, not a concept drawing.
 
 <details>
-<summary><strong>Show all five layers</strong> (click to expand)</summary>
+<summary><strong>Show both boards, front and back</strong> (click to expand)</summary>
 
-**5 · Front layer** (2D concept — key openings, phone pocket, screw holes; the
-v0.24 front is now two grip lids + the separate telescoping `bridge` tray, not a center panel).
+**Front — right grip.** Nothing but snap-dome contact pads (centre pad + leg ring with the routing
+escape gap) and front-layer traces. The front carries **zero soldered parts**; the domes are pressed
+on later, under retention tape.
 
-![Front shell](renders/layer_5_front_shell.png)
+![Right board, front](renders/routed_right_top.png)
 
-**4 · Keymats** — the one-piece printed keycaps joined by living-hinge strips.
+**Back — right grip.** Everything soldered lives here: a diode behind every dome, the Ebyte module
+(**antenna-up at the top edge**, v0.17), charger, USB-C, ESD, power switch, reset tact, charge LED,
+the FFC connector and all passives — the whole cluster in the top zone, which is what let the chin
+be trimmed.
 
-![Keymats](renders/layer_4_keymats.png)
+![Right board, back](renders/routed_right_bottom.png)
 
-**3 · PCB front** — the snap-dome contact pads (centre pad + leg ring with the routing escape gap)
-and the front-layer traces. The front carries **zero soldered parts** — domes are pressed on later,
-under retention tape.
+**Left grip, front and back.** No active silicon at all — 42 domes, 42 diodes, the FFC ZIF, and
+(v0.27) the cell's JST-PH **J4** and its **F1** PPTC fuse in the chin.
 
-![PCB front](renders/layer_3_pcb_front.png)
+![Left board, front](renders/routed_left_top.png)
 
-**2 · PCB back** — a diode behind every dome, the Ebyte module (**antenna-up at the top edge**,
-v0.17), charger, USB-C, ESD, power switch, reset tact, charge LED, FFC connector, and all passives.
-Everything soldered lives here — the whole cluster now sits in the top zone (the old trackpad space)
-so the chin could be trimmed.
-
-![PCB back](renders/layer_2_pcb_back.png)
-
-**1 · Back layer** (2D concept; printed as left/right halves since v0.16) — the case, screw bosses,
-support posts under the key field, the LiPo bay in the LEFT grip, and the USB-C / power-switch /
-pinhole cutouts. In v0.24 the center spine is the telescoping `bridge` tray (springs + FFC run
-enclosed inside it), not a fixed floor channel. v0.24d gives the tray's contents a
-**lane plan** — **v0.27** it reads `spring | FFC | spring` front to back (the power lane went with
-the cable it carried), every lane on one z with printed divider ribs between them, so nothing
-is stacked over anything and the ribbon sits inside the *moving* shroud's cavity (enclosed at every
-extension, not just while the fixed tray happens to still be underneath). The FFC lane widened with
-the connector — 17.0 → **21.0 mm** on y **28.5** — and y 40.0…82.5 inside the cavity is now free.
-
-![Back shell](renders/layer_1_back_shell.png)
+![Left board, back](renders/routed_left_bottom.png)
 
 </details>
+
+Inside the centre tray, v0.24d gives the contents a **lane plan** — as of **v0.27** it reads
+`spring | FFC | spring` front to back (the power lane went with the cable it carried), every lane on
+one z with printed divider ribs between them, so nothing is stacked over anything and the ribbon
+sits inside the *moving* shroud's cavity — enclosed at every extension, not just while the fixed
+tray happens to still be underneath. The FFC lane widened with the connector — 17.0 → **21.0 mm** on
+y **28.5** — and y 40.0…82.5 inside the cavity is now free.
 
 ### The 3D model — printable shells + keymats
 
@@ -470,25 +452,24 @@ Fit-checked in CAD against real-dimension component models — datasheet heights
 build. The mechanical parts are generated from the **same** parametric
 model as the PCB ([`hardware/scripts/deck.py`](hardware/scripts/deck.py)) via CadQuery, so key
 openings land on dome pads and bosses land on mount holes *by construction*. The whole stack — back
-halves, PCB with **real-dimension** components (E73 module, USB-C, connectors, SOT-23s, 0402s,
-snap-domes), LiPo, FFC jumper, keymats, grip lids, the **`bridge` telescoping tray**, **TPU
-grippers**, phone — is assembled in one frame and **collision-checked at min /
-nominal / max clamp span**: `deck3d.py --check` reports **0 impossible overlaps** across the whole
-130–170 mm travel. Full method: [`docs/cad-process.md`](docs/cad-process.md).
-
-![Full assembly](renders/assembly3d.png)
+halves (the right one is the grip **and** the fixed tray in a single part since v0.25), PCB with
+**real-dimension** components (E73 module, USB-C, connectors, SOT-23s, 0402s, snap-domes), LiPo, FFC
+jumper, keymats, grip lids, **TPU grippers**, phone — is assembled in one frame and
+**collision-checked at every clamp position**: `deck3d.py --check` reports **0 impossible overlaps**
+at 130 mm, nominal, 170 mm and 179 mm fully open, with the cable enclosure sealed at each.
+Full method: [`docs/cad-process.md`](docs/cad-process.md).
 
 **Exploded** — back halves (right = grip + tray, one part) · PCB + domes · keymats · grip lids · TPU grippers · phone:
 
-![Exploded assembly](renders/assembly3d_exploded.png)
+![Exploded assembly](renders/exploded.png)
 
 The shell prints flat on a **220 × 220 mm Ender 3 V2 bed** — the old one-piece shells needed a
 350-class printer. Since **v0.24** the rigid center panel is gone: the two back halves are the
-**grips themselves** — `back_right` is the fixed ground, `back_left` is the moving clamp jaw — and a
-separate **`bridge` telescoping tray** bolts to the right grip while the left grip's inner shroud
-laps inside it, enclosing the springs and the single FFC. The tray top is an uninterrupted flat phone rest
-recess**; **TPU grippers** on each inner edge do the mechanical hold. Opening the left grip's five
-screws services the battery. v0.17
+**grips themselves** — `back_right` is the fixed ground, `back_left` is the moving clamp jaw — and
+since **v0.25** the telescoping tray is printed as *part of* `back_right` rather than bolted on, with
+the left grip's inner shroud lapping inside it to enclose the springs and the single FFC. The tray
+top is an uninterrupted flat phone rest; **TPU grippers** on each inner edge do the mechanical hold.
+Opening the left grip's five screws services the battery. v0.17
 keymats carry the **rectangular keycaps** (8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the
 space bars and the right H-row's Rii-style Enter, round cluster keys) on the same living-hinge web
 (TPU 95A), now with **debossed Rii-style legends** (primary, shifted-symbol and FN-layer); the grip
@@ -498,12 +479,12 @@ moats, through a single dished Ø24.4 lid aperture. The five domes underneath do
 board or firmware changes; the presses stay discrete because the web is **thinned to 0.4 mm under
 each moat** and pinned all the way round the pad by a **clamp ring** on the lid backed by a **rib**
 on the mat.
-Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, `bridge` tray
-~131 × 83, keymats ~63 × 86–89 — all within the 204 mm brim-safe limit.
+Part sizes: back halves 170.5/162.8 × 103.8 mm, grip lids 77.9 × 103.8, keymats ~63 × 86–89 — all
+within the 204 mm brim-safe limit.
 
-Back half | Grip lid | `bridge` tray | Keymat
+Back half (grip + tray) | Grip lid | TPU gripper | Keymat
 :---:|:---:|:---:|:---:
-![back](renders/part_back_right.png) | ![lid](renders/part_grip_lid_right.png) | ![bridge](renders/part_bridge.png) | ![keymat](renders/part_keymat_right.png)
+![back](renders/part_back_right.png) | ![lid](renders/part_grip_lid_right.png) | ![gripper](renders/part_gripper_right.png) | ![keymat](renders/part_keymat_right.png)
 
 Regenerate: `hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render`
 (`--all` also gates every part on the Ender 3 V2 bed-fit; `--sync-models` refreshes the tracked STLs
@@ -512,8 +493,8 @@ in [`hardware/cad/models/`](hardware/cad/models/)).
 **Full nested assembly** —
 [`hardware/cad/models/thumbdeck_full_asm.glb`](hardware/cad/models/thumbdeck_full_asm.glb) is the
 whole build as one glTF file with a **named object tree** (open it in Blender or any glTF viewer, or
-[spin it on Sketchfab](https://sketchfab.com/3d-models/gripster-thumbdeck-6d42744a55e74e839ba6c28b54392279)
-— that model is this file): translucent **Atomic-Purple** shells + dark-gray keymats (real glTF PBR
+spin it in the browser on [the live site](https://neuman.github.io/gripster/), which
+loads a web-optimized build of this same file): translucent **Atomic-Purple** shells + dark-gray keymats (real glTF PBR
 materials), **KiCad-generated boards** (real Edge.Cuts body + routed copper + soldermask + silkscreen
 from the `.kicad_pcb`s), every placed component and snap dome as its real-dimension body, plus the
 403040 battery, FFC jumper (drawn as a straight box in its tray lane — its descent into the ZIFs is
@@ -521,8 +502,6 @@ the open item in [Not done](#not-done--read-this-before-spending-money)), the M3
 flush-mounted cased phone. All transforms are baked into the vertices, so the tree survives even
 minimal TRS-only viewers. Regenerate:
 `hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py`.
-
-![Full assembly GLB — internals](renders/full_asm_internals.png)
 
 ### Parts list (BOM)
 
@@ -574,7 +553,7 @@ appear.
 | PCB | `thumbdeck_right` + `thumbdeck_left`, **4-layer**, 1.6 mm FR-4, **ENIG** | 5 each | Two distinct boards, **two separate JLC orders**. Fab package exported by `gen_fab.py` into `hardware/kicad/generated/fab/`. |
 | Shell | **v0.25: 6 prints** (`back_right` = grip **+ fixed tray in one part**, `back_left`, 2 grip lids, nub spring + cap) + 2 **TPU grippers** | 1 | Retention is entirely mechanical (TPU grippers + capture lips + spring clamp) — no magnets. All parts fit a 220 × 220 bed. |
 | Pointing nub | **TMAG5273A1** hall sensor (C3716049, on the right board) + **Ø4 × 2 mm N45 disc magnet, axially magnetized** (supermagnete **S-04-02-N**) in the printed spring | 1 + spare magnets | v0.21: the only added electronics is one SOT-23-6 — machine-placed with everything else. v0.22: the spring's post is a standard TrackPoint square platform — genuine classic caps fit; a red soft-dome replica prints in TPU. **v0.26:** the magnet is now a real body in the CAD (it had only ever been a *hole*) and sits a measured **3.33 mm from the hall element** — not the 2.6 mm the old comment claimed, which was the distance to the outside of the chip package rather than to the sensing element 0.73 mm inside it. The flexure was re-derived against the TrackPoint IV spec and **kept at 0.8 mm** (thickening it would have made the nub nearly rigid); what it gained was a **root fillet** at the arms' square T-junction — where every model put peak stress — and a **0.35 mm plunge stop**, without which pressing harder sped the cursor up at constant tilt. Grade is N45, **not** N52: N52 tops out at 65 °C and the loss is irreversible. |
-| M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 10 + 10 | Heads flush with the face (v0.19). 5/grip lid; v0.24: the 4 center-panel screws are gone — the `bridge` tray bolts to the right grip with 2 short M3s into its cradle bosses. |
+| M3 hardware | **M3×10 countersunk** screws + M3 heat-set inserts (Ø4.0 bores) | 10 + 10 | Heads flush with the face (v0.19). 5 per grip lid, and that is all of them: v0.24 deleted the 4 center-panel screws, and v0.25 deleted the tray's own 2 by printing it as part of `back_right`. |
 
 ---
 
@@ -673,9 +652,9 @@ one `gen_fab.py` run away.
   in — the cell lives UNDER the left PCB, and since **v0.27** its pigtail reaches **J4 on that same
   board**, so nothing has to be routed across the spine. Then seat each board on its 3 support posts
   + perimeter bosses; screw on each grip lid
-  (5 × M3×10 CSK). v0.24: route the FFC through the tray, **bolt the `bridge` tray to
-  the right grip** (2 × M3), lap the left grip's inner shroud into it, then press the TPU grippers +
-  battery is serviced by opening the left grip. v0.24d: the ribbon threads its
+  (5 × M3×10 CSK). Route the FFC through the tray — which since v0.25 is already part of
+  `back_right`, so there is nothing to bolt — lap the left grip's inner shroud into it, then press
+  the TPU grippers on. The battery is serviced by opening the left grip. v0.24d: the ribbon threads its
   **own walled channel** with a spring in each outboard lane (**v0.27:** `spring | FFC | spring` —
   the power lane is gone) — thread it before the shrouds are lapped together, and don't let the
   service loop sit across a divider rib. Full order:
@@ -744,7 +723,8 @@ python3 gen_fab.py                    # gerbers/BOM/CPL per side (refuses to exp
 python3 verify_alignment.py           # top-to-bottom 2D stack audit: PCB domes/diodes vs model, cap gutters, boss clearances
 python3 sim_matrix.py                 # ghosting/NKRO proof (78 keys, 0 collisions) — FINAL PASS
 python3 gen_firmware.py               # ZMK transform/keymap/gpio, generated from the model
-python3 render_layers.py              # 5 stackable 2D layers  -> renders/layer_*.png
+python3 layout_gen.py --iter 23       # per-grip layout diagram -> renders/iter_23.png
+python3 render_fab.py                 # Edge.Cuts + placement fab view -> renders/fab_view.png
 # --- 3D (CadQuery; see docs/cad-process.md) ---
 cd ../.. && hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all --check --render
 hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py   # nested full-assembly GLB (KiCad boards + all parts)

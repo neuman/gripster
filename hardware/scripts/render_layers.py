@@ -2,6 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Eric Neuman
 """
+⚠ STALE — DO NOT PUBLISH ITS OUTPUT. This generator was last correct at v0.22.
+It still draws the MagSafe ring and pocket (dropped in v0.25), a rigid centre
+spine (replaced by the v0.24 telescoping tray) and the left nav cluster as five
+separate buttons (v0.25 merged them into one Ø24 integrated D-pad). Its PNGs
+were removed from the README for that reason. Fix those three things against
+deck.product() before regenerating anything from here.
+
 render_layers.py — the assembly as STACKABLE LAYERS. Five PNGs on an identical
 canvas (same size + positioning) so they overlay pixel-for-pixel or flip through
 as an animation, back-to-front:

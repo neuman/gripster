@@ -2,6 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Eric Neuman
 """
+⚠ STALE — DO NOT PUBLISH ITS OUTPUT. This generator was last correct at v0.22.
+It still draws the MagSafe ring (dropped in v0.25 — the phone is spring-clamped)
+and the left nav cluster as five separate buttons (v0.25 merged them into one
+Ø24 integrated D-pad; deck.build() already emits it as a single "dpad" feature).
+Its PNG was removed from the README for that reason. Fix both before
+regenerating anything from here.
+
 render_product.py — whole-assembly PRODUCT view: both grips flanking the phone,
 MagSafe ring in the centre, front-face features (keys, D-pad, mouse buttons,
 trackpad, page keys) drawn to scale. This is the "what it is" diagram, as

@@ -4,7 +4,7 @@
   "title": "Expanding tray + TPU grippers",
   "oneLiner": "The phone clamps between the grips, held by soft toothed pads.",
   "blurb": "Fits anything from about 130 to 170 mm — a plain iPhone through a Galaxy Ultra, case on. The pads hook over the front edge and a shelf along the bottom carries the weight, so it stays put even held above your face.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "phone__0",
@@ -46,7 +46,7 @@
   "title": "nRF52840 module (Ebyte E73-2G4M08S1C)",
   "oneLiner": "The Bluetooth chip that runs the whole keyboard.",
   "blurb": "One radio for the whole keyboard means one thing to pair and one battery to charge. It behaves like a single keyboard, not two halves you have to keep in sync.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#why-a-module-not-chip-down",
+  "href": "https://github.com/neuman/gripster/blob/main/README.md#why-a-module-not-chip-down",
   "docLabel": "README.md",
   "anchorNodes": [
    "pcb_right__U1"
@@ -57,7 +57,7 @@
   "title": "TI TMAG5273A1 Hall Sensor",
   "oneLiner": "The chip that senses the pointing nub, from under the board.",
   "blurb": "It reads the nub straight through the circuit board, so nothing rubs and nothing is exposed — no wiper to wear out, no gap for grit to get into.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v021--right-grip-pointing-nub-bean-style-tmag5273-hall-sensor-2026-07-23-branch-featureright-joystick",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v021--right-grip-pointing-nub-bean-style-tmag5273-hall-sensor-2026-07-23-branch-featureright-joystick",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "pcb_right__U4"
@@ -68,7 +68,7 @@
   "title": "Nub magnet — Ø4 × 2 mm N45",
   "oneLiner": "The magnet the pointer actually reads — its only moving part.",
   "blurb": "Nudge the nub and it tilts; the sensor underneath feels that through the board. No contacts, no springs to fatigue, nothing to drift out of calibration.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v026--the-nub-magnet-becomes-real-and-the-flexure-gets-a-spec-2026-08-03-branch-main",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v026--the-nub-magnet-becomes-real-and-the-flexure-gets-a-spec-2026-08-03-branch-main",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "nub_magnet__vc"
@@ -79,7 +79,7 @@
   "title": "Nub cap — ThinkPad-red TPU",
   "oneLiner": "The soft red thumb cap you point with.",
   "blurb": "It sits on a standard TrackPoint post, so if you already have a favourite genuine cap, it pushes straight on.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v022--true-mirror-page-keys--genuine-trackpoint-cap-mount-2026-07-24-branch-featureright-joystick",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v022--true-mirror-page-keys--genuine-trackpoint-cap-mount-2026-07-24-branch-featureright-joystick",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "nub_cap__trackpoint_red"
@@ -90,7 +90,7 @@
   "title": "2-part telescoping tray",
   "oneLiner": "The spring-loaded tray the two grips ride on.",
   "blurb": "Stretch it open, drop the phone in, let it spring shut. The springs and one ribbon — carrying both the keys and the battery — stay sealed inside at any width, so nothing dangles or snags.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "back_right__atomic_purple"
@@ -101,7 +101,7 @@
   "title": "403040 LiPo pouch (left grip)",
   "oneLiner": "The battery, tucked inside the left grip.",
   "blurb": "About 450 mAh runs everything, and it charges over the same USB-C port you flash it with. No coin cells, no second battery to keep topped up.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "battery__vc"
@@ -112,7 +112,7 @@
   "title": "20-way FFC bridge",
   "oneLiner": "The ribbon that joins the two grips.",
   "blurb": "A service loop pays out as the grips slide, so it keeps up at any width. The same ribbon carries the keys and the battery, so only one cable crosses between the grips. It is also why this is one keyboard and not two — nothing to pair, one battery, one charge.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v03--the-architecture-pivot-single-controller",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md#v03--the-architecture-pivot-single-controller",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
    "flex__vc"
@@ -123,7 +123,7 @@
   "title": "USB-C receptacle (J1)",
   "oneLiner": "The USB-C port, for charging and firmware.",
   "blurb": "Wired so any ordinary Type-C charger or laptop will actually power it — plug in with the cable you already own. The same port takes firmware updates.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/connectivity-and-power.md#usb",
+  "href": "https://github.com/neuman/gripster/blob/main/docs/connectivity-and-power.md#usb",
   "docLabel": "connectivity-and-power.md",
   "anchorNodes": [
    "pcb_right__J1"
@@ -134,7 +134,7 @@
   "title": "Snaptron 7 mm snap domes",
   "oneLiner": "The keys themselves: 78 metal snap domes, no switches.",
   "blurb": "They give a crisp, positive click with nothing to solder and nothing to wear out. Gold-plated pads keep that snap instead of letting it go mushy.",
-  "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this",
+  "href": "https://github.com/neuman/gripster/blob/main/README.md#what-is-this",
   "docLabel": "README.md",
   "anchorNodes": [
    "keymat_right__gbc_button_gray"

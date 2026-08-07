@@ -103,19 +103,19 @@
       "links": [
         {
           "label": "What is this? (README)",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#what-is-this"
+          "href": "https://github.com/neuman/gripster/blob/main/README.md#what-is-this"
         },
         {
           "label": "Design decisions",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md"
         },
         {
           "label": "The parametric model (deck.py)",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/deck.py"
         },
         {
           "label": "Original concept sketches",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/sketches"
+          "href": "https://github.com/neuman/gripster/blob/main/sketches"
         }
       ]
     },
@@ -150,15 +150,15 @@
       "links": [
         {
           "label": "The original concept sketches",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/sketches"
+          "href": "https://github.com/neuman/gripster/blob/main/sketches"
         },
         {
           "label": "Reference notes — the devices this borrows from",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/reference-notes.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/reference-notes.md"
         },
         {
           "label": "Design decisions — every version, and why",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/design-decisions.md"
         }
       ]
     },
@@ -175,19 +175,19 @@
       "links": [
         {
           "label": "deck.py — the parametric source of truth",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/deck.py"
         },
         {
           "label": "Why it isn't a split keyboard",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#is-it-a-split-keyboard"
+          "href": "https://github.com/neuman/gripster/blob/main/README.md#is-it-a-split-keyboard"
         },
         {
           "label": "Routing status — autorouted, DRC-clean",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/routing-status.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/routing-status.md"
         },
         {
           "label": "Snap-dome contact pad footprint",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/footprints/snaptron_7mm_contact_pad.kicad_mod"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/footprints/snaptron_7mm_contact_pad.kicad_mod"
         }
       ]
     },
@@ -203,19 +203,19 @@
       "links": [
         {
           "label": "Matrix & diode design",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/matrix-and-diodes.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/matrix-and-diodes.md"
         },
         {
           "label": "Connectivity & power",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/connectivity-and-power.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/connectivity-and-power.md"
         },
         {
           "label": "Ghost-proof matrix simulation",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/sim_matrix.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/sim_matrix.py"
         },
         {
           "label": "Full pin routing table",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/routing-status.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/routing-status.md"
         }
       ]
     },
@@ -231,19 +231,19 @@
       "links": [
         {
           "label": "deck.py — the parametric source of truth",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/deck.py"
         },
         {
           "label": "deck3d.py — CadQuery generation of the 9 printed parts",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/cad/deck3d.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/cad/deck3d.py"
         },
         {
           "label": "docs/cad-process.md — full CAD pipeline and toolchain",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/cad-process.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/cad-process.md"
         },
         {
           "label": "README — Design & generation",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#design--generation-the-parametric-model"
+          "href": "https://github.com/neuman/gripster/blob/main/README.md#design--generation-the-parametric-model"
         }
       ]
     },
@@ -260,19 +260,19 @@
       "links": [
         {
           "label": "Fab-readiness evaluation — what's machine-verified, and what isn't",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/evaluation.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/evaluation.md"
         },
         {
           "label": "The ghost-proof matrix simulation",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/sim_matrix.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/sim_matrix.py"
         },
         {
           "label": "docs/cad-process.md — the generate-and-check loop",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/cad-process.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/cad-process.md"
         },
         {
           "label": "Contributing",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/CONTRIBUTING.md"
+          "href": "https://github.com/neuman/gripster/blob/main/CONTRIBUTING.md"
         }
       ]
     },
@@ -287,19 +287,19 @@
       "links": [
         {
           "label": "Build guide",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/README.md#build-guide"
+          "href": "https://github.com/neuman/gripster/blob/main/README.md#build-guide"
         },
         {
           "label": "Bill of materials",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/bill-of-materials.md"
+          "href": "https://github.com/neuman/gripster/blob/main/docs/bill-of-materials.md"
         },
         {
           "label": "Firmware",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/tree/main/firmware"
+          "href": "https://github.com/neuman/gripster/tree/main/firmware"
         },
         {
           "label": "deck.py — the parametric model",
-          "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/hardware/scripts/deck.py"
+          "href": "https://github.com/neuman/gripster/blob/main/hardware/scripts/deck.py"
         }
       ]
     }

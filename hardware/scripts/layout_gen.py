@@ -138,7 +138,7 @@ def render(iter_n: int, out_dir: str, params: dict | None = None) -> str:
     _draw_half(axes[0], left, f"LEFT  (passive matrix)  {left['board_w']:.0f}x{left['board_h']:.0f}mm")
     _draw_half(axes[1], right, f"RIGHT (MCU: nRF52840+LiPo+USB-C)  {right['board_w']:.0f}x{right['board_h']:.0f}mm")
     fig.suptitle(f"thumbdeck — layout iter {iter_n:02d}   "
-                 f"(36-key grid +clusters/half · Snaptron 7mm dome · phone MagSafe · single nRF52840)",
+                 f"(36-key grid +clusters/half · Snaptron 7mm dome · phone spring-clamped · single nRF52840)",
                  fontsize=11.5, color="#f4d35e", y=0.98)
     fig.text(0.5, 0.02, "one controller in the RIGHT grip · LEFT grip passive, wired over the "
              "bridge connector · inner/split edge faces phone · thumb arc dotted",
