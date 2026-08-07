@@ -61,7 +61,7 @@ def _draw_grip(ax, geo, ox, oy):
                     fontweight="bold", zorder=6)
     # internal-component annotations (dashed) — MCU/LiPo/USB-C
     role_labels = {"controller": "Ebyte E73\n(nRF52840)", "lipo": "LiPo", "usb_c": "USB-C",
-                   "antenna": "ANT", "bridge": "bridge (JST GH)", "charger": "chg"}
+                   "antenna": "ANT", "bridge": "bridge (FFC-20 ZIF)", "charger": "chg"}
     for name, (x, y, w, h) in geo["keepouts"].items():
         if name not in role_labels:
             continue

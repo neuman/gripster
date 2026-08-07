@@ -102,8 +102,10 @@ class Config:
     key_h: float = 7.0
     col_stagger: float = 0.0      # ortholinear (was 1.3 arc-stagger through v0.4)
     arc_bow: float = 0.0          # ortholinear (was 0.06 through v0.4)
-    # v0.15: 6 -> 8 so the 16-pin FFC ZIF bridge connector (6.7mm deep) fits on the
+    # v0.15: 6 -> 8 so the FFC ZIF bridge connector (6.7mm deep) fits on the
     # inner edge without touching the key field (dome courtyards start at margin+0.1).
+    # (That was the 16-pin part; v0.27's 20-pin sibling grows only in y, so the depth
+    # argument carries over unchanged.)
     # v0.19: grip_margin 7.0 -> 8.5 — with the outer bow deleted (GBC straight edge)
     # the outer M3 boss column (Ø7.5 @ edge-4.2) needs ~1mm the bow used to provide,
     # and +0.5 more is the routing-congestion relief (at 8.0 Freerouting left 1-3
@@ -273,13 +275,18 @@ def _outline(c: Config, keys):
 
 
 def _bridge_conn(board_h):
-    """Static internal harness connector — a 16-pin 1.0mm-pitch FFC ZIF (SMT, ~2mm
-    tall, bottom contacts) rotated VERTICAL at the INNER edge; the 16-way type-A FFC
-    jumper exits toward the spine and runs flat across (behind the phone, at back-
-    cavity level) to the other grip's connector. 9 rows + 5 left cols + 2 GND.
-    Low on the board so the ribbon clears the spine battery above it. Power stays
-    in this grip. [x, y, w, h] advisory box in deck mm."""
-    return [0.5, 12.5, 6.5, 21.0]
+    """Static internal harness connector — a 20-pin 1.0mm-pitch FFC ZIF (SMT, ~2mm
+    tall, bottom contacts) rotated VERTICAL at the INNER edge. v0.27: the slot faces
+    INBOARD, not toward the spine — the ribbon folds inside the back cavity and leaves
+    through a low duct under the phone cradle (see deck3d._flex_path). It carries
+    9 rows + 5 left cols + 2 GND + 2 VBAT_CELL + 2 NC guards, i.e. the cell crosses here
+    too and there is no separate power cable any more.
+    [x, y, w, h] advisory box in deck mm (advisory only — deck3d does not read it)."""
+    # v0.27: the 20-way land, measured off the placed footprint rather than left at the
+    # 16-way's box. render_layers/render_product draw this as "J2 FFC-20", so a stale value
+    # here publishes a diagram of the wrong connector: J2 now spans deck x 0.33..7.25,
+    # y 15.08..41.93 (26.85 land centred on gen_board.J2_DECK_Y = 28.5).
+    return [0.3, 15.0, 7.0, 27.0]
 
 
 def _right_edge_x(y, outline):
@@ -342,7 +349,16 @@ def _mount_holes(board_h, outer_base, bottom_strip, outline):
     # mouse-button column (c-c 8.55 after the v0.19 cluster re-anchor).
     return [
         {"x": 4.6, "y": 6.0, "d": d},                          # bottom-inner (in the trimmed chin; nudged off the inner edge for wall)
-        {"x": inset, "y": round(board_h * 0.42, 2), "d": d},   # inner-mid
+        # v0.27 inner-mid: FROZEN at 46.0, no longer board_h*0.42 (= 40.74). This hole's
+        # Ø8.0 boss disc is the ONLY thing that caps the bridge connector's pin count: it
+        # and the bottom-inner hole bracket the inner-edge window that J2 has to live in.
+        # At 40.74 that window was y 10.00..36.74 = 26.74mm, and a 20-way AFA07 land needs
+        # 26.85 — it missed by 0.11mm. J2 also had to move north to 28.5 (the 21mm ribbon
+        # would otherwise overlap the clamp's front spring lane, deck3d LANE_GAP_MIN), which
+        # pushes the requirement to >=45.95. 46.0 keeps 8.43mm c-c to the nearest dome
+        # (gate: 7.90) on BOTH boards. Derived ratios were hiding a hard mechanical limit
+        # behind an innocuous-looking 0.42, so this is an absolute now.
+        {"x": inset, "y": 46.0, "d": d},                       # inner-mid
         {"x": inset, "y": 72.0, "d": d},                       # top-inner (inner edge, left of the E73 body)
         {"x": ocol, "y": 19.4, "d": d},                        # bottom-outer
         {"x": ocol, "y": 68.0, "d": d},                        # top-outer (below the PgUp/PgDn cluster)
@@ -509,10 +525,11 @@ def product(c: Config, clamp_pos: float = None) -> dict:
         # standard cell fits behind the ring any more. The cell is now a 403040
         # (4.0 x 30 x 40, ~450-500mAh) in the LEFT grip's back cavity, foam-taped
         # to the floor UNDER the passive PCB (the only parts there are diodes,
-        # 1.16mm deep, and the FFC ZIF at the inner edge — 5.1mm of free depth vs
-        # 0.24mm in the right cavity where the mated JST-PH lives). Leads run
-        # along the spine's bottom border (outside the phone well) to J3 on the
-        # right board. Grip-local rect on the LEFT grip, converted to product mm.
+        # 1.16mm deep, and the FFC ZIF at the inner edge). v0.27: the mated JST-PH
+        # (J4) is in THIS cavity now, so it is the left one that runs the 0.24mm
+        # margin; nothing crosses the spine — the cell plugs into J4 ~8mm away and
+        # reaches the right board over the ribbon.
+        # Grip-local rect on the LEFT grip, converted to product mm.
         "battery": {"cell": "403040", "t": 4.0, "grip": "left",
                     "w": 30.0, "h": 40.0,
                     "x": round(lx + 22.0, 2), "y": 13.0},

@@ -29,6 +29,16 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
 > **M3 flush-countersunk** face screws; the phone well is closed (end walls +
 > finger dish) and the spine is 3.9 mm wider — order boards and print shells
 > from the CURRENT fab package + STLs only.
+>
+> **2026-08-07 (v0.27 — the battery rides the ribbon):** the bridge is now a
+> **20-way** 1.0 mm ZIF and four of its conductors carry the cell, so **there is
+> no separate battery power cable any more**. The battery connector moved with it:
+> **J3 is gone from the right board; the cell plugs into J4 on the LEFT board**,
+> ~8 mm from where it sits, through a new **F1** PPTC fuse. Two things this changes
+> for you, both safety-relevant: **buy a 20-way TYPE-A ribbon, never a 16-way**
+> (§0.3), and **seat the ribbon BEFORE plugging in the cell** (§2) — the power
+> switch gates only the load, so the ribbon is live whenever the cell is attached.
+> BOTH boards were re-routed 0/0 for this, so order from the CURRENT fab package.
 
 ## 0. Order & print
 
@@ -54,16 +64,24 @@ you** in this build. Your work is mechanical + one one-time SWD flash.
    [cad-process.md](cad-process.md). Coupon-test a 3×3 keymat patch for hinge
    fatigue (>10 k presses) before printing the full mats.
 3. **Order alongside:** 78+ Snaptron 7 mm domes with the taped retention array,
-   a 16-way 1.0 mm **type-A** (same-side contacts) FFC jumper, **length ≥240 mm**
-   (v0.24) — the clamp span is now VARIABLE (the grips slide 130–170 mm), so the
-   ribbon carries a **rolling service loop** that folds in a channel under the
-   telescoping `bridge` tray and pays out as the jaw moves; it must reach at max
-   extension (~195 mm J2-to-J2) plus the fold, so coupon-tune the loop radius —
-   plus the **battery power cable** (2-wire, ≥240 mm, JST-PH) that runs enclosed
-   in the tray beside it, 2 **extension springs** (~5–8 N, ≥40 mm working
+   a **20-way** 1.0 mm **TYPE-A** (contacts on the SAME side at both ends) FFC
+   jumper, **length ≥240 mm** (v0.24) — the clamp span is now VARIABLE (the grips
+   slide 130–170 mm), so the ribbon carries a **rolling service loop** that folds
+   in a channel under the telescoping `bridge` tray and pays out as the jaw moves;
+   it must reach at max extension (~195 mm J2-to-J2) plus the fold, so coupon-tune
+   the loop radius. **20-way and type-A are both hard requirements, not
+   preferences** (v0.27): this ribbon carries the battery as well as the matrix,
+   and a 17 mm 16-way ribbon drops into the 21 mm housing with 4 mm of slop at each
+   end — up to a 4-position shift, which the pin order survives (VBAT lands on a
+   column, one dead MCU pin) only because it was designed to. There is **no
+   separate battery power cable to buy any more**. Also: 2 **extension springs**
+   (~5–8 N, ≥40 mm working
    extension) for the clamp force, a 1S **403040** pouch LiPo (4.0 × 30 × 40 mm,
    ~450–500 mAh, JST-PH; the footprint is a hard limit — the cell lives inside
-   the **left grip**, not the spine), 0.3 mm foam tape for the cell, Ø56 N52
+   the **left grip**, not the spine) that **must have an integrated PCM**
+   (overcurrent 2.0–2.5 A / 8–16 ms, overcharge 4.275 V, overdischarge 2.75 V —
+   the board's F1 PPTC and the pack's PCM cover *different* fault bands and
+   neither alone is sufficient), 0.3 mm foam tape for the cell, Ø56 N52
    **10 M3 heat-set inserts (OD ≤4.6, ~4 mm) + 10 M3×10 DIN 965
    countersunk screws** (10 grip lids) + **2 short M3** for the bridge-to-grip
    bolts. (DIN 965 = 90° countersunk flat head, flush with the face.)
@@ -81,36 +99,56 @@ Per grip, on the **front** (bare gold) side:
 
 ## 2. Mechanical assembly
 
-Order matters with the split shells: **FFC into the boards first, battery into
-the left grip before its board, lids before panel, panel last** (it overlaps
+Order matters with the split shells: **FFC into the boards first, battery taped
+into the left grip before its board, lids before panel, panel last** (it overlaps
 nothing but is the seam splice + the FFC service hatch — the battery is
 serviced through the left grip, not the panel).
+
+> **v0.27 — the ribbon goes in before the cell, and that is not a preference.**
+> SW90 gates only the **load**, so `VBAT_CELL` — and therefore the bridge ribbon —
+> is live the moment the cell is plugged into J4. Seat and latch both ZIF ends
+> first, then plug J4 (which is only in §3, after the first flash). J4 is also
+> your de-energize point for any later service: **unplug J4 before touching the
+> ribbon.**
 
 1. Heat-set the **14 M3 inserts** (Ø4.0 bores): 5 per grip in each back half's PCB bosses
    and 2 per half in the panel bosses beside the x=0 seam (all Ø4.0 bores).
    *(The two ring-height spine anchors are gone in v0.18 — the panel takes 4
    border screws only.)*
 2. **FFC jumper first:** with the boards loose, open both ZIF latches and seat
-   the ribbon (≥240 mm type-A, v0.24), **contacts facing the board at both ends**
-   (the ZIFs are bottom-contact and the jumper is type-A/same-side — a straight
-   ribbon is correct by construction; do not twist it). Close the latches. The
+   the ribbon (**20-way**, ≥240 mm, type-A), **contacts facing the board at both
+   ends** (the ZIFs are bottom-contact and the jumper is type-A/same-side — a
+   straight ribbon is correct by construction; do not twist it). Push it fully
+   home against both ends of the 21 mm housing and check it is **square in the
+   slot with no conductor over-hanging either end** before closing the latches:
+   since v0.27 four of these conductors are the battery, and a ribbon seated a few
+   positions over is a fault, not a dead key. Close the latches. The
    ZIFs are unreachable once the lids are on. The ribbon will later fold into a
    **rolling service loop** inside the telescoping `bridge` tray that pays out as
    the clamp jaw slides (step 6).
-3. **Battery — polarity check first, cell NOT connected yet.** Vendors wire
+   Note the ribbon does **not** leave the ZIF toward the spine. Since v0.27 the
+   slot faces **inboard**: the ribbon runs a short way into the grip, folds down
+   through the back cavity, then doubles back at low level and out through a duct
+   under the phone cradle into the tray lane. Seat the fold before the lid goes on
+   — it is a static crease, not a moving one (the rolling service loop lives in the
+   tray). `deck3d.py --check-lanes` verifies the whole path is clear.
+3. **Battery — polarity check first, cell NOT connected yet.** Since v0.27 the
+   cell's connector is **J4 on the LEFT board** (there is no J3 — the right board
+   lost its JST when the battery stopped crossing the spine). Vendors wire
    JST-PH pigtails **both ways**: meter the pack pigtail and confirm the red/+
-   wire lands on the pin marked **"+"** on the back silk beside J3 — that is
-   **pin 1, the pin nearer the bottom board edge** ("−" marks pin 2). Foam-tape
+   wire lands on the pin marked **"+"** on the back silk beside **J4** — that is
+   **pin 1** ("−" marks pin 2); the silk also carries `BAT`, and `F1 PPTC 0.75A`
+   labels the fuse sitting in series with that positive line. Foam-tape
    (0.3 mm) the 403040 cell to the **left** grip's floor where it will sit
-   under the passive PCB — only the left cavity has the headroom — and route
-   the leads out of the left cavity into the bottom-border lane (y≈5, outside
-   the phone well) toward the transverse-wall lead windows. Leave the cell
+   under the passive PCB — only the left cavity has the headroom — and dress its
+   short pigtail along the chin to J4, ~8 mm away in the same cavity. Nothing
+   crosses the spine any more. Leave the cell
    **unplugged** and the power switch **OFF** — it is connected only *after*
    the first flash (§3); see the REGOUT0 warning there.
 4. Drop each board in, **parts down**, onto its perimeter bosses + the **3
    support posts** under the key field. On the **left**, the board goes in
    over the cell (~0.8 mm clearance under the diodes at nominal) — check the
-   leads exit cleanly and nothing is pinched. Check the USB-C sits in its wall
+   pigtail reaches J4 in the chin cleanly and nothing is pinched. Check the USB-C sits in its wall
    opening, the slide-switch knob reaches its slot, and the reset tact + LED
    align with the floor pinhole + light hole. *(v0.17: the USB-C opening and
    slide-switch slot are in the TOP shell wall, the reset pinhole + charge
@@ -119,16 +157,17 @@ serviced through the left grip, not the panel).
 5. Lay the keymats over the domes and fit each **grip lid** (its rim lightly
    clamps the keymat web); drive the **5 M3×10 countersunk screws per grip** — heads finish flush with the face.
 6. **Cable the tray + join the grips (v0.24):** the two grips no longer meet at
-   x=0 — they're bridged by the telescoping tray. Lay the FFC and the battery
-   power cable into the `bridge` tray's enclosed channels, each with a **rolling
-   service loop** (a U-fold that pays out as the jaw slides) — route them on
-   their separate y-lanes so they don't chafe. Bolt the `bridge` to the **right
+   x=0 — they're bridged by the telescoping tray. Lay the FFC into the `bridge`
+   tray's enclosed channel with a **rolling service loop** (a U-fold that pays out
+   as the jaw slides). Since v0.27 it is the **only** cable in there — one lane
+   between the two springs, walled off from both by printed divider ribs, so keep
+   the fold inside its channel and it cannot reach a coil. Bolt the `bridge` to the **right
    grip** (the ground member) with its **2 short M3s** into the cradle bosses,
    then engage the **left grip's inner shroud** into the open left end of the
    tray so it laps inside (it stays overlapped 57→17 mm across the travel, so the
-   springs/FFC/power stay enclosed at every width). Hook the **2 extension
+   springs and the FFC stay enclosed at every width). Hook the **2 extension
    springs** from the tray's fixed anchors to the inner shroud's hooks — these
-   are the clamp force. Leave the battery unplugged for now.
+   are the clamp force. Leave the battery unplugged at J4 for now.
 7. **Pointing nub (v0.21):** three steps, all on the right lid.
    **(a) Magnet:** press the Ø4 × 2 N52 disc into the `nub_spring` hub pocket
    **N pole facing down** (toward the sensor). Find N BEFORE seating, with a
@@ -185,6 +224,11 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
 > pin's absolute-maximum rating**. So: battery switch OFF and cell unplugged,
 > power from USB or the SWD probe only, flash the bootloader (which programs
 > REGOUT0 = 3.3 V), and only *then* connect the cell.
+>
+> **v0.27: "battery-free" now means J4 unplugged, on the left board.** The switch
+> alone will not do it — SW90 gates the load, not the cell, so with J4 mated the
+> ribbon and the charger see the cell whatever the knob says. That is also exactly
+> why J4 exists on the board the cell lives in.
 
 1. Connect an SWD probe (J-Link, CMSIS-DAP, or a Raspberry Pi with OpenOCD) to the
    silk-labelled pads **TP1–5**: SWDIO, SWDCLK, RESET, 3V3, GND. Power the board
@@ -195,7 +239,8 @@ The E73 ships **blank** — it cannot be UF2-flashed out of the box.
    this board's flash layout; the board itself is *not* a nice!nano). The
    bootloader sets `UICR.REGOUT0 = 3.3 V`, which the LiPo-direct power scheme
    requires — verify the flash completed before going further.
-4. **Now connect the cell** (polarity already metered in §2) and switch ON —
+4. **Now connect the cell at J4** (polarity already metered in §2; the ribbon is
+   already seated and latched at both ends) and switch ON —
    **ON = knob toward the USB-connector end of the board**.
 5. From now on it's drag-and-drop: **double-tap reset** (paperclip in the floor
    pinhole) → a UF2 drive mounts → drag on `thumbdeck-zmk.uf2` from the GitHub

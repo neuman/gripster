@@ -37,6 +37,18 @@ the v0.14 fab-readiness audit) are superseded by this file plus
    cavities. v0.19's well end walls widened the spine: the J2 contact rows are
    now 173.3 mm apart and the minimum length is **194 mm**; the 200 mm stock
    ribbon still works, ~6 mm slack.)**
+   *(v0.27 — SUPERSEDED, and the old part is now a hazard: the bridge is a
+   20-position ZIF, JUSHUO `AFA07-S20FCC-00`, LCSC `C262352` (same 1.0 mm
+   pitch / bottom contact / 2.5 mm height / JLC Extended tier), taking a **20-way,
+   1.0 mm, TYPE-A** jumper, **≥240 mm** for the v0.24 variable clamp span. The
+   four extra conductors carry the cell — `NC | VBAT_CELL | VBAT_CELL | NC` — which
+   is what deleted the separate battery power cable. **Do not fit a 16-way ribbon
+   to a v0.27 board:** 17.0 mm of ribbon in a 21.0 mm housing has 4.0 mm of
+   independent slop at each end, i.e. up to a 4-position shift. The conductor order
+   puts GND 15 positions from VBAT so the worst achievable shift lands VBAT on a
+   column (one dead MCU pin) rather than on GND (a dead cell short) — a last line
+   of defence, not a licence. The 14 matrix signals are unchanged, so firmware is
+   unaffected.)**
    Left-grip connector nets are assigned **by
    ribbon geometry**, so a straight jumper is correct by construction (verified:
    net-at-same-height matches 1:1). *Was:* a 2×08 THT pin header that (a)
@@ -45,8 +57,23 @@ the v0.14 fab-readiness audit) are superseded by this file plus
 4. **Battery connector → JST-PH 2.0 mm side-entry SMT** (S2B-PH-SM4-TB, C295747) —
    polarized, the hobby-LiPo standard. *Was:* an unpolarized 2.54 mm pin header.
    Build-guide note: vendors wire PH pigtails **both ways** — meter against the
-   "+"/"−" silk beside J3 (pin 1 = "+", nearer the bottom board edge) before
-   first plug-in.
+   "+"/"−" silk beside the connector (pin 1 = "+") before first plug-in.
+   **(v0.27: the connector moved grips with the cell. J3 is deleted from the right
+   board; the battery now lands on **J4 on the LEFT board**, deck (60.0, 5.5),
+   mouth facing +y — ~8 mm from the 403040 that sits in that same grip, instead of
+   a ~265 mm bare pigtail crossing the whole device. Meter against **J4's** silk.
+   **NEW F1**, in series with the cell positive between J4 and J2: Bourns
+   **MF-MSMF075-2** PPTC, LCSC **C84140**, 1812, 0.75 A hold / 1.5 A trip, 13.2 V,
+   Imax 100 A, R_init ≤0.45 Ω, at deck (50.0, 5.5). It has to be on the **cell**
+   side of the ribbon or it protects nothing. It is **required**, not belt-and-
+   braces: the ribbon now carries the raw cell, a 1S pouch's own PCM does not trip
+   until 2.0–2.5 A, and a 1.0 mm-pitch FFC conductor (0.70 × 0.035 mm =
+   0.0245 mm²) melts its own PET in ~0.2 s at a real short — the 0.43–2.0 A band
+   between them is the signature of a partly abraded conductor in a mechanism that
+   flexes on every phone insertion, and nothing else covers it. The **cell must
+   also have an integrated PCM** (2.0–2.5 A / 8–16 ms overcurrent, 4.275 V
+   overcharge, 2.75 V overdischarge): the PCM and the PTC cover *different* bands
+   and neither alone is sufficient.)**
 5. **NEW power switch:** MSK12C02 slide (C431540, SW90) between cell+ and the
    VBAT rail; the charger stays on the **cell side**, so it charges while
    switched off. Knob through a slot in the top shell wall (regenerated for v0.17).
@@ -82,7 +109,8 @@ the v0.14 fab-readiness audit) are superseded by this file plus
     were never on any real board — artifacts of the telescoping-cable era). Noted
     as a rev-B option if field ESD issues appear.
 14. **Routability engineered in:** every small-part GND pad gets a generated
-    **escape via** to the In1 plane before routing (26 on the right board);
+    **escape via** to the In1 plane before routing (26 on the right board;
+    **30 since v0.27**);
     combined with the obstacle-aware GND stitcher, this is what makes the
     headless route loop converge to 0/0 (see
     [routing-status.md](routing-status.md)).
@@ -122,8 +150,9 @@ MINUS/EQUAL, HOME/END, PSCRN, BT_CLR/BT_SEL 0–3, bootloader/sys_reset.
 | 1 | RF range with phone + hands flanking the antenna | edge-mounted antenna + keepout + shell relief; measure on the first article |
 | 2 | Dome feel / keymat hinge fatigue | coupon-test before full mats; retention tape mandatory |
 | 3 | JLC part rotation (LED, SOT-23, E73) | DFM preview checklist in fabrication-sourcing.md |
-| 4 | Battery pigtail polarity | polarized JST-PH + meter-against-silk step in assembly.md |
+| 4 | Battery pigtail polarity | polarized JST-PH + meter-against-silk step in assembly.md (v0.27: at **J4, on the left board**) |
 | 5 | E73 stock is volatile (observed ~1000 → ~20 units within days; Extended, X-ray) | check jlcpcb.com/parts for C356849 and reserve/backorder before anything else; Holyiot 18010 backup needs a footprint change (rev-B) |
+| 6 | **v0.27:** a 16-way ribbon fitted to the 20-way ZIF shifts up to 4 positions and can put VBAT on a matrix line | conductor order keeps GND 15 positions from VBAT (worst shift = one dead MCU pin, not a cell short); **F1** PPTC on the cell side; NC guards either side of VBAT; J2's silk names the width *and* the type |
 
 **Gate that remains:** a **first-article run of 5** with the bring-up checkpoints
 in [assembly.md](assembly.md) before any larger spend.

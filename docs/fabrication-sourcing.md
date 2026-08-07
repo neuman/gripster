@@ -1,4 +1,4 @@
-# Fabrication & sourcing — rev-A (v0.19)
+# Fabrication & sourcing — rev-A (v0.27)
 
 > **These boards have never been fabricated.** rev-A is routed, DRC-clean (0/0) and
 > the fab package exports cleanly, but no order has ever been placed and no board
@@ -19,8 +19,9 @@ hardware/kicad/generated/fab/left/   thumbdeck_left_gerbers.zip  + bom.csv + pos
 Rough cost target **~$150–250 delivered for 5 sets** of both boards assembled
 (indicative 2026 figures — **re-quote at order time**; the E73 price and stock move).
 This is **boards + assembly only.** It excludes the domes and retention array, the
-LiPo, FFC jumpers, MagSafe rings, M3 hardware, filament, and an SWD probe for the
-one-time bootloader flash — budget for those separately (see
+LiPo (which must be a **protected** cell — see the BOM), the **20-way** FFC jumpers,
+MagSafe rings, M3 hardware, filament, and an SWD probe for the one-time bootloader
+flash — budget for those separately (see
 [bill-of-materials.md](bill-of-materials.md)).
 
 ## Placing the two orders
@@ -32,7 +33,7 @@ For each board: upload the `*_gerbers.zip`, choose PCBA, then upload `bom.csv` a
 |---|---|---|
 | Layers / material | **4-layer**, 1.6 mm FR-4 | same |
 | Surface finish | **ENIG — mandatory** (snap domes press on bare pads; HASL oxidises within weeks of key cycling) | same |
-| Assembly | **Standard** (forced: the E73 is an Extended part that needs X-ray inspection) | **Economic** is fine (42 diodes + one FFC connector) |
+| Assembly | **Standard** (forced: the E73 is an Extended part that needs X-ray inspection) | **Economic** is fine (42 diodes, the bridge ZIF, and — v0.27 — the battery JST + its PPTC) |
 | Assembly side | **Bottom** (all parts are on the back; the front must stay bare for the domes) | Bottom |
 | Panelize? | **No.** Two different designs — panelizing them costs more than two small orders. | No |
 
@@ -43,6 +44,12 @@ real: a mixed panel of two distinct designs triggers JLC's multi-design surcharg
 and a bigger stencil, and the left board no longer shares the right board's Standard
 assembly requirement. Two separate orders — the trivial left one on Economic — comes
 out cheaper.
+
+**v0.27 doesn't change this.** Moving the battery connector to the left board (J4)
+and adding its fuse (F1) takes that board from 43 to **45 placements** — two extra
+feeders on the Economic order, not an assembly-class change. There is still no MCU,
+no X-ray part and nothing hand-soldered on it. The right board drops to **70
+placements** (J3 is gone).
 
 ## DFM preview checklist (before paying)
 
@@ -63,7 +70,11 @@ per part. In the DFM/component preview, verify and rotate if needed:
 2. **SOT-23-5 / SOT-23-6 rotation** (U2 MCP73831, U3 USBLC6-2SC6).
 3. **USB-C (J1)** seated on the pad pattern, shell at the board edge.
 4. **E73 (U1) orientation** — antenna edge pointing off the top board edge.
-5. Confirm every part is placed in the **single-pass SMT assembly** — nothing is
+5. **J4 (JST-PH) on the LEFT board** (v0.27, the left board's first polarized part)
+   — mouth facing **into** the grip (+y, over the board), pin 1 against the "+" silk.
+   A 180° flip aims the mated plug off the bottom board edge into the shell wall.
+   F1 next to it is a PPTC and is not polarized.
+6. Confirm every part is placed in the **single-pass SMT assembly** — nothing is
    hand-soldered. (The USB-C shell's plated stakes and the FFC/slide-switch
    locating pegs are the only through-board features, and they go on in the same
    pass; if the preview asks for a separate THT/hand-solder step, something is
@@ -77,8 +88,9 @@ per part. In the DFM/component preview, verify and rotate if needed:
 | USB-C 16P full-SMD | C165948 | Extended | |
 | MCP73831T-2ACI/OT | C424093 | Extended | Don't sub -2ATI (different Vreg behaviour). |
 | USBLC6-2SC6 | C7519 | Extended | |
-| FFC ZIF AFA07-S16FCC-00 | C13744 | Extended | One per board. |
-| JST-PH S2B-PH-SM4-TB | C295747 | Extended | |
+| FFC ZIF **AFA07-S20FCC-00** | **C262352** | Extended | One per board. **v0.27: 20-pin, not the old 16-pin C13744** — the bridge carries the battery now. 1.0 mm pitch, bottom contact, slide lock, side entry, 2.5 mm height, 0.3 mm FFC, tin plating; ~21.9 k in LCSC stock. Same Extended tier as the 16-way, so it costs a feeder, not an assembly class. **Order the matching 20-way TYPE-A jumper** (contacts same side both ends) — a 16-way ribbon fits this housing with 4 mm of slop per end and is a fire hazard, see the BOM. |
+| JST-PH S2B-PH-SM4-TB | C295747 | Extended | **v0.27: this is J4 on the LEFT board** (it was J3 on the right). The right board has no battery connector any more. |
+| PPTC 0.75 A — Bourns MF-MSMF075-2 | **C84140** | **Confirm the tier when you quote** | **v0.27, new: F1 on the LEFT board, and it is safety-critical.** 1812, 0.75 A hold / 1.5 A trip, 13.2 V, Imax 100 A, initial resistance ≤0.45 Ω. It sits in series with the cell positive between J4 and J2, on the **cell** side of the ribbon — anywhere else and it protects nothing. Do not let a quote substitute a different hold current. |
 | MSK12C02 slide switch | C431540 | Extended | |
 | TS-1187A reset tact | C318884 | Extended | |
 | 1N4148WS SOD-323 | C2128 | **Basic** | 78 across both boards (36 right / 42 left). |
@@ -90,9 +102,11 @@ per part. In the DFM/component preview, verify and rotate if needed:
 Snap domes are mechanical spring contacts — they oxidise/warp in reflow, so no
 house machine-places them. Your steps after delivery: press the **78 domes** under
 the Snaptron retention array, print shells + keymats, foam-tape the battery into
-the **left grip before its board goes in**, seat the FFC jumper + power cable in
-the tray channel, bolt the `bridge` tray to the right grip (2 M3s) and lap the left
-grip's shroud into it, press the TPU grippers + MagSafe ring, close the shell.
+the **left grip before its board goes in**, seat the **20-way** FFC jumper in the
+tray channel and both ZIFs — **ribbon first, cell into J4 last**, because the ribbon
+carries VBAT_CELL and goes live the moment the cell is plugged in — bolt the
+`bridge` tray to the right grip (2 M3s) and lap the left grip's shroud into it,
+press the TPU grippers + MagSafe ring, close the shell.
 PCBWay can quote manual dome-sheet application, but it
 roughly doubles the cost — pressing them yourself is a calm 20-minute job.
 
@@ -102,13 +116,21 @@ Flat fees dominate at qty 5: 4-layer PCB + ENIG, one Standard assembly setup +
 stencil (right), one Economic setup (left), Extended-feeder fees, E73 X-ray, parts
 (~$6 × 5 for the E73 dominates), shipping. Per-board cost only falls with volume.
 **Both orders exclude** the domes + retention array, LiPo, printed parts, M3
-hardware and the FFC jumper — see [bill-of-materials.md](bill-of-materials.md).
+hardware and the **20-way** FFC jumper — see
+[bill-of-materials.md](bill-of-materials.md).
 
 ## Caveats
 
 - **E73 stock is volatile** (~1000 → ~20 units observed within days): check
   jlcpcb.com/parts for **C356849** and **reserve/backorder the modules before
   anything else**. The Holyiot 18010 backup requires a footprint change (rev-B).
+- **v0.27: the bridge is 20-way.** Any 16-way ZIFs (C13744) or 16-way ribbons bought
+  against an earlier version of this document are the wrong parts, and in this build
+  they are dangerous rather than merely wrong: a 17.0 mm 16-way ribbon seats in the
+  21.0 mm 20-way housing with 4.0 mm of slop at each end. Scrap them.
+- **The cell is now on the ribbon**, so F1 (C84140) must be fitted and the LiPo must
+  be a **protected** cell with an integrated PCM. They cover different fault bands and
+  neither alone is sufficient — see [bill-of-materials.md](bill-of-materials.md).
 - **ENIG is mandatory** — state it explicitly; don't let a quote default to HASL.
 - Selective hard gold on dome pads is a production-volume upgrade; plain ENIG is
   fine for a personal build.

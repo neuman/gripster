@@ -22,7 +22,7 @@ of simultaneous presses stays unambiguous (NKRO best-effort; BLE HID boot protoc
 is 6KRO regardless).
 
 - Logical **columns 0–4 = RIGHT grip** (wired locally to the module).
-- Logical **columns 5–9 = LEFT grip** (reached over the 16-way FFC ribbon).
+- Logical **columns 5–9 = LEFT grip** (reached over the 20-way FFC ribbon).
 - **Rows 0–8** are shared across both grips (they cross the ribbon too).
 
 **Proof, not vibes:** `hardware/scripts/sim_matrix.py` is the final pass — all
@@ -49,16 +49,26 @@ model by `gen_firmware.py` so board and firmware can't drift.
 | **8 ms debounce** | yes (firmware) | `debounce-press-ms` / `debounce-release-ms` in the kscan. |
 | **Solid In1 GND plane** | yes | 4-layer stackup; rows/cols reference a real plane → low crosstalk. |
 | GND stitching + escape vias | yes | Machine-placed by the pipeline (see routing-status.md). |
-| Column series resistors | **no — dropped** | Justified for the old long telescoping cable; the rev-A bridge is a short (≤200 mm) fixed internal ribbon. Rev-B option if ringing ever shows. |
+| Column series resistors | **no — dropped** | Justified for the old long telescoping cable. The bridge ribbon is longer again since v0.24 (≥240 mm, with a rolling service loop for the sliding clamp) but it is still a fully internal, GND-referenced ribbon and no ringing has been observed in simulation. Rev-B option if it ever shows. |
 | Dome-field TVS | **no — dropped** | Never on any real board. The dome field sits behind the keymat + shell; USB ESD is handled by the USBLC6-2. Rev-B option if field ESD appears. |
 
 ## The bridge is part of the matrix
 
-ROW0–8 + COL5–9 (14 signals) + GND cross the **16-way FFC** to the left grip.
+ROW0–8 + COL5–9 (**14 signals**) + GND cross the **20-way FFC** to the left grip.
 The left connector's pin→net assignment is generated **from ribbon geometry** so a
-straight type-A jumper is correct by construction (verified: net-at-same-height
-matches 1:1). Debug rule of thumb: a dead left-grip **column** → reseat the ribbon;
-a dead **row** shows on **both** grips.
+straight **20-way type-A** jumper is correct by construction (verified:
+net-at-same-height matches 1:1). Debug rule of thumb: a dead left-grip **column**
+→ reseat the ribbon; a dead **row** shows on **both** grips.
+
+The other six conductors are **power, not matrix**: `2× VBAT_CELL`, `2× GND` and
+two unwired **NC guards** that keep the battery group away from the matrix group
+(order by deck y, index 0 = highest: `GND, GND, ROW0–8, COL5–9, NC, VBAT_CELL,
+VBAT_CELL, NC`). The **14 matrix signals are identical to the 16-way bridge they
+replaced** — same ROW0–8 / COL0–9 on the same E73 pads — so **firmware is
+completely unaffected** by the widening. See
+[connectivity-and-power.md](connectivity-and-power.md) for why the ribbon carries
+the cell at all, and why fitting a 16-way ribbon in the 20-way housing is a
+safety issue rather than just a dead half.
 
 ## Diode direction sanity
 

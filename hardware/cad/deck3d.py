@@ -65,8 +65,9 @@ SPECS = [
     ("SOT-23-6", {"h": TMAG_PKG_H}),                       # U4 TMAG5273 / U3 USBLC6 (DBV)
     ("E73-2G4M08S1C", {"h": 2.2, "body": (13.0, 18.0)}),   # Ebyte module; bbox incl. antenna keepout
     ("USB_C_Receptacle_HRO", {"h": 3.3}),                  # J1 body 3.26
-    ("ffc_afa07", {"h": 2.0}),                             # J2 FFC ZIF 16P (Molex 200528 pattern)
-    ("JST_PH_S2B", {"h": 6.0}),                            # J3 side-entry, mated height
+    ("ffc_afa07", {"h": 2.0}),                             # J2 FFC ZIF 20P (AFA07-S20FCC-00)
+    ("JST_PH_S2B", {"h": 6.0}),                            # J4 (LEFT board) side-entry, mated height
+    ("Fuse_1812", {"h": 0.9}),                             # F1 PPTC, left board cell protection
     ("msk12c02", {"h": 3.6, "body": (8.9, 3.6), "knob": True}),  # SW1 power slide + knob
     ("TS-1187A", {"h": 3.1}),                              # SW2 reset tact (floor-facing actuator)
     ("SOT-23", {"h": 1.1}),                                # MCP73831 / USBLC6
@@ -568,7 +569,9 @@ FLOOR = 1.6            # back-half floor thickness
 WALL_T = 2.5          # shell wall thickness
 TOP_T = 2.4           # grip-lid plate thickness (v0.19: 2.0 -> 2.4 so the M3 flush
                       #   countersink cone leaves >=1.0mm of land under it)
-STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH (J3) + 0.24 margin
+STANDOFF = 6.3        # PCB standoff: clears the 6.0mm mated JST-PH + 0.24 margin. v0.27:
+                      #   that connector is J4 on the LEFT board now (J3 is gone from the
+                      #   right), so it is the LEFT cavity that runs at the 0.24 margin.
 PHONE_CLR = 0.6       # phone pocket clearance (total, both sides)
 GAP = 0.5
 KM_WEB, KM_PL_H, KM_PL_D = 0.8, 3.9, 6.2   # keymat web / plunger height / plunger dia
@@ -593,7 +596,7 @@ PHONE_TC = CFG.phone_t + CFG.case_t          # 9.4 — nominal cased thickness (
 RECESS_TOP = FACE_Z - PHONE_TC - 0.2         # 5.1 — bridge recess floor top (nominal screen ~flush)
 LAP_CLR = 0.25        # printed-joint / rail-slide in-plane clearance (FDM: elephant foot + warp)
 # --- v0.24 expanding spring-clamp bridge, ENCLOSED (product frame) ---
-# The clamp mechanism (springs + FFC + battery power cable) is housed in a
+# The clamp mechanism (springs + the one bridge FFC) is housed in a
 # TELESCOPING enclosure that stays closed at every extension: a fixed OUTER shroud
 # (bolted to the right grip) and a moving INNER shroud (on the left jaw) that slides
 # inside it. The two always overlap, so nothing is ever exposed in the gap. The
@@ -694,8 +697,9 @@ SHELF_W = 1.5                                 # thickness in y (sits directly ov
 # plug hung 0.45mm into that cavity and jammed the clamp at EVERY span (1159mm^3 measured
 # at min), hidden behind a blanket collide() whitelist. One less part, one less magnet, and
 # the only remaining structure over the jaw is the 1.6mm plate itself.
-BOLT_Y = (46.0, 62.0)                        # bridge->right-grip bolt line (clear of J2 at y 12.5..33.5)
-BOLT_X = 83.3                                # bolt column: behind the right cradle wall (outboard of the phone edge)
+# (v0.25 deleted the bolted tray-to-grip joint; BOLT_X/BOLT_Y went with it. They survived
+# here as unreferenced constants carrying a stale "clear of J2 at y 12.5..33.5" note that
+# v0.27 would have made wrong anyway — J2 is at y 15.08..41.93 now.)
 # === v0.24d internal LANE PLAN =====================================================
 # v0.24c stacked things inside the enclosure: the FFC ran at y=24 directly UNDER
 # spring 0 (also y=24), their z bands overlapping — the coil would have sat on the
@@ -706,7 +710,11 @@ BOLT_X = 83.3                                # bolt column: behind the right cra
 #
 # Both are lane bugs, so the fix is one lane plan. Front -> back the enclosure is:
 #
-#     spring | FFC | power | spring          (y lanes, walled by printed ribs)
+#     spring | FFC | spring                   (y lanes, walled by printed ribs)
+#
+# (v0.27: there used to be a second cable lane for the battery's 2-wire at y=41. The
+# battery moved onto the ribbon, so that lane and its two divider ribs are gone and
+# y 40.0..82.5 is now free.)
 #
 # and EVERY lane shares one z (LANE_Z), the mid-height of the inner shroud's
 # cavity. Nothing is stacked over anything; the springs are pushed out to the
@@ -728,17 +736,30 @@ SPRING_D = 4.0                               # extension-spring OD (fit model)
 # spring, so the force ratio across the range collapses to something a real off-the-shelf
 # extension spring can deliver. See docs/design-decisions.md for the force numbers.
 SPRING_ANCHOR_X = 76.0                       # fixed spring anchor (springs pull the inner shroud's hook toward here)
-FLEX_Y, FLEX_W, FLEX_T = 26.5, 17.0, 0.3      # FFC lane — J2's y centre (13.07..35.92), so the
-                                             #   16-way 0.5mm-pitch ribbon enters the ZIF dead straight
-POWER_Y, POWER_W, POWER_T = 41.0, 3.0, 2.2   # battery 2-wire lane — its own row, clear of both springs
+# v0.27: ONE cable lane. The battery rides the ribbon (4 of the 20-way's conductors), so
+# the separate 2-wire power lane at y=41 is gone along with the cable itself.
+#
+# FLEX_Y is J2's deck y and is ASSERTED against the KiCad placement export in
+# check_lanes() — it is not a free number. The old value (26.5) claimed in its own comment
+# to be "J2's y centre" and was not: J2 sat at 24.5, so the 17mm ribbon ran 2.0mm off the
+# pad row and conductor 1 fell outside it entirely. 26.5 was in fact the lane-plan minimum
+# that the spring-rib assert would accept, silently overriding the connector. Both numbers
+# move together now or the build fails.
+FLEX_Y, FLEX_W, FLEX_T = 28.5, 21.0, 0.3      # 20-way 1.0mm-pitch ribbon (21mm wide over the
+                                             #   conductors) entering the ZIF dead straight
+FLEX_LOOP_T = 2.2                            # service-loop CRUMPLE envelope, not the 0.3 flat
+                                             #   thickness. The lane still has to be this deep —
+                                             #   the ribbon folds where the 2-wire used to fill it.
 RIB_T = 1.2                                  # divider-rib thickness (3 perimeters at 0.4 nozzle)
 LANE_CLR = 1.0                               # cable <-> channel wall clearance, per side
 LANE_GAP_MIN = 2.0                           # --check: required clear y gap, spring lane <-> cable lane
 
 def _chan_bands():
-    """(y0, y1) of each cable channel = the lane plus its clearance, front to back."""
-    return [(FLEX_Y - FLEX_W / 2 - LANE_CLR, FLEX_Y + FLEX_W / 2 + LANE_CLR),
-            (POWER_Y - POWER_W / 2 - LANE_CLR, POWER_Y + POWER_W / 2 + LANE_CLR)]
+    """(y0, y1) of each cable channel = the lane plus its clearance, front to back.
+    v0.27: one entry. Every consumer of this is a `for` loop, so deleting the power
+    lane costs no code anywhere — the ribs, the shroud end-wall windows and the tray
+    windows all just stop building their second copy."""
+    return [(FLEX_Y - FLEX_W / 2 - LANE_CLR, FLEX_Y + FLEX_W / 2 + LANE_CLR)]
 
 def _rib_bands():
     """(y0, y1) of each divider rib: RIB_T thick, hugging both walls of each channel.
@@ -1033,7 +1054,7 @@ def _grip_bridge_iface(part, side):
     seats on the wall). The RIGHT grip (GROUND) adds the bridge-bolt bosses. The LEFT
     grip (moving jaw) grows the moving INNER SHROUD — a closed box that telescopes
     inside the fixed outer shroud, carrying the cable run and the spring hooks — so
-    the springs/FFC/power are enclosed at every extension. Built in the nominal
+    the springs and the FFC are enclosed at every extension. Built in the nominal
     frame; the whole left grip (shroud included) translates by the jaw slide."""
     prod = _product()
     ph = prod["phone"]; py0, py1 = ph["y"] - 0.5, ph["y"] + ph["h"] + 0.5
@@ -1070,7 +1091,7 @@ def _grip_bridge_iface(part, side):
                               izb + SHROUD_WALL, (izt - SHROUD_WALL) - (izb + SHROUD_WALL))
         part = part.union(outer.cut(inner))                 # closed box, open right end
         # v0.24d LANE RIBS: full-cavity-height dividers run the shroud's whole length,
-        # walling the FFC and the power cable into their own channels. The service
+        # walling the FFC into its own channel. The service
         # loop can crumple all it likes at short spans — it has no path into a spring.
         for ry0, ry1 in _rib_bands():
             part = part.union(_cq_from_poly(shp_box(gxl + SHROUD_WALL, ry0, sx_in, ry1),
@@ -1111,6 +1132,10 @@ def _back_half_build(side):
     part = _grip_bridge_iface(part, side)
     if side == "right":
         part = part.union(_tray_solid())     # v0.25 (J3): one part, no joint
+    # v0.27 FFC duct — cut AFTER the tray union, or the tray would fill the right grip's
+    # half of it straight back in. Both grips get one; the right grip had no cable
+    # opening of any kind before this.
+    part = part.cut(_flex_duct_cutter(side))
     # v0.25: quarter-round the outside bottom edge — the back plane is the face the palm
     # rides on, and it is now one continuous plane across the grips AND the tray, so the
     # round is taken on their combined outline rather than each piece's.
@@ -1284,7 +1309,7 @@ def _tray_solid():
     v0.24c the fixed TRAY — a 2-part telescoping tray (simpler than the geared
     3-stage). It bolts to the right grip and cantilevers left to OUTER_LEFT; the left
     grip's plate laps inside it (grown in _grip_bridge_iface), so the two overlap at
-    every span and enclose the springs + FFC + power cable. The flat top is the phone
+    every span and enclose the springs + FFC. The flat top is the phone
     rest (v0.25: no MagSafe recess — flat all the way across); the back is the rounded
     enclosure. Big continuous top face = room for the ring AND clean back-space for
     maker alt-shells (solar / battery / LoRa)."""
@@ -1316,9 +1341,11 @@ def _tray_solid():
     #     GONE with the joint. They were unbuildable anyway — both sides were Ø3.4 clearance,
     #     so nothing was ever threaded, and the column sat under 12.5mm of solid cradle wall
     #     with no driver access. Merging the parts deletes the problem rather than fixing it.
-    # (4) cable windows in the RIGHT end wall — one per LANE (FFC to J2, battery leads
-    #     to J3), on the lane z band. v0.24c cut a single window at y 15..33, which the
-    #     power lane at y=40 missed entirely.
+    # (4) cable windows in the RIGHT end wall — one per LANE, on the lane z band. v0.27:
+    #     there is only the FFC lane now, so there is one window; the battery leads that
+    #     used to need their own are gone with the cable. (v0.24c cut a single window at
+    #     y 15..33 and the then-existing power lane at y=40 missed it entirely — which is
+    #     why this is driven off _chan_bands() rather than hardcoded.)
     for cy0, cy1 in _chan_bands():
         br = br.cut(_cq_from_poly(shp_box(BR_X_RIGHT - SHROUD_WALL - 1, cy0, BR_X_RIGHT + 1, cy1),
                                   CAV_Z0 - 0.2, (CAV_Z1 + 0.2) - (CAV_Z0 - 0.2)))
@@ -1602,20 +1629,250 @@ def _cable_run(clamp_pos, y, w, h, z):
     m = _box(rx - lx, w, h)
     return _place(m, (lx + rx) / 2, y, z)
 
+ZIF_ENTRY_Z = 0.9      # AFA07: cable-slot centreline above the connector's seating plane
+                       #   (2.5 body over a 0.3 ribbon; the slot sits low in the body)
+ZIF_MOUTH_OFF = 2.4    # anchor -> cable-slot face, from the footprint's F.Fab rect
+                       #   (local y -2.4). NOT the courtyard (-3.05) and not the bbox:
+                       #   the ribbon arrives at the BODY face, and the 0.65mm difference
+                       #   is the whole margin in the duct problem flex_route_report()
+                       #   reports, so it has to be the right number.
+
+# --- v0.27 FFC DUCT ------------------------------------------------------------------
+# The ribbon's way out of the grip. Until v0.27 there was none: the ZIF slot sits at
+# z ~= 6.95 (back-mounted under a board at PCB_Z) and the lane at LANE_Z = 0.2, and the
+# column between the tray end and the grip cavity is solid at every z. Both bridge cables
+# were straight boxes reaching neither connector, so nothing ever had to be true.
+#
+# The duct is deliberately LOW and SHORT: it passes under the phone-retention structure
+# (cradle backstop wall, its 1.2mm rest ledge and the v0.24e bottom shelf all live at
+# z >= 3.9 — see _cradle_shelf/retain_top) rather than through it. A full-height slot from
+# the lane up to the ZIF would have been simpler and needed no PCB change, but it would
+# have severed ~23mm of the wall the TPU capture lip is rooted in, on the one structure
+# whose whole job is stopping a phone falling out. J2 was rotated to face inboard instead.
+# The duct is STEPPED, because only its grip-side half may be tall. Inboard of the grip's
+# inner face the moving inner shroud's roof spans CAV_Z1 (1.75) to izt (3.15) — a straight
+# 2.6-high cut across the whole duct leaves that roof 0.55mm thick on an exposed outside
+# surface, well under the file's own 3-perimeter convention (RIB_T = 1.2). The grip side
+# has no such roof (it is cutting the grip's own floor slab), so it can be tall enough for
+# the ribbon's fold while the shroud side stays a flat slot at lane height.
+FLEX_DUCT_Z0 = LANE_Z - 1.0    # -0.8 — duct floor, below the lane axis
+FLEX_DUCT_Z1 = 2.6             # GRIP side: opens into the back cavity (floor top ~1.55)
+FLEX_DUCT_Z1_LANE = 1.95       # SHROUD/TRAY side: leaves izt - 1.95 = 1.20mm of roof
+# The ribbon leaves the slot horizontally and has to end up vertical, so the descending
+# leg does NOT sit at the fold point — it sits one bend radius further in. Sizing the fold
+# to a zero-radius corner is how you put a 21mm-wide ribbon through a diode column.
+FFC_BEND_R = 1.6               # min bend radius for the 0.3mm ribbon (static installed
+                               #   fold; the Wurth part is rated 20 x 180deg, so this is
+                               #   conservative). The descent lands at FLEX_TURN_X + this.
+FLEX_TURN_X = 2.0              # fold offset from the ZIF slot, toward the grip interior.
+                               #   The usable strip runs from J2's own body edge to the
+                               #   innermost back-side part in the ribbon's y band; with
+                               #   FFC_BEND_R that leaves the descent ~1mm clear of the
+                               #   matrix diode column. ASSERTED in check_lanes() against
+                               #   the real placement, not trusted to this comment.
+FLEX_CAV_Z = 2.2               # the ribbon's run back toward the seam sits just above the
+                               #   cavity floor (~1.6). It only drops to LANE_Z once it is
+                               #   inside the duct, where the floor has been cut away.
+
+def _flex_duct_cutter(side):
+    """Cutter for one grip's ribbon duct: the channel band in y, FLEX_DUCT_Z0..Z1 in z,
+    spanning from inside the tray's cavity through the solid column into the grip's back
+    cavity. Cut from BOTH grips — the right grip previously had no cable window at all."""
+    s = 1 if side == "right" else -1
+    c0, c1 = _chan_bands()[0]
+    face = s * _seam_frame()
+    grip = s * (_seam_frame() + 1.2)          # into the grip, past its inner wall
+    tray = s * (BR_X_RIGHT - 1.0)             # out into the tray cavity
+    tall = _cq_from_poly(shp_box(min(face, grip), c0, max(face, grip), c1),
+                         FLEX_DUCT_Z0, FLEX_DUCT_Z1 - FLEX_DUCT_Z0)
+    flat = _cq_from_poly(shp_box(min(face, tray), c0, max(face, tray), c1),
+                         FLEX_DUCT_Z0, FLEX_DUCT_Z1_LANE - FLEX_DUCT_Z0)
+    return tall.union(flat)
+
+def _flex_path(side):
+    """The ribbon's route inside ONE grip, in the product frame: out of the ZIF slot
+    inboard, down through the open back cavity, fold, back out through the duct to the
+    lane. Sampled by flex_route_report() against the real shell solid — which is the only
+    way this stays true, since a cable that reaches nothing also collides with nothing."""
+    m = _zif_mouth(side)
+    d = _zif_dir(side)                             # product-x direction the slot faces
+    seam = 1 if side == "right" else -1            # which way the enclosure lies
+    x_turn = m[0] + d * (FLEX_TURN_X + FFC_BEND_R)   # descent leg, one bend radius in
+    # the vertical drop must happen on the GRIP side of the face, where the duct is tall
+    x_duct = seam * (_seam_frame() + 0.5)
+    x_tray = seam * (BR_X_RIGHT - 1.0)
+    return [np.array([m[0], m[1], m[2]]),            # at the slot
+            np.array([x_turn, m[1], m[2]]),          # out of the slot + the entry bend
+            np.array([x_turn, m[1], FLEX_CAV_Z]),    # descend the open back cavity
+            np.array([x_duct, m[1], FLEX_CAV_Z]),    # fold, run back toward the seam
+            np.array([x_duct, m[1], LANE_Z]),        # drop to the lane INSIDE the duct
+            np.array([x_tray, m[1], LANE_Z])]        # out through to the enclosure lane
+
+def _zif_dir(side, ref="J2"):
+    """+1/-1: the PRODUCT-x direction J2's cable slot faces, read from the placed
+    rotation. _flex_path() used to hardcode this as a function of `side`, which quietly
+    defeated the whole point of deriving it in _zif_mouth(): rotate J2 back to face the
+    spine and the mouth would move 4.8mm one way while the path still turned the other,
+    landing the whole route in open cavity where nothing is buried and the check passes."""
+    f = next(p for p in _placement(side) if p["ref"] == ref)
+    rot = round(f["rot"]) % 360
+    assert rot in (90, 270), f"{ref} on {side} is rotated {rot}deg; expected 90 or 270"
+    return 1 if rot == 90 else -1   # deck +x == product +x for both grips
+
+def _zif_mouth(side, ref="J2"):
+    """(x, y, z) of J2's cable slot in the PRODUCT frame — where the ribbon physically
+    has to arrive — read from the KiCad placement export instead of being assumed.
+
+    This function is the fix for a whole CLASS of bug: until v0.27 both bridge cables
+    were straight boxes floating in the enclosure, connected to nothing at either end,
+    and nothing could see it. collide() only tests interpenetration, and a cable that
+    reaches nothing touches nothing; cable_enclosure() clipped 6mm off each end, so the
+    connector ends were outside its window by construction. Deriving the endpoint from
+    the placement makes the two drift together or fail together."""
+    prod = _product()
+    H = prod[side]["board_h"]
+    ox, oy = prod[f"{side}_origin"]
+    f = next(p for p in _placement(side) if p["ref"] == ref)
+    assert f["back"], f"{ref} must be back-mounted for the ribbon to reach the lane"
+    # Which way the slot points is READ from the placed rotation, never assumed — v0.27
+    # flips it, and a hardcoded sign here would have silently pointed the model's cable
+    # at the back of the connector.
+    d = _zif_dir(side, ref)
+    return np.array([ox + f["ax"] + d * ZIF_MOUTH_OFF,
+                     oy + (H - f["ay"]),
+                     (PCB_Z - SOLDER) - ZIF_ENTRY_Z])
+
 def flex_body(clamp_pos=None):
-    """Bridge FFC (16-way, 0.5mm pitch -> 9.5mm ribbon; the matrix jumper): runs
-    ENCLOSED through the shrouds in the FLEX lane, walled off from both springs by
-    the divider ribs, on LANE_Z inside the MOVING shroud's cavity (v0.24c pinned it
-    to the fixed tray's floor, 1.4mm below that cavity — so past the tray's left end
-    it hung in open air, worst at full extension). The variable span is taken up by a
-    rolling service loop folding inside its channel; modeled as the straight run."""
+    """Bridge FFC (20-way, 1.0mm pitch -> 21mm ribbon): the matrix jumper AND, since
+    v0.27, the battery feed — 9 rows + 5 cols + 2 GND + 2 VBAT_CELL + 2 NC guards.
+    Runs ENCLOSED through the shrouds in the FLEX lane, walled off from both springs by
+    the divider ribs, on LANE_Z inside the MOVING shroud's cavity. The variable span is
+    taken up by a rolling service loop folding inside its channel.
+
+    Still modelled as the straight enclosed run: that is the part whose ENCLOSURE has to
+    be proven, and it is what cable_enclosure() checks. The route from each ZIF slot DOWN
+    to this lane is a separate body of geometry (_flex_path + the duct) and is proven
+    separately by flex_route_report()."""
     return _cable_run(clamp_pos, FLEX_Y, FLEX_W, FLEX_T, LANE_Z)
 
-def power_body(clamp_pos=None):
-    """Battery POWER cable (2-wire, left-grip 403040 -> J3 on the right board).
-    Routed ENCLOSED alongside the FFC in its OWN walled channel — same z, its own y
-    row — with its own service-loop slack folding inside."""
-    return _cable_run(clamp_pos, POWER_Y, POWER_W, POWER_T, LANE_Z)
+
+def check_lanes():
+    """v0.24d LANE PLAN + v0.27 CONNECTOR AGREEMENT. Pure arithmetic over constants and
+    the placement export, so a regression fails in ~2s instead of after the multi-minute
+    mesh sweep. Run standalone with `deck3d.py --check-lanes`.
+
+    The connector-agreement asserts are the new ones, and they are the point: the lane
+    plan and the ZIF placement used to be two independent numbers that a comment CLAIMED
+    were equal. They were not — FLEX_Y was 26.5 against a connector at 24.5, so the
+    ribbon ran 2.0mm off the pad row and its first conductor missed the housing entirely.
+    Nothing objected, because nothing compared them."""
+    for nm, (ly, lw) in (("flex", (FLEX_Y, FLEX_W)),):
+        assert min(SPRING_Y) < ly < max(SPRING_Y), f"{nm} lane y={ly} is not between the springs"
+        for sy in SPRING_Y:
+            gap = abs(sy - ly) - (SPRING_D + lw) / 2.0
+            assert gap >= LANE_GAP_MIN, (f"{nm} lane (y={ly}) is only {gap:.1f}mm clear of the "
+                                         f"spring lane at y={sy} — min {LANE_GAP_MIN}mm")
+    for c0, c1 in _chan_bands():                  # every channel inside the cavity
+        assert CAV_Y0 <= c0 - RIB_T and c1 + RIB_T <= CAV_Y1, \
+            f"cable channel {c0:.1f}..{c1:.1f} (+ribs) does not fit the cavity {CAV_Y0}..{CAV_Y1}"
+    assert CAV_Z0 <= LANE_Z - FLEX_LOOP_T / 2 and LANE_Z + FLEX_LOOP_T / 2 <= CAV_Z1, \
+        "the lane axis does not fit inside the MOVING shroud's cavity"
+    for sy in SPRING_Y:                           # the outboard lanes must still fit the cavity
+        assert CAV_Y0 <= sy - SPRING_D / 2 and sy + SPRING_D / 2 <= CAV_Y1, \
+            f"spring lane y={sy} does not fit inside the enclosure cavity {CAV_Y0}..{CAV_Y1}"
+    ribs = _rib_bands()                           # ...and no divider rib may foul one
+    assert min(r[0] for r in ribs) - (SPRING_Y[0] + SPRING_D / 2) >= 1.0 and \
+           (SPRING_Y[1] - SPRING_D / 2) - max(r[1] for r in ribs) >= 1.0, \
+        "a cable channel's divider rib fouls a spring lane"
+    # --- the lane must agree with the connector it feeds, on BOTH boards ---
+    for side in ("left", "right"):
+        m = _zif_mouth(side)
+        assert abs(m[1] - FLEX_Y) <= 0.25, \
+            (f"FLEX_Y={FLEX_Y} is {abs(m[1]-FLEX_Y):.2f}mm off {side} J2's slot centre "
+             f"y={m[1]:.2f} — the ribbon cannot enter the ZIF straight")
+        # The AFA07 family is exact: land = N + 6.85, ribbon = N + 1, so land - ribbon is
+        # ALWAYS 5.85 whatever N is. Check that identity, not a tolerance band — the first
+        # version allowed body-6.0 .. body, a 6mm window against the 4mm that separates the
+        # 16- and 20-way parts, so FLEX_W=21.0 satisfied BOTH and swapping J2 back to the
+        # 16-way footprint (still in the library) would have passed silently.
+        body = next(f["h"] for f in _placement(side) if "ffc_afa07" in f["fp"])
+        assert abs((body - FLEX_W) - 5.85) <= 0.2, \
+            (f"FLEX_W={FLEX_W} does not match {side} J2's {body:.2f}mm land — wrong pin count. "
+             f"AFA07: land = N+6.85, ribbon = N+1, so ribbon must be land-5.85 = {body-5.85:.2f}")
+    # The ribbon descends inside the grip one bend radius past the fold. Nothing but a
+    # comment used to keep that leg off the matrix diodes, and the comment was dimensioned
+    # to a zero-radius corner. Measure it against the real placement instead.
+    for side in ("left", "right"):
+        m, d = _zif_mouth(side), _zif_dir(side)
+        descent = m[0] + d * (FLEX_TURN_X + FFC_BEND_R)
+        prod = _product(); H = prod[side]["board_h"]; ox, oy = prod[f"{side}_origin"]
+        y0, y1 = FLEX_Y - FLEX_W / 2.0, FLEX_Y + FLEX_W / 2.0
+        near = None
+        for f in _placement(side):
+            if f["ref"] == "J2" or not f["back"]:
+                continue
+            px, py = ox + f["x"], oy + (H - f["y"])
+            if py + f["h"] / 2.0 < y0 or py - f["h"] / 2.0 > y1:
+                continue                                  # not in the ribbon's y band
+            edge = px - d * f["w"] / 2.0                  # its face toward the connector
+            if (edge - descent) * d > 0:                  # inboard of the descent leg
+                if near is None or (edge - descent) * d < (near[0] - descent) * d:
+                    near = (edge, f["ref"])
+        if near is not None:
+            gap = (near[0] - descent) * d
+            assert gap >= 0.8, \
+                (f"{side}: the ribbon's descent at x={descent:.2f} is only {gap:.2f}mm clear "
+                 f"of {near[1]} — FLEX_TURN_X({FLEX_TURN_X}) + FFC_BEND_R({FFC_BEND_R}) puts "
+                 f"a 21mm-wide ribbon over a back-side part")
+            print(f"  flex descent {side}: x={descent:.2f}, {gap:.2f}mm clear of {near[1]} ✅")
+    print(f"  lanes y: spring {SPRING_Y[0]} | flex {FLEX_Y} | spring {SPRING_Y[1]}"
+          f"  (on z={LANE_Z:.2f}, moving-shroud cavity {CAV_Z0:.2f}..{CAV_Z1:.2f}); "
+          f"ribbon {FLEX_W}mm == J2 body {body:.2f}-6 ✅")
+
+
+def flex_route_report(verbose=True):
+    """Prove the ribbon can physically get from each ZIF slot down to the enclosure lane.
+
+    v0.27 built the route this checks (J2 rotated to face the grip interior + the low duct
+    at FLEX_DUCT_Z0..Z1). Before that there was none, in any version, and nothing noticed:
+    both bridge cables were straight boxes floating in the lane, reaching neither
+    connector, and a cable that reaches nothing also collides with nothing.
+
+    The test SWEEPS THE RIBBON'S ACTUAL SECTION along the path, not its centre line. That
+    distinction is this project's most expensive recurring lesson (v0.24e: "centre-line
+    enclosure tests lie") — a centre-line contains() test reports "clear" for a duct 0.1mm
+    wide, for a duct offset in y, and for a fold whose 21mm width is buried in the cavity
+    wall. Here the ribbon is 21.0mm across a 23.0mm duct band, i.e. 1.0mm a side, so the
+    width is exactly what is tight.
+
+    Returns (results, ok); results is [(side, n_samples, n_buried)]."""
+    out = []
+    for side in ("left", "right"):
+        shell = back_half(side)
+        pts = _flex_path(side)
+        # section grid: full width in y, full thickness in z, at the corners and mid-faces
+        ys = np.linspace(-FLEX_W / 2.0, FLEX_W / 2.0, 9)
+        zs = np.array([-FLEX_T / 2.0, FLEX_T / 2.0])
+        samples = []
+        for a, b in zip(pts, pts[1:]):
+            n = max(2, int(np.linalg.norm(b - a) / 0.5))
+            for t in np.linspace(0, 1, n):
+                c = a + (b - a) * t
+                for dy in ys:
+                    for dz in zs:
+                        samples.append((c[0], c[1] + dy, c[2] + dz))
+        S = np.array(samples, dtype=float)
+        buried = shell.contains(S)
+        nb = int(buried.sum())
+        out.append((side, len(S), nb))
+        if verbose:
+            tag = "clear" if nb == 0 else f"{nb}/{len(S)} section samples BURIED IN SHELL"
+            print(f"  flex route {side}: slot {np.round(pts[0], 2)} -> lane z={LANE_Z:.2f}, "
+                  f"{FLEX_W}mm section swept — {tag}")
+            if nb:
+                print(f"      first obstruction at {np.round(S[int(np.argmax(buried))], 2)}")
+    ok = all(nb == 0 for _s, _n, nb in out)
+    return out, ok
 
 # ---- the 14 shell screws (5 per grip + 4 panel, v0.19) -----------------------------
 # M3 x 10 COUNTERSUNK (DIN 965, 90-degree, dk<=6.0), dropped in from the TOP: the
@@ -1668,7 +1925,10 @@ def height_report(side="right"):
     # v0.26: U4 (the nub's TMAG5273) joins the watch list. It was the one part whose z
     # actually drives a design parameter — the magnet gap — and it was the one part the
     # height report never printed.
-    watch = ["U1", "J1", "J2", "J3", "U2", "U4"] + [n for n in parts if n.endswith(("_pwr", "_rst"))]
+    # v0.27: J3 is gone; J4/F1 (left board) take its place on the watch list. A ref that
+    # matches nothing prints nothing, which is how the mated JST-PH — the part STANDOFF
+    # is dimensioned off — silently dropped out of this report.
+    watch = ["U1", "J1", "J2", "J4", "F1", "U2", "U4"] + [n for n in parts if n.endswith(("_pwr", "_rst"))]
     for n in watch:
         if n in parts:
             bb = parts[n].bounds
@@ -1772,11 +2032,17 @@ def render_iso(meshes, path, title, elev=32, azim=-60):
 # (PCB_Z / DOME_TOP / KM_Z0 / TOP_Z / FACE_Z / RECESS_TOP are derived up top.)
 PHONE_Z = RECESS_TOP + PHONE_TC/2               # cased phone rests its back on the bridge recess
                                                 # floor; nominal screen top ~= FACE_Z (near-flush)
-BATT_Z = FLOOR + 2.0                   # 403040 cell (4mm) seated flush on the LEFT grip
+# v0.27: the cell sits on its FOAM TAPE, not on the bare floor. The tape was always in
+# the BOM and in the docs' 0.84mm diode clearance; only this constant left it out, which
+# put the pouch's bottom face at exactly z=FLOOR — the same plane as the grip floor's top
+# surface. Two coplanar faces is a depth tie, so the web viewer z-fought across the whole
+# underside of the battery. Adding the 0.3 also makes the model agree with the documented
+# 0.84mm clearance under the diodes (it was 1.14 here).
+BATT_TAPE = 0.3                        # 3M foam tape under the pouch (see bill-of-materials)
+BATT_Z = FLOOR + BATT_TAPE + 2.0       # 3.9 = centre of the 4mm 403040 cell in the LEFT grip
                                        # floor — the 0.3 foam compresses under the taped
                                        # cell; flush gives the full 1.14mm diode clearance
                                        # (was +0.3, which left 0.84mm and read as a clash)
-FLEX_Z = 1.3                           # ribbon in the under-slab floor channel (duct 1.1..1.6)
 
 def nub_spring():
     return _memo("nub_spring", _nub_spring_build)
@@ -1897,7 +2163,7 @@ def nub_magnet():
     printed one, so it is NOT in SHELLS and never reaches --sync-models; it exists so
     the assembly shows what is actually in the product and so collide() can see it.
 
-    Ø4 × 2 mm N52 axially-magnetized disc, seated against the pocket CEILING (pressed
+    Ø4 × 2 mm N45 axially-magnetized disc, seated against the pocket CEILING (pressed
     fully home from below) — NUB_MAGNET_Z is that seated bottom face. Its N pole faces
     DOWN, toward the sensor. See docs/bill-of-materials.md for the orderable part."""
     return _memo("nub_magnet", _nub_magnet_build)
@@ -1998,7 +2264,6 @@ def assemble(clamp_pos=None):
     for i, s in enumerate(spring_bodies(clamp_pos)):   # enclosed in the outer shroud
         A[f"spring_{i}"] = s
     A["flex"] = flex_body(clamp_pos)                    # FFC, enclosed (z set in the body)
-    A["power"] = power_body(clamp_pos)                  # battery power cable, enclosed
     for k, m in screw_bodies().items():   # left grip's screws ride the moving jaw
         A[k] = L(m) if k.startswith("screw_left") else m
     return A
@@ -2043,8 +2308,7 @@ def _allowed(a, b):
     # modeled contacts. The fixed TRAY is NOT on that list any more (v0.24c let it be):
     # inside the tray the cable runs in a walled channel with real clearance, so any
     # overlap there means it is buried in a wall — impossible, not "contact".
-    if any(x in ("flex", "power") for x in s) and any(x.startswith("back_") or ":J" in x for x in s): return True
-    if "power" in s and "battery" in s: return True         # the power cable plugs the battery
+    if "flex" in s and any(x.startswith("back_") or ":J" in x for x in s): return True
     # a collapsed grip's inner mount screw grazes the fixed recess floor by <0.5mm;
     # the printed plate carries a local clearance dimple there.
     if any(x.startswith("screw_") for x in s) and "back_right" in s: return True
@@ -2100,7 +2364,7 @@ def collide(A, tol_gross=3.0, tol_shell=0.2):
 
 def cable_enclosure(A, gap_x=6.0):
     """v0.24d enclosure guard. collide() only tests interpenetration, NOT whether the
-    FFC + power cable are actually SURROUNDED by shell — so an exposed cable in the
+    FFC is actually SURROUNDED by shell — so an exposed cable in the
     inter-grip gap passes collide() silently (exactly what a translucent render can
     look like, and what you must otherwise eyeball).
 
@@ -2121,7 +2385,7 @@ def cable_enclosure(A, gap_x=6.0):
     gxr = BR_X_RIGHT
     dirs = {"up": (0, 0, 1.0), "down": (0, 0, -1.0), "front": (0, -1.0, 0), "back": (0, 1.0, 0)}
     bad = []
-    for cab in ("flex", "power"):
+    for cab in ("flex",):
         if cab not in A:
             continue
         m = A[cab]; lo, hi = m.bounds
@@ -2179,11 +2443,24 @@ def main():
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--check", action="store_true")
+    # v0.27: worth being able to check the lane plan + the ribbon route WITHOUT the
+    # multi-minute clamp-travel collision sweep. --check runs both too. Not "~2s": the
+    # route half builds both grips' back halves to sample against, so it is ~15s. Still
+    # cheap enough for CI, where nothing exercised deck3d at all.
+    ap.add_argument("--check-lanes", action="store_true",
+                    help="lane plan, connector agreement and ribbon route (~15s) — "
+                         "no clamp-travel collision sweep")
     ap.add_argument("--render", action="store_true")
     ap.add_argument("--sync-models", action="store_true",
                     help="copy the printable STLs from build/ to the tracked models/ dir")
     args = ap.parse_args()
     os.makedirs(BUILD, exist_ok=True)
+    if args.check_lanes:
+        check_lanes()
+        _routes, route_ok = flex_route_report()
+        # v0.27: this used to `sys.exit(0)` unconditionally and throw the flag away, so a
+        # ribbon fully buried in the shell still exited 0. A logger is not a gate.
+        sys.exit(0 if route_ok else 1)
     if args.report:
         height_report("right"); height_report("left")
         nub_report()
@@ -2223,28 +2500,10 @@ def main():
         # v0.24: the clamp is a MECHANISM — check it at min / nominal / max span so
         # nothing clashes anywhere in the travel and the rails stay engaged.
         cfg = deck.Config()
-        # v0.24d LANE PLAN, checked before any mesh work (pure numbers, so a lane
-        # regression fails in milliseconds instead of after a 4-minute build): every
-        # cable gets its own y row BETWEEN the two springs, never stacked on one.
-        for nm, (ly, lw) in (("flex", (FLEX_Y, FLEX_W)), ("power", (POWER_Y, POWER_W))):
-            assert min(SPRING_Y) < ly < max(SPRING_Y), f"{nm} lane y={ly} is not between the springs"
-            for sy in SPRING_Y:
-                gap = abs(sy - ly) - (SPRING_D + lw) / 2.0
-                assert gap >= LANE_GAP_MIN, (f"{nm} lane (y={ly}) is only {gap:.1f}mm clear of the "
-                                             f"spring lane at y={sy} — min {LANE_GAP_MIN}mm")
-        for a, b in zip(_chan_bands(), _chan_bands()[1:]):
-            assert b[0] - a[1] >= 2 * RIB_T, "cable channels are too close to wall off from each other"
-        assert CAV_Z0 <= LANE_Z - POWER_T / 2 and LANE_Z + POWER_T / 2 <= CAV_Z1, \
-            "the lane axis does not fit inside the MOVING shroud's cavity"
-        for sy in SPRING_Y:                       # the outboard lanes must still fit the cavity
-            assert CAV_Y0 <= sy - SPRING_D / 2 and sy + SPRING_D / 2 <= CAV_Y1, \
-                f"spring lane y={sy} does not fit inside the enclosure cavity {CAV_Y0}..{CAV_Y1}"
-        ribs = _rib_bands()                       # ...and no divider rib may foul one
-        assert min(r[0] for r in ribs) - (SPRING_Y[0] + SPRING_D / 2) >= 1.0 and \
-               (SPRING_Y[1] - SPRING_D / 2) - max(r[1] for r in ribs) >= 1.0, \
-            "a cable channel's divider rib fouls a spring lane"
-        print(f"  lanes y: spring {SPRING_Y[0]} | flex {FLEX_Y} | power {POWER_Y} | spring {SPRING_Y[1]}"
-              f"  (all on z={LANE_Z:.2f}, moving-shroud cavity {CAV_Z0:.2f}..{CAV_Z1:.2f}) ✅")
+        check_lanes()
+        _routes, route_ok = flex_route_report()
+        assert route_ok, ("the ribbon has no physical route from a ZIF slot to the lane — "
+                          "see the BURIED IN SHELL samples above")
         # v0.24e RETENTION invariants. A phone falling onto the user's face is the
         # failure mode this whole clamp exists to prevent, so the geometry that stops it
         # is asserted rather than eyeballed in a translucent render.
@@ -2333,7 +2592,6 @@ def _explode_offset(k):
     if k.startswith("back_"): return -35
     if k == "battery":      return -18
     if k == "flex":         return -10
-    if k == "power":        return -14
     if ":" in k:            return 0        # PCB stack (board + components)
     if k.startswith("keymat"): return 22
     if k.startswith("grip_lid"): return 40
@@ -2369,7 +2627,6 @@ def _asm_col(k):
     if k.startswith("spring"): return [0.6,0.6,0.63,1]
     if k.startswith("screw_"): return [0.73,0.74,0.77,1]
     if k == "flex":         return [0.75,0.55,0.2,1]
-    if k == "power":        return [0.85,0.2,0.15,1]  # red battery power cable
     if ":pcb" in k:         return [0.16,0.35,0.24,1]
     if ":SW" in k:          return [0.9,0.72,0.2,1]
     if any(x in k for x in (":U",":J")): return [0.2,0.2,0.24,1]

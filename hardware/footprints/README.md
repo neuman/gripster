@@ -1,10 +1,10 @@
 # hardware/footprints — thumbdeck footprint library (rev-A)
 
 `thumbdeck.pretty/` is the library the board generator loads (alongside the stock
-KiCad libraries). The three custom rev-A footprints below are **as-fabricated** —
-they are on the routed, DRC-clean boards and were verified against manufacturer
-drawings in 2026-07. Do not edit them casually: `gen_board.py` and the routed
-`.kicad_pcb` files depend on their exact geometry.
+KiCad libraries). The custom footprints below are **as-fabricated** — they are on
+the routed, DRC-clean boards and were verified against manufacturer drawings in
+2026-07 (the 20-way ZIF in 2026-08). Do not edit them casually: `gen_board.py` and
+the routed `.kicad_pcb` files depend on their exact geometry.
 
 ## `snaptron_7mm_contact` — the production snap-dome footprint
 
@@ -33,17 +33,40 @@ key**. The continuous ring makes rotation irrelevant.
 > resistance within weeks of key cycling. Order ENIG; hard gold is a
 > production-volume upgrade only.
 
-## `ffc_afa07_s16fcc` — the bridge ZIF
+## `ffc_afa07_s20fcc` — the bridge ZIF (current, v0.27)
 
-JUSHUO **AFA07-S16FCC-00** (LCSC C13744): FFC/FPC ZIF, **1.0 mm pitch, 16
-positions, side entry, BOTTOM contacts**, slide-lock drawer, 2.5 mm tall. Land
-pattern per the customer drawing: 16× 0.6×1.8 mm pads at 1.0 mm + 2 nail pads
-2.6×3.0. One per grip, on the inner edge, cable opening toward the spine. Mates
-with a **16-way type-A** (same-side contacts) jumper, **≥194 mm** (200 mm stock —
-the J2 contact rows sit 173.3 mm apart in v0.19, so a 150 mm ribbon cannot mate) —
-the left grip's
-pin→net assignment is generated from ribbon geometry so the straight jumper is
-correct by construction.
+JUSHUO **AFA07-S20FCC-00** (LCSC **C262352**, JLC **Extended**): FFC/FPC ZIF,
+**1.0 mm pitch, 20 positions, side entry, BOTTOM contacts**, slide-lock drawer,
+2.5 mm tall, 0.3 mm FFC, tin plating. Land pattern per the customer drawing —
+same family rule as the 16-way (nail pad = `(N−1)/2 × pitch + 2.35`): 20×
+0.6×1.8 mm pads at 1.0 mm + 2 nail pads 2.6×3.0, land 26.85 mm long. One per
+grip, on the inner edge at deck y **28.5**, cable opening toward the spine.
+Mates with a **20-way, 1.0 mm pitch, TYPE-A (contacts on the SAME side at both
+ends)** jumper, **≥240 mm** (the v0.24 clamp span is variable, so the ribbon
+carries a rolling service loop) — the left grip's pin→net assignment is generated
+from ribbon geometry, so the straight jumper is correct by construction.
+
+Since v0.27 this ribbon carries the **battery as well as the matrix**: the four
+extra conductors over the 16-way are `NC | VBAT_CELL | VBAT_CELL | NC`, which is
+what deleted the separate 2-wire power cable. Two consequences the geometry
+alone won't tell you:
+
+- **Buy 20-way, and buy TYPE-A. Do not use a leftover 16-way ribbon.** A 17.0 mm
+  16-way ribbon drops into this 21.0 mm housing with **4.0 mm of independent slop
+  at each end** — up to a 4-position shift. The conductor order is chosen so the
+  worst achievable shift lands VBAT on a *column* (one dead MCU pin) rather than
+  on GND (a dead cell short), but that is a last line of defence, not a licence.
+  The silk names the width and the type for the same reason.
+- **The cell path is fused on the cell side** (F1, a 0.75 A-hold PPTC on the left
+  board) because a 1.0 mm-pitch FFC conductor is only 0.0245 mm² — see
+  [`docs/design-decisions.md`](../../docs/design-decisions.md).
+
+## `ffc_afa07_s16fcc` — the rev-A 16-way ZIF (superseded, KEPT)
+
+JUSHUO **AFA07-S16FCC-00** (LCSC C13744): the same connector in **16 positions**,
+16× 0.6×1.8 mm pads + 2 nail pads, land 22.85 mm long. Superseded by the 20-way
+above in v0.27 and **kept on purpose** — the committed rev-A boards reference this
+file and must keep loading. It is not what a current build orders.
 
 ## `msk12c02_slide` — the power switch
 
@@ -61,5 +84,5 @@ and its shell openings to the top zone).
 | `nRF52840_E73-2G4M08S1C` | Ebyte E73 module — 13×18 mm, 43 pads (28 castellated + 15 inner, 1.27 mm), **antenna keep-out embedded** (all-layer, crosses the board edge as placed). Pad N = Ebyte datasheet pin N; from marbastlib (see `marbastlib-LICENSE`), verified against the Ebyte User Manual. |
 | `USB_C_Receptacle_HRO_TYPE-C-31-M-12` | full-SMD 16P USB-C (C165948). |
 | `snaptron_7mm_simple` | historical 2-pad routing proxy — **not for fab**. |
-| `CON_JST_ACH_BM02B` | unused spare (JST ACH 2-pos); the battery connector on the board is the stock-library JST-PH `S2B-PH-SM4-TB`. |
+| `CON_JST_ACH_BM02B` | unused spare (JST ACH 2-pos); the battery connector is the stock-library JST-PH `S2B-PH-SM4-TB` — **J4 on the LEFT board** since v0.27 (it was J3 on the right). |
 | `../snaptron_7mm_contact_pad.kicad_mod` | earlier standalone draft of the contact footprint, superseded by `thumbdeck.pretty/snaptron_7mm_contact`. |

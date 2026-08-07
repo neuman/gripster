@@ -50,7 +50,7 @@
       "anchorNode": "bridge",
       "title": "2-part telescoping tray",
       "oneLiner": "The spring-loaded tray the two grips ride on.",
-      "blurb": "Stretch it open, drop the phone in, let it spring shut. The springs, ribbon and power cable stay sealed inside at any width, so nothing dangles or snags.",
+      "blurb": "Stretch it open, drop the phone in, let it spring shut. The springs and one ribbon — carrying both the keys and the battery — stay sealed inside at any width, so nothing dangles or snags.",
       "docPath": "docs/design-decisions.md",
       "docHeading": "v0.24 — expanding spring-clamp back (2026-07-26, branch feature/expanding-clamp)"
     },
@@ -66,9 +66,9 @@
     {
       "id": "bridge",
       "anchorNode": "flex",
-      "title": "16-way FFC bridge",
+      "title": "20-way FFC bridge",
       "oneLiner": "The ribbon that joins the two grips.",
-      "blurb": "A service loop pays out as the grips slide, so it keeps up at any width. It is also why this is one keyboard and not two — nothing to pair, one battery, one charge.",
+      "blurb": "A service loop pays out as the grips slide, so it keeps up at any width. The same ribbon carries the keys and the battery, so only one cable crosses between the grips. It is also why this is one keyboard and not two — nothing to pair, one battery, one charge.",
       "docPath": "docs/design-decisions.md",
       "docHeading": "v0.3 — the architecture pivot (single controller)"
     },
@@ -168,7 +168,7 @@
       "dek": "Four ideas that make it more than a phone case with buttons glued on.",
       "paragraphs": [
         "It fits your phone, not one specific phone. The grips ride a spring-loaded 2-part telescoping tray — like an Abxylute or 8BitDo controller — so you stretch it open, drop the phone in, and let the springs clamp it by the edges. A soft toothed TPU gripper on each grip hooks a lip over the phone's front edge — soft on purpose, so it flexes for your case and can't scratch the glass — so it's held mechanically and is safe even used screen-down over your face; there are no magnets at all. The back is one flat plane, coplanar with the centre tray, with every outside edge softened by a 1.2 mm round.",
-        "It looks like a split, but it's one keyboard. A single nRF52840 module in the right grip scans the whole 9×10 matrix; the left grip is passive — domes, diodes, a connector — wired across on one ribbon. That's one thing to pair, one battery to charge, and no two halves trying to find each other.",
+        "It looks like a split, but it's one keyboard. A single nRF52840 module in the right grip scans the whole 9×10 matrix; the left grip is passive — domes, diodes, the battery — and one ribbon carries the keys and the power across. That's one thing to pair, one battery to charge, and no two halves trying to find each other.",
         "Nothing gets hand-soldered. The 78 keys are snap domes pressed onto gold pads, and every part that is soldered sits on one side of each board in a single reflow pass. A fab house builds both boards end to end — no iron, no rework.",
         "It's generated, not drawn. One Python file lays out both grips, and the circuit boards, printed shells, firmware keymap, and these renders all fall out of it. A key opening lines up with its pad because the same number placed both — not because I eyeballed it."
       ],
@@ -196,8 +196,8 @@
       "heading": "How it works",
       "dek": "One matrix, one radio, one battery — all run from the right grip.",
       "paragraphs": [
-        "It's a single 9×10 matrix — 78 keys — scanned by the E73 (nRF52840) module in the right grip. The left grip has no brain of its own, just domes and one diode per key so chords don't ghost. Half the columns are local to the right grip; the rest, and every row, cross over on a 16-way ribbon. A small simulator walks about 68,500 multi-key combinations and turns up zero ghosts or misses.",
-        "Power is one 403040 LiPo (~450–500 mAh) tucked into the left grip, its leads crossing to a charger and slide switch on the right. The switch only cuts the load, so the cell keeps charging over USB-C even with the deck off. The module spends 19 pins on the matrix and one on battery sensing, with a spare I²C bus parked on test pads in case a trackpad ever happens.",
+        "It's a single 9×10 matrix — 78 keys — scanned by the E73 (nRF52840) module in the right grip. The left grip has no brain of its own, just domes and one diode per key so chords don't ghost. Half the columns are local to the right grip; the rest, and every row, cross over on a 20-way ribbon. A small simulator walks about 68,500 multi-key combinations and turns up zero ghosts or misses.",
+        "Power is one 403040 LiPo (~450–500 mAh) tucked into the left grip, plugging into a socket a few millimetres away instead of trailing a lead across the deck; it reaches the charger and slide switch on the right over the same ribbon as the keys. A resettable fuse sits between the cell and that ribbon, and the pouch has to be a protected one, with its own protection board built in. The switch only cuts the load, so the cell keeps charging over USB-C even with the deck off. The module spends 19 pins on the matrix and one on battery sensing, with a spare I²C bus parked on test pads in case a trackpad ever happens.",
         "It pairs as a single Bluetooth keyboard — no second half to drop. The antenna sits at the top edge, as far from the phone and battery as the board allows, with a clear-out in the copper and a notch in the shell to match."
       ],
       "links": [

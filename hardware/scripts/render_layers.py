@@ -205,7 +205,7 @@ def pcb_back(ax, P):
             ax.text(axk + ox + aw / 2, ay + oy + ah / 2, "antenna\nkeep-out", ha="center",
                     va="center", fontsize=3.4, color=COPPER, zorder=5)
         refs = {"controller": "U1 Ebyte E73", "usb_c": "J1 USB-C",
-                "charger": "U2 + pwr", "bridge": "J2 FFC-16"}
+                "charger": "U2 + pwr", "bridge": "J2 FFC-20"}
         for name, (kx, ky, kw, kh) in ko.items():
             if name == "antenna":
                 continue

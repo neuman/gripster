@@ -32,6 +32,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { ScreenTypist } from './ScreenTypist'
 
 export interface ExplodeManifest {
   axes: { thick: number; height: number; width: number }
@@ -78,6 +79,10 @@ export interface ViewerOptions {
   theme?: 'light' | 'dark'
   framingOffset?: boolean // default true; false = keep the model centred (thumbnail)
   frameMargin?: number // fit distance multiplier (default 1.18; smaller = tighter)
+  /** Prose typed out on the phone's screen; omit to keep the GLB's baked screenshot. */
+  screenText?: string
+  /** false = park the screen on one static frame (used for the OG-card shot). */
+  screenAnimate?: boolean
   onHotspotOpen?: (h: Hotspot | null) => void
   onReady?: () => void
   onFullLoaded?: () => void // fired once the full-res master is in the scene
@@ -116,6 +121,7 @@ export class GripsterViewer {
   private pinsDirty = true // recompute pin world anchors (explode/model changed)
   private readyFired = false
   private framed = false
+  private typist: ScreenTypist | null = null
 
   constructor(opts: ViewerOptions) {
     this.opts = opts
@@ -216,6 +222,7 @@ export class GripsterViewer {
 
     this.bindMovers(root)
     this.bindPins(root)
+    this.bindScreen(root)
     this.applyExplode(this.explodeT)
     this.pinsDirty = true
     this.requestRender()
@@ -255,6 +262,35 @@ export class GripsterViewer {
         this.movers.push({ offset: new Vector3().fromArray(spec.offset), parts })
       }
     }
+  }
+
+  // Swap the phone's baked screenshot for a live canvas that types out the story
+  // copy. The screen is the mesh carrying the glTF material named `display`; it
+  // is emissive (emissiveFactor 1,1,1) so the texture doubles as both albedo and
+  // emission and the screen reads as self-lit. Material.dispose() in setModel()
+  // does not touch textures, so the same canvas survives the proxy→master swap.
+  private bindScreen(root: Group) {
+    if (!this.opts.screenText) return
+    if (!this.typist) {
+      this.typist = new ScreenTypist({
+        text: this.opts.screenText,
+        animate: this.opts.screenAnimate !== false && !this.reducedMotion,
+      })
+    }
+    const tex = this.typist.texture
+    tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+    root.traverse((o: any) => {
+      const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []
+      for (const m of mats) {
+        if (m?.name !== 'display') continue
+        if (!o.geometry?.getAttribute?.('uv')) continue // proxy screen has no UVs
+        m.map = tex
+        m.emissiveMap = tex
+        m.emissive?.setRGB(1, 1, 1)
+        m.color?.setRGB(1, 1, 1)
+        m.needsUpdate = true
+      }
+    })
   }
 
   private applyExplode(t: number) {
@@ -473,6 +509,9 @@ export class GripsterViewer {
   private tick() {
     if (this.disposed) return
     const moved = this.controls.update()
+    // The typist repaints its canvas only when a character lands or the caret
+    // blinks, so idle frames stay free even with a "live" screen.
+    if (this.typist?.update(performance.now())) this.needsRender = true
     if (moved || this.needsRender) {
       this.needsRender = false
       this.updatePins()
@@ -482,6 +521,7 @@ export class GripsterViewer {
 
   dispose() {
     this.disposed = true
+    this.typist?.dispose()
     this.renderer.setAnimationLoop(null)
     this.controls.dispose()
     this.renderer.dispose()

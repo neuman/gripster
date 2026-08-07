@@ -302,6 +302,10 @@ function renderCard(h: Hotspot | null) {
   card.querySelector('.card-close')!.addEventListener('click', () => viewer.closeHotspot())
 }
 
+// The phone in the 3D model types out the opening of "Why I built this", so the
+// screen copy and the story copy can never drift apart.
+const whySection: any = byKey.get('why')
+
 const viewer = new GripsterViewer({
   container: viewerEl,
   proxyUrl: './models/thumbdeck_proxy.glb',
@@ -311,6 +315,8 @@ const viewer = new GripsterViewer({
   theme: SHOT ? 'dark' : theme,
   framingOffset: !SHOT, // centre the model for the thumbnail
   frameMargin: SHOT ? 0.72 : undefined, // tighter fill for the social card
+  screenText: whySection?.paragraphs?.find((p: any) => typeof p === 'string') ?? '',
+  screenAnimate: !SHOT, // the OG card needs one deterministic frame, not a loop
   onReady: () => loading.remove(),
   onFullLoaded: SHOT ? () => ((window as any).__thumbReady = true) : undefined,
   onHotspotOpen: (h) => renderCard(h),

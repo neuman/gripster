@@ -2,8 +2,236 @@
 
 Decision log, newest first. Older entries are **history** — they record why calls
 were made at the time and may name parts since replaced (Raytac → E73, Cirque /
-IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board). The
-current design is rev-A / v0.26 (first entry).
+IQS7211E trackpad → dropped, JST-GH → FFC ZIF, nice!nano → bare E73 board,
+16-way FFC → 20-way, battery connector J3-on-the-right → J4+F1-on-the-left). The
+current design is rev-A / v0.27 (first entry).
+
+## v0.27 — the battery rides the bridge ribbon (2026-08-07, branch main)
+
+The 403040 has lived in the **left** grip since v0.18; the charger, the switch and the
+E73 have lived in the **right** grip since v0.8. Between them ran a two-wire pigtail
+~265 mm long, across the spine, through a mechanism that moves on every phone insertion,
+in an enclosure lane of its own. v0.27 deletes that cable. The bridge FFC goes **16-way →
+20-way** (JUSHUO **AFA07-S20FCC-00**, LCSC **C262352** — same 1.0 mm pitch, bottom
+contact, side entry, slide lock, 2.5 mm height, same JLC **Extended** tier, so no
+assembly-class change) and four of the extra conductors carry the cell.
+
+The **14 matrix signals are unchanged**, so ROW0–8 / COL0–9 land exactly where they did
+and **the firmware is completely unaffected** — not "regenerated identical", untouched.
+
+### Why the ribbon, and not a second connector pair
+
+Three options: keep the pigtail, add a dedicated 2-pin connector at each end of a proper
+cable, or spend four conductors on the ribbon that already crosses. The third wins on
+every axis that matters here, and the v0.24d entry below is the evidence for most of it:
+
+- **The second cable is where the enclosure kept failing.** Every v0.24c/d cable fault
+  was the power lane's: it was the lane the tray's single end-wall window missed
+  entirely (cut at y 15–33, lane at y 40), and its envelope was the one hanging 0.95 mm
+  below the moving shroud's underside at full extension. One cable in one walled channel
+  is not a smaller version of that problem — it is the problem deleted.
+- **Part count goes DOWN, not up.** A dedicated pair costs two connectors, a cable and a
+  second service loop. The ribbon route adds one connector (J4) and deletes one (J3), so
+  the count is flat — and the ribbon's service loop already exists and is already ribbed
+  off from both springs.
+- **The cell finally terminates in the grip it lives in.** ~8 mm of pigtail to J4 instead
+  of ~265 mm of bare two-wire to the other grip. That is the actual safety win; the fuse
+  below is what pays for putting the cell on a flat flex.
+- **Freed volume.** `POWER_Y`/`POWER_W`/`POWER_T` are gone and y 40.0–82.5 inside the
+  clamp cavity is now empty — the lane plan reads `spring | FFC | spring`.
+
+The costs, stated rather than buried: the ribbon now carries the **raw cell**, which is
+what forces F1; and the left board **stops being purely passive**, which is what forces
+J4. Both are treated as requirements below, not as nice-to-haves.
+
+### Why 20-way and not 24
+
+A 24-position sibling exists in the AFA07 family (confirm the exact suffix and LCSC
+code against the JUSHUO drawing before ordering — this design never sourced one) and four
+more guard conductors would be pleasant. It does not fit the board. J2 sits between the chin
+mount hole at deck y 6.0 and the inner-mid mount hole, and it is the inner-mid hole's
+**Ø8 boss disc** — not the board edge, not the routing — that caps the connector's pin
+count. At 20 positions the land is **26.85 mm** long with **4.08 mm** to the boss against
+a 4.00 mm gate: 0.08 mm of margin, and only after moving that hole from `board_h*0.42`
+(= 40.74) to a **frozen 46.0**. A 24-way needs the hole at **≥50.0** — i.e. moving a
+mount hole, its boss, its screw and the shell around it, to buy guard positions that F1
+and the pin order below already make unnecessary.
+
+The `0.42` is worth a sentence of its own. A hard geometric requirement had been hiding
+behind an innocuous-looking fraction that nothing was allowed to notice; it is an
+absolute now, with the reason written next to it.
+
+### F1 is required. It is not belt-and-braces.
+
+**Bourns MF-MSMF075-2** PPTC, LCSC **C84140**, 1812, **0.75 A hold / 1.5 A trip**,
+13.2 V, Imax 100 A, initial resistance ≤0.45 Ω. On the **left** board at deck
+(50.0, 5.5), in series with the cell **positive**, between J4 and J2 — on the **cell**
+side of the ribbon, or it protects nothing at all.
+
+The reasoning is a gap between two protections, not a duplication of either:
+
+- A 1S pouch's built-in PCM does not trip until **2.0–2.5 A**.
+- A 1.0 mm-pitch FFC conductor is **0.70 × 0.035 mm = 0.0245 mm²**. It reaches its
+  105 °C insulation limit at about **2.8 A·√s**, and at a real short it melts its own
+  PET in **~0.2 s**.
+- Between them sits the **0.43–2.0 A** band: too little for the pack to notice, more than
+  enough to cook the ribbon over seconds to minutes. That is precisely the signature of a
+  **partially abraded conductor in a mechanism that flexes on every phone insertion** —
+  the one failure this device's geometry actively invites — and nothing else covers it.
+
+0.75 A hold rather than 0.5 A because the part derates with temperature and has to stay
+clear of the ~196 mA charge current in a device designed to sit on a car dash.
+
+**The cell must also be a protected pack — that is now a hard requirement, not advice.**
+Integrated PCM with overcurrent 2.0–2.5 A / 8–16 ms, overcharge 4.275 V, overdischarge
+2.75 V. The PCM and the PTC cover **different bands**; neither alone is sufficient, and
+the BOM says so.
+
+**What F1 costs: charge TIME, not capacity.** Its ≤0.45 Ω is in the charge loop, so
+CC→CV handover happens at a lower cell voltage and the taper runs longer. The
+*undercharge* at termination is `ITERM × R_loop` ≈ **10–16 mV**, which is negligible
+beside the MCP73831's own **±32 mV** VREG tolerance — the charger's datasheet spread is
+already twice the effect. What the loop resistance did deserve was a real trace:
+`VBAT_CELL`/`VBAT` now route at **0.4 mm** via a genuine `power` netclass injected in
+`route.sh`'s DSN rewrite. Before v0.27 `gen_board.py`'s `PWR = 0.5` was **dead code**
+(KiCad 9 exposes no netclass setter through SWIG) and `VBAT_CELL` shipped at 0.2 mm —
+about **336 mΩ**, a third of the entire charge loop, on a board that had a stated
+intention to do better.
+
+### The conductor order is an interlock, not packing convenience
+
+Index 0 = **highest** deck y:
+
+```
+GND | GND | ROW0..ROW8 | COL5..COL9 | NC | VBAT_CELL | VBAT_CELL | NC
+^ high deck y                                              low deck y ^
+```
+
+The hazard being designed against is **not** a one-position slip. It is the 16-way ribbon
+every rev-A builder already owns: 17.0 mm of ribbon in a 21.0 mm housing has **4.0 mm of
+independent slop at each end** — up to a **4-position shift**. `place_bridge()` maps the
+left connector **by deck y**, so a shift joins right-net(k) to left-net(k+n), and only
+nets present on *both* boards can fault.
+
+- **GND is 15 positions from VBAT_CELL.** VBAT onto GND is a dead cell short — roughly
+  10–16 A through one 0.0245 mm² conductor, which melts its own PET in ~0.2 s. At 15
+  positions apart **no achievable shift can reach it**. The worst case instead lands VBAT
+  on a **column**: ~50–100 mA into an MCU output NFET — one dead pin, no fire.
+- **The two NC guards** absorb a ±1 slip completely, so VBAT never touches a matrix line
+  for the ordinary error either. They carry **no net at all**, deliberately: tying them to
+  GND would recreate exactly the short the guards exist to prevent.
+- **No VBAT at a ribbon edge**, where a conductor is most exposed to abrasion.
+- **Ribbon GND is not in the matrix return loop** (that closes through the right board's
+  R1–R9 pulldowns and right-board GND), so exiling it to the far end costs no signal
+  integrity — it is purely the battery return.
+- **This ordering is only correct with F1 fitted.** Without the fuse the right answer
+  changes shape entirely, which is another reason F1 is not an option.
+
+**Consequence: purging "16-way" from the documentation is itself a safety item.** Any doc
+still telling a builder what ribbon to buy in 16-way terms is actively dangerous now, so
+every such reference across the repo moved to 20-way, and J2's silk names the **width and
+the type** (`J2 FFC20 1.0mm TYPE-A <- pin1`) because getting either wrong is a short, not
+a no-op.
+
+### J3 out, J4 + F1 in — and why J4 has to exist
+
+**J3 is deleted from the right board.** **J4** (JST-PH-2, S2B-PH-SM4-TB, C295747) is new
+on the **left** board at deck (60.0, 5.5), mouth facing **+y**. Pin 1 = "+". Placement is
+not free: `rot=180` would aim the plug off the bottom board edge into the shell wall, and
+the naive mirror of the old right-board J3 at x = 31 would drive the mated plug's swath
+straight into the cell. F1 sits west of it at (50.0, 5.5), clear of the cell footprint,
+of the innermost diode column and of every boss. `VBAT_CELL` reaches the right board's
+charger and switch over the ribbon; the power tree is otherwise **unchanged** — the
+charger is still on the cell side of SW90, so it still charges while switched off, and
+VBAT_SENSE (R22/R23/C6 → AIN0) is untouched.
+
+J4 is **required**, not a convenience, and the reason is a live-parts argument: **SW90
+gates only the LOAD**, so `VBAT_CELL` — and therefore the whole ribbon — is energised
+whenever the cell is attached. Without a connector on the board the cell sits on, there
+is no way to de-energize the ribbon for the service operation the docs advertise, and
+[assembly.md](assembly.md)'s **battery-free first power-up** (the REGOUT0 / AIN0
+absolute-maximum rule) becomes impossible to perform. So the build order changes:
+**ribbon first, then J4** — and "battery-free" now means *J4 unplugged*, not *switch off*.
+
+### The enclosure loses a lane and gains an assertion
+
+`spring | FFC | power | spring` → **`spring | FFC | spring`**. `FLEX_Y` 26.5 → **28.5**,
+`FLEX_W` 17.0 → **21.0**, `FLEX_T` still 0.3, `POWER_*` deleted.
+
+The lane move is the more interesting half. v0.24d recorded that the FFC lane was kept at
+"**J2's y centre (24.5)**" so the ribbon would enter the ZIF dead straight. **That was
+false when it was written.** The lane was 26.5 and the connector was at 24.5 — a 2.0 mm
+skew that ran the 17 mm ribbon off the pad row and put its first conductor outside the
+housing altogether. 26.5 was never J2's y; it was the lane-plan *minimum* that the
+spring-rib assert would accept, silently overriding the connector, and nothing objected
+because the two numbers lived in different files and nothing compared them.
+
+v0.27 makes the claim true and then makes it checkable. J2 moves to deck y **28.5** on
+both boards — the 21 mm ribbon needs ≥28.20 to clear the front spring lane, and the
+inner-mid mount boss is the ceiling — and `check_lanes()` now asserts the lane y against
+**J2's slot centre read from the KiCad placement export** (to 0.25 mm) *and* the ribbon
+width against J2's body, so a wrong pin count fails loudly too. `deck3d.py
+--check-lanes` runs the whole thing in seconds, before any mesh work. The general lesson
+is the same one v0.24d learned about its guards: a comment claiming two numbers are equal
+is not a constraint, it is a wish.
+
+### Boards
+
+Both re-generated and **re-routed from scratch to 0 DRC violations / 0 unconnected**.
+Right board: **75 nets, 114 footprints, 30 GND escape vias**. Left board: **60 nets**
+(was 58 — `VCELL_RAW` and `VBAT_CELL` are new there). The footprint library gains
+`ffc_afa07_s20fcc`; the 16-way file is **kept**, because the committed rev-A boards
+reference it.
+
+### The FFC duct, and why J2 was rotated to face inboard
+
+A defect that **pre-dates v0.27** surfaced the moment the ribbon was modelled honestly:
+there was no physical route from either ZIF into the enclosure lane, and never had been.
+J2's cable slot sits at z ≈ 6.95 (the ZIF is back-mounted under a board at `PCB_Z` 7.9)
+and the lane at z 0.2, and across the ribbon's y band the grip is solid from the tray end
+to the cavity wall. With the slot facing the spine that left about **1.20 mm of x** in
+which to lose **6.74 mm of z**. It could not be done.
+
+Nothing caught it because *both* bridge cables were straight boxes in the lane reaching
+neither connector, and a cable that reaches nothing touches nothing — `collide()` had no
+opinion, and `cable_enclosure()` clipped 6 mm off each end, putting the connector ends
+outside its window by construction.
+
+Two ways to open the route, and the choice is structural:
+
+- **Cut a full-height slot** from the lane up to the ZIF. No PCB change, no re-route —
+  but at the ribbon's 23 mm y band that slot passes through the cradle backstop wall, its
+  1.2 mm rest ledge and the bottom shelf, removing ~23 mm of phone-edge support out of
+  ~78 mm on the one structure whose entire job is stopping a phone falling out.
+- **Rotate J2 to face inboard** (chosen). The ribbon exits into ~10 mm of open back
+  cavity, descends there, folds at z ≈ 2.2 and leaves through a **low duct** that passes
+  *under* the retention structure — all of which lives at z ≥ 3.9. Costs one re-route and
+  ~20 mm more ribbon, and buys back the cradle intact.
+
+The duct is **stepped**, and that is not cosmetic. Only its grip-side half may be tall:
+inboard of the grip's inner face the moving inner shroud's roof spans `CAV_Z1` 1.75 to
+`izt` 3.15, so a straight 2.6-high cut across the whole duct left that roof **0.55 mm**
+thick on an exposed outside surface — well under this file's own 3-perimeter convention
+(`RIB_T` = 1.2). The grip side has no such roof (it is cutting the grip's own floor slab,
+whose top is at 1.55), so it goes to `FLEX_DUCT_Z1` = 2.6 for the fold while the shroud
+side stays a flat slot at `FLEX_DUCT_Z1_LANE` = 1.95. Measured result: **1.42 mm** of roof
+left, and the ribbon's vertical drop is placed on the grip side of the face so it still
+has the height it needs.
+
+The descent is dimensioned, not eyeballed. `FFC_BEND_R` = 1.6 mm is charged against
+`FLEX_TURN_X` = 2.0 mm, because a ribbon leaving a slot horizontally lands its vertical
+leg one bend radius past the fold — sizing the fold to a zero-radius corner is how a
+21 mm-wide ribbon ends up over a diode column. `check_lanes()` measures the resulting leg
+against the real placement and asserts it clears the innermost back-side part: currently
+**0.98 mm** (left, D25) and **1.03 mm** (right, D24).
+
+`flex_route_report()` then sweeps the ribbon's **full 21 mm section** — not its centre
+line — along the whole path and asserts nothing is buried in the shell. The centre-line
+version of that test was written first and rejected: this repo's own v0.24e lesson is
+that centre-line enclosure tests lie, and with 21 mm of ribbon in a 23 mm duct band the
+width is exactly what is tight. Removing the duct makes it fail with the first
+obstruction at y = 18.0 — the ribbon's *edge*, which a centre-line probe would have
+walked straight past.
 
 ## v0.26 — the nub magnet becomes real, and the flexure gets a spec (2026-08-03, branch main)
 
@@ -464,6 +692,13 @@ instead of to a plan.
     still enters the ZIF dead straight rather than being doglegged to make room; the
     power cable keeps its own row at 40. Pushing the springs outboard is a second win:
     a wider stance resists jaw racking.
+    > **⚠ Superseded by v0.27, and the "J2's y centre" claim in this bullet was already
+    > wrong when written.** The lane was 26.5 against a connector at 24.5 — a 2.0 mm
+    > skew that put the ribbon's first conductor outside the housing. 26.5 was the
+    > lane-plan minimum the spring-rib assert would accept, not J2's y. v0.27 moves
+    > both to **28.5** (21 mm ribbon, 20-way), deletes the power lane and its cable
+    > entirely (`spring | FFC | spring`), and makes `check_lanes()` assert the lane
+    > against the KiCad placement export so the two cannot drift apart again.
   - **Printed divider RIBS** wall each cable into a channel, in *both* telescoping
     members, so a loose loop has no path into a spring lane at any extension. The tray's
     ribs can only live right of the moving shroud's end at the *shortest* span — that is
@@ -537,7 +772,7 @@ springs**, **preserve near-flush at the nominal phone**, phone long-edge range
   practice (the clamped phone is the stiffener), far easier to tune, and its continuous
   flat top hosts the MagSafe ring + leaves back-space for maker alt-shells (the user's
   hackability goal). Kept: the enclosure (lapping plates), springs, power cable, rounded
-  section. Dropped: the pinion, both racks, the separate centre stage, the twin channels.
+  section. *(⚠ v0.27: the power cable is deleted — the cell crosses on the bridge ribbon.)* Dropped: the pinion, both racks, the separate centre stage, the twin channels.
 - **Face-down retention is MECHANICAL, not magnetic.** Requirement: usable screen-down
   over your face (Switch/Steam-Deck). Magnets shear/peel — unsafe over a face — so the
   phone is trapped between the tray (behind) and **deep soft lips** (front); gravity just
@@ -575,6 +810,9 @@ springs**, **preserve near-flush at the nominal phone**, phone long-edge range
   through the shrouds in its own y/z lane beside the FFC, each with a rolling service
   loop. Collision shows both cables as intended contacts with the shrouds (threaded
   through, inside the cavity), not clashes.
+  > **⚠ Deleted in v0.27.** The cable, its lane and J3 are all gone: the cell crosses on
+  > four conductors of a 20-way bridge ribbon and plugs into **J4 on the LEFT board**,
+  > ~8 mm from where it sits. `power_body` no longer exists.
 - **Packing conflicts solved during collision bring-up** (validated at min/nominal/max):
   the left grip's mount screws had to be shifted with the moving jaw (they were pinned
   at nominal); the recess floor was shortened to x −60 so it clears the **collapsed
@@ -592,6 +830,11 @@ springs**, **preserve near-flush at the nominal phone**, phone long-edge range
   FFC grows to ≈240 mm) because the span is variable. The 403040 battery stays in the
   left grip and rides the moving jaw. No PCB changes — this is shell-only; the boards
   remain v0.22 rev-A.
+  > **⚠ Superseded by v0.27.** There is only **one** cross-grip cable now: a **20-way**
+  > FFC carrying the matrix *and* the cell. ≥240 mm and the rolling service loop still
+  > stand — quoted for 20-way stock, **TYPE-A only**. This did become a PCB change: J2
+  > is a 20-position ZIF at deck y 28.5, the right board loses J3, and the left board
+  > gains J4 + F1.
 
 ## v0.23 — faceted ergonomic back crown (2026-07-26, branch feature/back-ergonomics)
 
@@ -895,6 +1138,10 @@ No change to the boards (no reroute); grips untouched.
   outside the well) across the spine → J3 on the right board. Trade-off logged:
   battery replacement now means opening the left grip (5 screws + lid + keymat +
   board) instead of the panel hatch; the FFC stays panel-serviceable.
+  > **⚠ The lead route is superseded by v0.27.** Nothing crosses the spine any more:
+  > the cell plugs into **J4 in its own grip**, through **F1** (0.75 A PPTC), and
+  > `VBAT_CELL` reaches the right board's charger over the bridge ribbon. The
+  > left-grip-service trade-off below still stands.
 - **FFC drops into a floor channel.** The ribbon crossed at z≈5.4 — inside the
   well now. A **0.5 mm recess in the back floor (19 mm lane at the J2 band)**
   gives it a 1.1..1.6 duct under the panel slab (0.5 mm headroom), S-bending down
@@ -1015,7 +1262,8 @@ rotation (min enclosing square ~302 mm); the target printer is now first-class.
   closes each half's torsion box where the front plate is now cut, seats the
   panel edge, and carries a **Ø8 boss at MagSafe-ring height** — phone-detach
   pull anchors in line with the ring instead of peeling the panel. FFC and
-  battery-lead windows are cut from the placed J2/J3 positions.
+  battery-lead windows are cut from the placed J2/J3 positions. *(⚠ v0.27: there are no
+  battery-lead windows and no J3; the one remaining window is the FFC duct.)*
 - **Panel plate 2.0 → 2.6 mm**: the Ø57 ring recess now leaves a **0.8 mm
   (4-layer) web** instead of one 0.2 mm layer; ring still sits 0.2 mm proud;
   spine grows 16.3 → 16.9 mm. Panel = spine **service hatch**: 6 screws expose

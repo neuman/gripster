@@ -89,7 +89,7 @@
   "id": "clamp",
   "title": "2-part telescoping tray",
   "oneLiner": "The spring-loaded tray the two grips ride on.",
-  "blurb": "Stretch it open, drop the phone in, let it spring shut. The springs, ribbon and power cable stay sealed inside at any width, so nothing dangles or snags.",
+  "blurb": "Stretch it open, drop the phone in, let it spring shut. The springs and one ribbon — carrying both the keys and the battery — stay sealed inside at any width, so nothing dangles or snags.",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v024--expanding-spring-clamp-back-2026-07-26-branch-featureexpanding-clamp",
   "docLabel": "design-decisions.md",
   "anchorNodes": [
@@ -109,9 +109,9 @@
  },
  {
   "id": "bridge",
-  "title": "16-way FFC bridge",
+  "title": "20-way FFC bridge",
   "oneLiner": "The ribbon that joins the two grips.",
-  "blurb": "A service loop pays out as the grips slide, so it keeps up at any width. It is also why this is one keyboard and not two — nothing to pair, one battery, one charge.",
+  "blurb": "A service loop pays out as the grips slide, so it keeps up at any width. The same ribbon carries the keys and the battery, so only one cable crosses between the grips. It is also why this is one keyboard and not two — nothing to pair, one battery, one charge.",
   "href": "https://github.com/neuman/custom-thumb-keyboard/blob/main/docs/design-decisions.md#v03--the-architecture-pivot-single-controller",
   "docLabel": "design-decisions.md",
   "anchorNodes": [

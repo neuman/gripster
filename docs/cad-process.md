@@ -1,5 +1,32 @@
 # 3D CAD process (shells, keymats, PCB assembly) — rev-A / v0.24d
 
+**v0.27 the battery rides the bridge ribbon — 20-way FFC, ONE cable lane
+(2026-08-07, branch main).** The bridge FFC goes **16-way → 20-way** (JUSHUO
+**AFA07-S20FCC-00**, LCSC **C262352**, same 1.0 mm pitch / bottom contact /
+2.5 mm height) and its four extra conductors carry the cell across the spine —
+so the **separate 2-wire battery power cable is deleted**, cable and lane
+together. The v0.24d lane plan `spring | FFC | power | spring` becomes
+**`spring | FFC | spring`**: `FLEX_Y` 26.5 → **28.5**, `FLEX_W` 17.0 → **21.0**
+(`FLEX_T` still 0.3), `POWER_Y`/`POWER_W`/`POWER_T` **deleted**, and y 40.0–82.5
+inside the clamp cavity is now free. The cell's connector moves grips with it:
+**J3 is deleted from the right board**, and **J4** (JST-PH-2, S2B-PH-SM4-TB,
+C295747) is **new on the LEFT board** at deck (60.0, 5.5) with its mouth facing
++y — the 403040 now plugs in ~8 mm away in the grip it lives in instead of
+running a ~265 mm bare pigtail across the whole device. In series with the cell
+positive, between J4 and J2, sits **F1** — a Bourns **MF-MSMF075-2** PPTC (LCSC
+**C84140**, 1812, 0.75 A hold / 1.5 A trip) at deck (50.0, 5.5); it is on the
+**cell** side of the ribbon or it protects nothing. Model knock-ons: `deck.py`'s
+inner-mid M3 mount hole is **frozen at y 46.0** (was `board_h*0.42` = 40.74 —
+its Ø8 boss disc was the only thing capping the connector's pin count), and
+**J2 moves from deck y 24.5 to 28.5** on both boards because the 21 mm ribbon
+would otherwise overlap the clamp's front spring lane. Both boards re-routed to
+**0 DRC violations / 0 unconnected**. New fast gate: **`deck3d.py
+--check-lanes`** — the constants, the KiCad placement
+export and the ribbon route, so a regression fails in ~15 s instead of after a
+mesh sweep (see the lane-plan bullet below). It also prints
+`flex_route_report()`, which is where the **ribbon's route out of the grip** is proven
+honestly — see the PCB fit model.
+
 **v0.24 expanding clamp back — 2-PART TRAY + MagSafe + TPU grippers (2026-07-27, branch
 feature/expanding-clamp; **v0.24d** 2026-07-28 adds the enclosure **lane plan** and the
 gripper **teeth** — see below).** The rigid center — the bolted **center panel** and its
@@ -12,7 +39,8 @@ have. The tray is simpler, sturdier-in-practice (the clamped phone stiffens it),
 easier to print/tune, and its **continuous flat top** both hosts the MagSafe ring and
 leaves clean back-space for maker alt-shells (solar / battery / LoRa). Mechanism: the
 `bridge` is the fixed tray (bolted to the right grip); the left grip's plate laps inside
-it, so the two overlap at every span and **enclose** the springs + FFC + power cable.
+it, so the two overlap at every span and **enclose** the springs + FFC (v0.27:
+the power cable is gone — the battery rides the ribbon).
 **Retention is MECHANICAL, never the magnets** — the phone is trapped between the tray
 (behind) and **deep soft lips** (front) so it can't fall when used screen-down over your
 face (Switch/Steam-Deck style). A soft **TPU gripper** on each grip's inner edge
@@ -158,9 +186,20 @@ cavity stack above is untouched.
   `SPECS` table in `deck3d.py`), plus snap-domes (0.5 mm), a realistic
   ~500 mAh pouch cell, and the FFC jumper. Used for collision-checking the shells
   against real-dimension component models — datasheet heights, not a physical
-  build — `--check` reports **0 collisions**. Caveat: the bridge
-  ribbon is modeled ~2 mm below its physical run in the fit-check (clearances in
-  that region are ≥4 mm, so it was not re-modeled).
+  build — `--check` reports **0 collisions**.
+  **v0.27 gave the ribbon a real route out of the grip**, which it had never had.
+  `flex_body()` still models the *bridged span* as the straight enclosed run —
+  that is the part whose enclosure `cable_enclosure()` has to prove — but the
+  descent from each ZIF down to the lane is now its own geometry: J2 faces
+  **inboard**, the ribbon folds in the open back cavity and leaves through a low
+  stepped duct (**z −0.8 .. 2.6** grip side, .. 1.95 through the
+  shroud, so its roof keeps 1.42 mm), under the phone-retention structure rather than
+  through it. `flex_route_report()` sweeps the ribbon's full 21 mm section along
+  that path against the built shell solids and **gates** on it — `--check-lanes`
+  exits non-zero and `--check` asserts. Before this, both bridge cables were drawn
+  as straight boxes reaching neither connector, so the descent was never designed
+  and nothing could see it (a cable that reaches nothing touches nothing, so
+  `collide()` had no opinion).
 - **Back halves (`back_left` / `back_right`)** — the tray split at **x=0**
   (mid-spine), each half = one grip bay + half the spine (170.5/162.8 × 103.8 mm):
   walls, 6.3 mm PCB standoffs + **M3 heat-set bosses (Ø7.5, 4.0 mm bores, 5/grip)** at
@@ -180,16 +219,19 @@ cavity stack above is untouched.
   **1.6 mm reset pinhole** and a **1.5 mm charge-LED light hole** in the floor
   (both located from the placed SW91/D80), and a **0.6 mm antenna wall relief**
   at the E73 edge (top wall — closed, 1.9 mm remains), plus the v0.18 **FFC floor
-  channel** (0.5 mm recess, 19 mm lane at the J2 band) and **battery-lead windows**
-  in both transverse walls. The **403040 LiPo sits on the LEFT grip's floor**
-  under the passive PCB (v0.18 — the sunken well displaced it from the spine).
+  channel** (0.5 mm recess, 19 mm lane at the J2 band). The **403040 LiPo sits on
+  the LEFT grip's floor** under the passive PCB (v0.18 — the sunken well displaced
+  it from the spine) and since **v0.27 plugs into J4 in that same grip**, so nothing
+  of the cell's wiring crosses the spine any more. (The spine's own battery-lead
+  windows had already gone in **v0.24**, when the rigid centre was deleted; v0.27
+  removes the cable that used to run through the tray instead.)
   **Seam joinery is printed and screwless**: two
   full-floor-thickness tabs (right) into cleared notches (left) register the
   halves in-plane, each perimeter wall gets an **8 mm vertical shiplap**
   (vertical faces — print clean flat; 0.25 mm clearance), and a 0.4 mm 45° V
   along the outer seam doubles as elephant-foot relief + shadow line. New in
-  v0.16: a **transverse spine wall at each grip boundary** (with FFC and
-  battery-lead pass-throughs) closes each half's torsion box, seats the panel
+  v0.16: a **transverse spine wall at each grip boundary** (with an FFC
+  pass-through) closes each half's torsion box, seats the panel
   edge, and carries a **Ø8 boss at MagSafe-ring height**.
 - **Grip lids (`grip_lid_left` / `grip_lid_right`)** — per-grip face plates
   (77.9 × 103.8 mm), Atomic-Purple: **rounded-rect key openings at the exact
@@ -208,25 +250,40 @@ cavity stack above is untouched.
   with a **2-part telescoping tray** (Abxylute-S9 / 8BitDo style). The `bridge` is
   the **fixed OUTER shroud**: it bolts to the right grip (the ground member) with 2
   short M3s and cantilevers left as a closed box (open on its left end) that
-  **encloses the two clamp springs, the FFC service loop, and the battery power
-  cable** at every extension. Its top is the **phone rest** (RECESS_TOP = 5.1, so
+  **encloses the two clamp springs and the FFC service loop** at every extension
+  (v0.27: there is no third thing to enclose — the battery power cable is
+  deleted). Its top is the **phone rest** (RECESS_TOP = 5.1, so
   the nominal cased screen lands ≈ flush at the 14.7 face plane); the tray centre
   carries a **Ø57 × 1.8 mm recess for the Ø56 N52 MagSafe ring** (a *secondary*
   snap — see below). The **left grip is the moving jaw**: it grows an INNER shroud
   that laps inside the `bridge` (staying overlapped 57→17 mm across the 130–170 mm
   travel, so nothing ever un-encloses), pulled closed by the springs.
-- **Enclosure LANE PLAN (v0.24d)** — everything inside runs in its own **y lane** on
-  one shared **z** (`LANE_Z`, the mid-height of the *moving* shroud's cavity). Front
-  → back: `spring (y 13.5) | FFC (24.5) | power (40) | spring (83.5)`, with printed
-  **divider ribs** walling each cable into a channel in *both* telescoping members.
-  Two v0.24c faults drove it: the FFC sat at y = 24 *directly under* spring 0 (also
-  y = 24, z bands overlapping — coil on ribbon), and every cable was pinned to the
-  FIXED tray's floor, 1.4 mm below the moving shroud's, so past the tray's left end
-  they hung in **open air out the back** (worst at full extension). Putting the lanes
-  inside the moving shroud's cavity makes enclosure hold *by construction*. The FFC
-  lane is **J2's own y centre**, so the 16-way ribbon enters the ZIF dead straight
-  rather than being doglegged to make room for a spring — move the springs, not the
-  ribbon. `--check` asserts the lane plan arithmetically before any mesh work.
+- **Enclosure LANE PLAN (v0.24d; ONE cable lane since v0.27)** — everything inside
+  runs in its own **y lane** on one shared **z** (`LANE_Z`, the mid-height of the
+  *moving* shroud's cavity). Front → back: `spring (y 12.5) | FFC (28.5) | spring
+  (84.5)`, with printed **divider ribs** walling the ribbon into a channel in *both*
+  telescoping members. v0.27 deleted the middle lane along with the cable that used
+  to run in it — the battery now crosses on four of the 20-way ribbon's conductors,
+  so y 40.0–82.5 inside the cavity is free space, and every consumer of the plan is
+  a loop that simply stops building its second copy.
+  Two v0.24c faults drove the plan: the FFC sat at y = 24 *directly under* spring 0
+  (also y = 24, z bands overlapping — coil on ribbon), and every cable was pinned to
+  the FIXED tray's floor, 1.4 mm below the moving shroud's, so past the tray's left
+  end they hung in **open air out the back** (worst at full extension). Putting the
+  lanes inside the moving shroud's cavity makes enclosure hold *by construction*.
+  The FFC lane is **J2's own y centre**, so the 20-way ribbon enters the ZIF dead
+  straight rather than being doglegged to make room for a spring — move the springs,
+  not the ribbon. **That sentence used to be false, and nothing checked it:** the
+  lane was 26.5 against a connector at 24.5 — a 2.0 mm skew that ran the 17 mm ribbon
+  off the pad row and put its first conductor outside the housing entirely. 26.5 was
+  never J2's y at all; it was the lane-plan minimum the spring-rib assert would
+  accept, silently overriding the connector. v0.27 moves both to **28.5** (the 21 mm
+  ribbon needs ≥28.20 to clear the front spring, and J2's upper bound is the
+  inner-mid mount boss), and `check_lanes()` now **asserts** the agreement against
+  the KiCad placement export — the lane y against J2's slot centre to 0.25 mm, and
+  the ribbon width against J2's body, so a wrong pin count fails too. `--check`
+  asserts the lane plan arithmetically before any mesh work; **`--check-lanes`**
+  runs just that, in seconds.
 - **TPU grippers (`gripper_left`, `gripper_right`)** — the phone's **mechanical**
   retention (GameSir-style). Each is a soft TPU 95A part on a grip's inner edge that
   protrudes **into the well**: a compliant **edge-grip pad** (1.6 mm, the phone
@@ -303,8 +360,9 @@ laps inside it (overlap asserted ≥12 mm across travel); the phone rests on the
 top, clamped by the spring-driven jaw against the **TPU grippers** (soft pads +
 capture lips, which the phone compresses), screen ≈ flush at 14.7, with the N52
 **MagSafe ring** in the tray-centre recess as a secondary snap. LiPo on the LEFT
-grip floor under the passive PCB; the FFC jumper + battery power cable run **enclosed
-inside the tray** on separate y-lanes with a rolling service loop. The back-half
+grip floor under the passive PCB, plugged into J4 in that same grip; the FFC jumper
+runs **enclosed inside the tray** in its own y-lane with a rolling service loop —
+since v0.27 it is the only cable in there. The back-half
 pair, the lid↔keymat rims, the tray lap, and the gripper/magsafe↔phone contacts are
 the whitelisted mating contacts; everything else that interpenetrates is a clash.
 
@@ -329,6 +387,7 @@ against the dome-pad grid).
 ```bash
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --all          # build all 9 printed parts + Ender 3 V2 bed-fit gate
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --check        # collision + printability report
+hardware/cad/.venv/bin/python hardware/cad/deck3d.py --check-lanes  # v0.27 fast gate: lane plan + J2 agreement + flex-route report
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --render       # PNG part sheets + assembly views
 hardware/cad/.venv/bin/python hardware/cad/deck3d.py --sync-models  # copy printable STLs to tracked models/
 ```

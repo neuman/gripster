@@ -21,7 +21,9 @@ object tree in Blender / any glTF viewer):
     ├── screws/            the M3x10 flush-countersunk shell screws (top-in:
     │                      5 per grip lid) + 2 short M3 bridge-to-grip bolts
     ├── battery            403040 pouch in the left grip (sketch tan)
-    ├── flex               FFC jumper in the enclosed tray channel (ribbon amber)
+    ├── flex               the ONE bridge FFC — matrix + battery — in the enclosed
+    │                      tray channel (ribbon amber). v0.27 deleted the separate
+    │                      red battery cable that used to run beside it.
     └── phone/             real Samsung S25 Ultra model (assets/s25_ultra.glb,
                            own materials incl. screen texture) — screen faces OUT
                            (+z), camera bump flush with the panel's well floor
@@ -85,7 +87,7 @@ COL = {
     "phone":  [18, 18, 24, 255],
     "dome":   [212, 175, 55, 255],   # gold snap domes on ENIG
     "comp":   [56, 56, 62, 255],     # component bodies
-    "conn":   [88, 88, 96, 255],     # connectors (J1/J2/J3)
+    "conn":   [88, 88, 96, 255],     # connectors (J1/J2/J4)
     "screw":  [186, 189, 195, 255],  # M3 flush-countersunk shell screws (steel)
     "magnet": [176, 180, 188, 255],  # NiCuNi-plated NdFeB nub magnet (bright nickel)
 }
@@ -281,7 +283,6 @@ def main():
     # it in nub_spring, i.e. not at all).
     _add(scene, deck3d.nub_magnet(), "nub_magnet", root, COL["magnet"])
     _add(scene, deck3d.flex_body(), "flex", root, COL["flex"])          # FFC (enclosed)
-    _add(scene, deck3d.power_body(), "power", root, [217, 51, 40, 255]) # battery power cable (enclosed)
     for i, sp in enumerate(deck3d.spring_bodies()):   # v0.24 clamp extension springs (enclosed)
         _add(scene, sp, f"spring_{i}", root, COL["ring"])
     _add_phone(scene, root, prod)

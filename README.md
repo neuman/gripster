@@ -39,8 +39,9 @@ phones); two grips flank it and you thumb-type a real 78-key QWERTY on metal sna
   single SOT-23-6 hall sensor on the same reflow pass — so JLCPCB builds it 100 % turnkey,
   zero soldering by you.
 - **It's not a split.** One certified nRF52840 module in the right grip scans a single 9×10 matrix;
-  the left grip is fully passive, joined by one 16-way FFC ribbon. One BLE device, no half-to-half
-  pairing, one battery, one firmware image.
+  the left grip carries no active parts, joined by one **20-way** FFC ribbon that carries the matrix
+  **and** the cell (v0.27 — the separate battery cable is deleted, so exactly one thing crosses the
+  spine). One BLE device, no half-to-half pairing, one battery, one firmware image.
 - **The whole product is generated from one Python file.**
   [`hardware/scripts/deck.py`](hardware/scripts/deck.py) emits the KiCad boards, the CadQuery
   shells, the renders *and* the ZMK keymap — so key openings land on dome pads by construction, not
@@ -111,17 +112,21 @@ language from a Game Boy Color: boxy rounded outline, translucent Atomic-Purple 
 keymats. The original concept drawings are in [`sketches/`](sketches/).
 
 Despite the two halves, **this is not a split keyboard**. One certified nRF52840 module lives in the
-right grip and scans everything; the left grip contains nothing but domes, diodes and a connector.
+right grip and scans everything; the left grip holds no active silicon at all — domes, diodes, the
+bridge connector, and (v0.27) the cell's plug and its fuse.
 
 ```
   LEFT grip (passive)                        RIGHT grip (MCU)
-  42 domes + diodes  ── 16-way FFC jumper ──  Ebyte E73 (nRF52840)  ⇄ phone (BLE HID)
+  42 domes + diodes  ── 20-way FFC jumper ──  Ebyte E73 (nRF52840)  ⇄ phone (BLE HID)
   D-pad/OK, mouse       straight type-A       + charger + USB-C + power switch
-  (no chip)             ribbon                scans the whole 9×10 matrix
+  LiPo + J4 + F1 PTC    14 matrix + VBAT      scans the whole 9×10 matrix
+  (no chip)             + GND, one cable      charges over the same ribbon
 ```
 
 That means one Bluetooth device to pair, no half-to-half link to drop, one battery to charge, and one
-firmware image. The cost is a ribbon cable running through the spine under the phone well.
+firmware image. The cost is a ribbon cable running through the spine under the phone well — since
+**v0.27** that ribbon is 20-way and carries the raw cell alongside the matrix, so it is the *only*
+thing crossing, and it is fused at the cell end (**F1**, a 0.75 A PPTC on the left board).
 
 Everything you can see in this repo — the KiCad boards, the printable shells, the renders above, even
 the ZMK keymap — is generated from a single parametric Python model,
@@ -185,7 +190,7 @@ will either talk you out of it or tell you exactly what you are signing up for �
 
 | | |
 |---|---|
-| Both PCBs | Fully placed and **autorouted**, **0 DRC violations / 0 unconnected items** (KiCad 9, `kicad-cli 9.0.9`, error severity; both boards re-routed and re-verified 2026-07-17 for the v0.19 outline, in the same commit that regenerated them) |
+| Both PCBs | Fully placed and **autorouted**, **0 DRC violations / 0 unconnected items** (KiCad 9, `kicad-cli 9.0.9`, error severity; both boards re-routed and re-verified for **v0.27**'s 20-way bridge, in the same commit that regenerated them — right board 75 nets / 114 footprints / 30 GND escape vias, left board 60 nets) |
 | Fab package | 4-layer gerbers + JLC-format BOM + CPL export cleanly to `hardware/kicad/generated/fab/` via `gen_fab.py`; the exporter refuses to run unless DRC is clean. (That directory is a build artifact and is **not committed** — regenerate it, see [Reproduce the design](#reproduce-the-design).) |
 | BOM | Every part real, LCSC-stocked and machine-placeable; no hand-soldered components |
 | 3D | 221 bodies assembled and collision-checked (`deck3d.py --check` → 0 impossible overlaps); all 7 shell parts (incl. the v0.21 nub spring + cap) + 2 keymats fit a 220 × 220 mm Ender 3 V2 bed (204 mm brim-safe limit) |
@@ -203,6 +208,7 @@ will either talk you out of it or tell you exactly what you are signing up for �
 | RF | The antenna sits centimetres from a phone and inside a closing hand. Range loss is expected and unquantified. |
 | Battery life | Never measured. The ~450–500 mAh cell and ZMK's sleep behaviour suggest weeks of light use; treat that as an estimate, not a spec. |
 | Tolerances | Boss travel, screw-boss fit and lid gaps have only been checked in CAD, never against a real print. |
+| **FFC route into the ZIF** | **Built in v0.27**, after turning out never to have existed. With the ZIF slot facing the spine there was only **1.20 mm of x** between the slot and a solid grip wall in which to lose **6.74 mm of z** — no route, in any version, for either cable, because both were drawn as straight boxes reaching neither connector. J2 now faces **inboard**: the ribbon folds in the grip's open back cavity and leaves through a low **stepped** duct (z −0.8 .. 2.6 on the grip side, .. 1.95 through the shroud so its roof keeps 1.42 mm) that passes *under* the phone-retention structure (all of which sits at z ≥ 3.9) rather than severing it. The descent clears the matrix diodes by **0.98 / 1.03 mm**, asserted against the real placement. `deck3d.py --check-lanes` sweeps the ribbon's full 21 mm section along the path and exits non-zero if any of it is buried. |
 
 ### Roadmap
 
@@ -299,7 +305,8 @@ check first is E73 module stock (JLC **C356849**) — it has been observed swing
 
 **Is it a split keyboard?**
 It looks like one and isn't. There is a **single 9×10 matrix** scanned by one MCU: the right grip
-owns COL0–4 locally, the left grip's COL5–9 arrive over a 16-way FFC ribbon, and all nine rows are
+owns COL0–4 locally, the left grip's COL5–9 arrive over a **20-way** FFC ribbon (14 of its conductors
+are the matrix and have not changed since rev-A; v0.27 put the battery on the spare ones), and all nine rows are
 shared. In ZMK terms it's a **unibody board**, not `CONFIG_ZMK_SPLIT`. One device pairs to your
 phone, one battery, one firmware. A useful debugging consequence: a dead **column** on the left
 points at the ribbon; a dead **row** kills the same row on *both* grips.
@@ -368,14 +375,14 @@ It's Apache 2.0, so you are free to build it, modify it or sell it yourself.
 |---|---|
 | Form | phone (**130–170 mm long edge**) held **LANDSCAPE** in a **2-part telescoping tray** (v0.24, Abxylute/8BitDo-style — spring clamp, TPU edge grippers + deep capture lips; v0.25 no magnets); two dome-key grips, **printed shell** in **Game-Boy-Color design language** (translucent Atomic-Purple shells, dark-gray keymats; v0.25 flat one-plane back with rounded outer edges; every part fits an Ender 3 V2 bed) |
 | Keys | **78 Snaptron 7 mm snap domes** (right 36, left 42) · **rectangular 8.5 × 7 mm keys** (i8+ chiclet feel) at **10 × 9 mm** pitch (~1.5–2 mm walls → PETG-printable) · one-piece living-hinge keymat with a **2u space bar**/side + a Rii-style **2u Enter** ending the right H-row · debossed keycap legends |
-| Left grip | QWERT-half (6×6) + a **Ø24 integrated D-pad** (v0.25, Rii i8+ style: four arm sectors + a Ø9 centre OK behind one round lid aperture, over the same five domes) + **mouse L/R** buttons — fully passive (diodes + FFC only) |
+| Left grip | QWERT-half (6×6) + a **Ø24 integrated D-pad** (v0.25, Rii i8+ style: four arm sectors + a Ø9 centre OK behind one round lid aperture, over the same five domes) + **mouse L/R** buttons — **no active parts**: diodes + the FFC ZIF, plus (v0.27) the cell's JST-PH **J4** and its **F1** PPTC fuse in the chin |
 | Right grip | YUIOP-half (6×6 field; the H-row ends in a Rii-style **2u ENT** — `H J K L + ENT`, with `'` on FN+`;`) + the v0.21 **pointing cluster mirroring the left D-pad cluster** (hall-effect nub at the D-pad mirror, PgUp/PgDn as the mouse-button pair's mirror), plus the module and the whole power front-end |
 | Modifiers | **mirrored** (v0.20): Ctrl at each grip's bottom-outside corner, Shift directly above it, Alt beside each Space — a thumb can't cross the phone gap, so every mod+same-side-key chord holds the mod with the opposite thumb (right emits RCTRL/RSHFT/RALT). `\` and `\|` moved to FN+`]` / FN+`[`; **no sticky keys — all chords are plain holds** |
 | Controller | **one Ebyte E73-2G4M08S1C** (nRF52840 module, JLC C356849) — certified radio, on-module antenna/crystals, UF2-flashable after a one-time SWD bootloader flash |
 | Matrix | single **9 × 10**, `col2row`, one **SOD-323** diode/key on the back, 9× 4.7 kΩ row pull-downs, NKRO best-effort |
-| Bridge | **16-pin 1.0 mm FFC ZIF** (JUSHUO AFA07-S16FCC-00, C13744) on each grip's inner edge + a **16-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥194 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A; the S25U spine, v0.19's well end-walls and the under-well floor channel raised the minimum from 160) — nets assigned by ribbon geometry so a straight jumper is correct by construction |
+| Bridge | **20-pin 1.0 mm FFC ZIF** (v0.27: JUSHUO **AFA07-S20FCC-00**, JLC **C262352**, Extended — same tier as the 16-way it replaces) on each grip's inner edge + a **20-way 1.0 mm type-A (same-side contacts) FFC jumper, length ≥240 mm** (v0.24: the clamp span is variable, so the ribbon carries a rolling service loop). It went 16 → 20 way so **one** cable carries the matrix *and* the battery: 14 matrix conductors (ROW0–8, COL5–9 — **identical to rev-A, so firmware is untouched**), 2× GND, 2× VBAT_CELL and 2 NC guards. Nets are assigned by ribbon geometry, so a straight jumper is correct by construction. **⚠ Do not fit a 16-way ribbon** — a 17.0 mm ribbon floats in the 21.0 mm housing with 4.0 mm of slop at *each* end |
 | Grip boards | **75.0 × 97.0 mm** each (v0.19: GBC-boxy straight outer edge — the parabolic cheek bow is gone for thumb reach), **4-layer** (sig / GND plane / sig / sig), 1.6 mm FR-4, **ENIG** (mandatory — dome contacts) |
-| Power | **LiPo 403040 (4.0 × 30 × 40, ~450–500 mAh) in the LEFT grip cavity** under the passive PCB (v0.18 — the sunken phone well leaves no cell height in the spine); **MCP73831** charger + **USB-C** + inline **USBLC6-2** ESD + **MSK12C02 power switch** + **reset tact** (pinhole) + **charge LED** in the right grip |
+| Power | **LiPo 403040 (4.0 × 30 × 40, ~450–500 mAh) with an integrated PCM — a hard requirement, not a preference** — in the LEFT grip cavity under its PCB (v0.18 — the sunken phone well leaves no cell height in the spine). **v0.27:** it plugs into **J4** (JST-PH) ~8 mm away *in the same grip*, through **F1** (0.75 A hold / 1.5 A trip PPTC) in series with cell +, and reaches the right grip over the bridge ribbon — the separate 2-wire power cable is deleted. **MCP73831** charger + **USB-C** + inline **USBLC6-2** ESD + **MSK12C02 power switch** + **reset tact** (pinhole) + **charge LED** stay in the right grip; the charger is still on the cell side of the switch, so it charges while switched off |
 | Pointer | v0.21/22: **ThinkPad-style hall-effect nub** on the right grip, Ploopy-Bean architecture — a TMAG5273 I²C hall sensor (SOT-23-6, machine-placed) reads a magnet in a printed flexure spring **through the PCB**; true **rate-control** firmware (deflection → cursor velocity, quadratic curve) in an in-tree Zephyr module on the repurposed TP6–8 I²C breakout. The mount is a **standard 4.4 mm-square TrackPoint platform**: wear the printed **red soft-dome replica** or any **genuine classic TrackPoint cap**. FN+D-pad mouse keys remain as fallback |
 | Wireless | BLE HID; USB-C for charging + UF2 flashing |
 | Fabrication | **JLCPCB** turnkey, **two separate orders** (right + left), single-sided reflow (**all SMT on the back**, single-pass — v0.21 adds no THT) → rough target **~$150–250 for 5 sets**, boards + assembly only (re-quote at order time) |
@@ -445,12 +452,13 @@ so the chin could be trimmed.
 
 **1 · Back layer** (2D concept; printed as left/right halves since v0.16) — the case, screw bosses,
 support posts under the key field, the LiPo bay in the LEFT grip, and the USB-C / power-switch /
-pinhole cutouts. In v0.24 the center spine is the telescoping `bridge` tray (springs + FFC + power
-cable run enclosed inside it), not a fixed floor channel. v0.24d gives the tray's contents a
-**lane plan** — front to back it reads `spring | FFC | power | spring`, every lane on one z with
-printed divider ribs between them, so nothing is stacked over anything and the cables sit inside
-the *moving* shroud's cavity (enclosed at every extension, not just while the fixed tray happens
-to still be underneath).
+pinhole cutouts. In v0.24 the center spine is the telescoping `bridge` tray (springs + FFC run
+enclosed inside it), not a fixed floor channel. v0.24d gives the tray's contents a
+**lane plan** — **v0.27** it reads `spring | FFC | spring` front to back (the power lane went with
+the cable it carried), every lane on one z with printed divider ribs between them, so nothing
+is stacked over anything and the ribbon sits inside the *moving* shroud's cavity (enclosed at every
+extension, not just while the fixed tray happens to still be underneath). The FFC lane widened with
+the connector — 17.0 → **21.0 mm** on y **28.5** — and y 40.0…82.5 inside the cavity is now free.
 
 ![Back shell](renders/layer_1_back_shell.png)
 
@@ -478,7 +486,7 @@ The shell prints flat on a **220 × 220 mm Ender 3 V2 bed** — the old one-piec
 350-class printer. Since **v0.24** the rigid center panel is gone: the two back halves are the
 **grips themselves** — `back_right` is the fixed ground, `back_left` is the moving clamp jaw — and a
 separate **`bridge` telescoping tray** bolts to the right grip while the left grip's inner shroud
-laps inside it, enclosing the springs, FFC and power cable. The tray top is an uninterrupted flat phone rest
+laps inside it, enclosing the springs and the single FFC. The tray top is an uninterrupted flat phone rest
 recess**; **TPU grippers** on each inner edge do the mechanical hold. Opening the left grip's five
 screws services the battery. v0.17
 keymats carry the **rectangular keycaps** (8.5 × 7 rounded-rect plungers, 18.5 mm 2u caps for the
@@ -508,7 +516,8 @@ whole build as one glTF file with a **named object tree** (open it in Blender or
 — that model is this file): translucent **Atomic-Purple** shells + dark-gray keymats (real glTF PBR
 materials), **KiCad-generated boards** (real Edge.Cuts body + routed copper + soldermask + silkscreen
 from the `.kicad_pcb`s), every placed component and snap dome as its real-dimension body, plus the
-403040 battery, FFC jumper (in its floor channel), the M3 shell screws and the
+403040 battery, FFC jumper (drawn as a straight box in its tray lane — its descent into the ZIFs is
+the open item in [Not done](#not-done--read-this-before-spending-money)), the M3 shell screws and the
 flush-mounted cased phone. All transforms are baked into the vertices, so the tree survives even
 minimal TRS-only viewers. Regenerate:
 `hardware/cad/.venv/bin/python hardware/cad/export_full_asm.py`.
@@ -530,20 +539,21 @@ placed by JLC; your hands do domes, shell, battery and the FFC jumper.
 | Keymat | one-piece 3D print, **TPU 95A** / tough resin | 2 | Living-hinge strips; fatigue-test a coupon >10 k cycles before the full mat. |
 | Diode | **1N4148WS SOD-323** (JLC **C2128**, Basic) | 78 | One/key, `col2row`, cathode band → row net, **on the back**. Basic part = free feeder. |
 | **Controller** | **Ebyte E73-2G4M08S1C** (nRF52840, JLC **C356849**) | **1** | Certified radio, on-module antenna/crystals. On the **back** of the right grip, **antenna-up at the top board edge** (v0.17 — farthest from the centred phone/LiPo, off the edge the palm doesn't cradle). Extended + X-ray + **volatile stock** (seen swinging ~1000 → ~20 units in days) — reserve/backorder before anything else. |
-| **LiPo** | **403040 pouch (4.0 × 30 × 40 mm, ~450–500 mAh)**, JST-PH pigtail | 1 | v0.18: foam-taped (0.3 mm) to the **LEFT grip's floor under the passive PCB** — the sunken phone well displaced it from the spine. Leads cross the spine's bottom-border lane to J3 on the right board. **Meter pigtail polarity against the "+"/"−" silk at J3 before first plug-in** — vendors wire PH pigtails both ways. |
-| **Bridge** | **AFA07-S16FCC-00** 16-pin 1.0 mm FFC ZIF (C13744) ×2 + **16-way 1.0 mm type-A FFC jumper, length ≥194 mm** (200 mm is the common stock length, e.g. "FFC-1.0-16P-200mm" type A) | 1 set | Bottom-contact, 2.5 mm tall. Type-A (same-side contacts) is correct — the left grip's nets are assigned by ribbon geometry so a straight jumper matches 1:1. v0.19: the J2 contact rows are **173.3 mm** apart + ~4 mm ZIF insertion per end + two S-bends down into the under-well floor channel — 200 mm stock has ~6 mm slack; shorter ribbons cannot mate. |
+| **LiPo** | **403040 pouch (4.0 × 30 × 40 mm, ~450–500 mAh)** with an **integrated PCM — REQUIRED**, JST-PH pigtail | 1 | The protection module is a hard requirement, not advice: overcurrent 2.0–2.5 A / 8–16 ms, overcharge 4.275 V, overdischarge 2.75 V. It and **F1** cover *different* bands and neither alone is sufficient. v0.18: foam-taped (0.3 mm) to the **LEFT grip's floor under its PCB** — the sunken phone well displaced it from the spine. **v0.27:** the pigtail plugs into **J4** ~8 mm away in the *same* grip instead of running a ~265 mm bare lead across the whole device. **Meter pigtail polarity against the "+"/"−" silk at J4 — on the LEFT board — before first plug-in** (pin 1 = "+"); vendors wire PH pigtails both ways. |
+| **Bridge** | **AFA07-S20FCC-00** **20**-pin 1.0 mm FFC ZIF (JLC **C262352**) ×2 + **20-way 1.0 mm FFC jumper, TYPE-A ONLY (contacts on the SAME side at both ends), length ≥240 mm** | 1 set | Bottom-contact, 2.5 mm tall, slide lock, side entry, 0.3 mm FFC. Type-A is load-bearing — the left grip's nets are assigned by ribbon geometry, so a straight jumper matches 1:1. **v0.27: buy 20-way. A 16-way ribbon is dangerous here** — 17.0 mm floats in the 21.0 mm housing with 4.0 mm of slop at *each* end, i.e. up to a 4-position shift. The conductor order (GND, GND, ROW0–8, COL5–9, NC, VBAT_CELL, VBAT_CELL, NC, index 0 = highest deck y) is chosen so even a 4-position shift lands VBAT on a **column** — one dead MCU pin — rather than on GND, which is a dead short across the cell. **v0.24:** the clamp span is variable, so the ribbon carries a rolling service loop that pays out as the jaw slides; it must reach at max extension (~195 mm J2-to-J2) plus the fold, so coupon-tune the loop radius. |
+| **Fuse (F1)** | **Bourns MF-MSMF075-2** PPTC, 1812 (JLC **C84140**) | 1 | **v0.27, safety-critical.** 0.75 A hold / 1.5 A trip, 13.2 V, Imax 100 A, R<sub>init</sub> ≤ 0.45 Ω. On the **LEFT** board at deck (50.0, 5.5), in series with cell **+** between **J4** and **J2** — it must be on the **cell** side of the ribbon or it protects nothing. Why it exists: the ribbon now carries the raw cell, and a 1.0 mm-pitch FFC conductor (0.70 × 0.035 mm = 0.0245 mm²) hits its 105 °C insulation limit around 2.8 A·√s and melts its own PET in ~0.2 s at a real short, while the cell's PCM does not trip until 2.0–2.5 A. The **0.43–2.0 A band in between** — the signature of a partially abraded conductor in a mechanism that flexes on every phone insertion — is covered by nothing else. Cost is **charge time**, not capacity: the 0.45 Ω moves CC→CV handover to a lower cell voltage so the taper is longer; undercharge at termination is I<sub>TERM</sub> × R<sub>loop</sub> ≈ 10–16 mV, negligible against the MCP73831's own ±32 mV VREG tolerance. |
 
-#### Power / USB front-end (right grip — required even with a module)
+#### Power / USB front-end (right grip unless noted — required even with a module)
 
 | Item | Part | Qty | Notes |
 |---|---|---|---|
 | Charger IC | **MCP73831T-2ACI/OT** (JLC **C424093**) | 1 | Module has no charger. PROG = 5.1 kΩ → ~196 mA (~0.43 C of the 403040 cell). Don't sub -2ATI (different Vreg). 4.7 µF 0805 at **both** VDD and VBAT per datasheet. |
 | USB-C receptacle | **fully-SMD 16P** (JLC **C165948**) + **2× 5.1 kΩ** CC1/CC2 | 1 | Must be SMD — a THT shell breaks 100 % reflow. Missing CC = never charges. |
 | ESD array | **USBLC6-2SC6** (JLC **C7519**) **inline** between USB-C and module | 1 | |
-| Power switch | **MSK12C02** slide (C431540) between cell+ and VBAT | 1 | Charger stays on the cell side — it charges while switched off. Knob through a slot in the **top** shell wall (v0.17 moved the electronics cluster to the top zone). |
+| Power switch | **MSK12C02** slide (C431540) between cell+ and VBAT | 1 | Charger stays on the cell side — it charges while switched off. Knob through a slot in the **top** shell wall (v0.17 moved the electronics cluster to the top zone). v0.27: cell + arrives here as **VBAT_CELL over the bridge ribbon**; the switch gates only the load, so the ribbon is live whenever the cell is plugged into J4. |
 | Reset button | **TS-1187A** tact (C318884), top-actuated | 1 | Pressed through a 1.6 mm pinhole in the shell floor — UF2 double-tap without opening the shell. |
 | Charge LED | 0603 red (C2286) + 1 kΩ | 1 | On MCP73831 STAT; visible through a 1.5 mm floor hole. |
-| Battery connector | **JST-PH 2.0 mm side-entry SMT** (S2B-PH-SM4-TB, C295747) | 1 | Polarized; the hobby-LiPo standard. |
+| Battery connector | **JST-PH 2.0 mm side-entry SMT** (S2B-PH-SM4-TB, C295747) — **J4, on the LEFT board** | 1 | Polarized; the hobby-LiPo standard. **v0.27:** it moved grips. Deck (60.0, 5.5) in the left grip's chin, mouth facing +y, so the 403040 plugs in ~8 mm from where it lives; the old right-board **J3 is deleted**. It is also the only way to de-energize the ribbon for service, since the power switch gates the load, not the cell. Pin 1 = "+". |
 | Battery sense | 2× 1 MΩ divider (÷2) + 100 nF SAADC filter | 1 | On P0.02/AIN0. |
 | SWD pads | **TP1–5** (SWDIO / SWDCLK / RESET / 3V3 / GND), silk-labelled | — | One-time bootloader flash / recovery. TP6–8 = the nub sensor's live I²C (SDA/SCL/INT), still probe-able. |
 
@@ -579,8 +589,12 @@ appear.
   TP6–8 for a rev-B trackpad. COL9 sits on P0.04/AIN2 — the XTAL pins (P0.00/P0.01) are deliberately
   kept free.
 - **Power electronics all in the right grip:** cell → charger (cell side) → **power switch** → VBAT →
-  the module's VDDH. Only logic signals cross the FFC bridge; the cell itself sits in the LEFT grip
-  (v0.18) with its two DC leads crossing the spine's bottom-border lane to J3.
+  the module's VDDH — topology unchanged. The cell itself sits in the LEFT grip (v0.18), and since
+  **v0.27** its whole path is `cell → J4 → F1 (PPTC) → J2 → ribbon → right board`: the connector and
+  the fuse are on the left board, and **VBAT_CELL crosses on the bridge ribbon** instead of on a
+  separate 2-wire cable. So the bridge carries power as well as logic, and the ribbon is live
+  whenever the cell is plugged in — the switch gates only the load. VBAT_SENSE (R22/R23/C6 → AIN0)
+  is unchanged.
 - **Antenna:** the E73's ceramic antenna points **up, off the top board edge** (v0.17 — centre-top,
   farthest from the phone/LiPo and off the edge the palm doesn't cradle), with an all-layer keep-out
   crossing the edge and a 0.6 mm relief in the shell wall. Expect the phone + hand to detune range
@@ -632,7 +646,7 @@ one `gen_fab.py` run away.
    [the pipeline](#reproduce-the-design) (`python3 hardware/scripts/gen_fab.py`).
 2. Options: **4-layer**, 1.6 mm FR-4, **ENIG** (snap domes need gold — HASL oxidises within weeks of
    cycling), assembly side = **bottom**, single-sided. The right board needs **Standard** assembly
-   (the E73 is Extended + X-ray); the left board (42 diodes + one connector) can go Economic.
+   (the E73 is Extended + X-ray); the left board (42 diodes + the ZIF + v0.27's J4 and F1) can go Economic.
 3. **Check the DFM preview before paying** — LED polarity (the classic JLC 180° flip), SOT-23-5/6
    rotation, USB-C and E73 orientation. Rotate in the preview if needed.
 4. Rough target **~$150–250 for 5 sets** — **boards + assembly only**; costing detail and part
@@ -650,23 +664,27 @@ one `gen_fab.py` run away.
 ### Step 3 — Assemble
 
 - Everything soldered arrives soldered — there is **no hand-soldering step**.
-- **FFC jumper first** (the ZIFs hide under the lids): **≥194 mm** type-A ribbon (200 mm stock
-  length) between the two ZIF connectors, **contacts facing the board at both ends** (bottom-contact
-  ZIFs); flip the latches closed. Before the panel goes on, seat the ribbon into its 0.5 mm spine
-  floor channel.
-- **Battery first (v0.18):** foam-tape the 403040 to the LEFT grip's floor and route its leads
-  through the bottom-border lane before the left board goes in — the cell lives UNDER the passive
-  PCB. Then seat each board on its 3 support posts + perimeter bosses; screw on each grip lid
-  (5 × M3×10 CSK). v0.24: route the FFC + power cable through the tray, **bolt the `bridge` tray to
+- **FFC jumper first** (the ZIFs hide under the lids): **≥240 mm, 20-way, type-A** ribbon between the
+  two ZIF connectors, **contacts facing the board at both ends** (bottom-contact ZIFs); flip the
+  latches closed. **Ribbon before the cell, always** — since v0.27 two of its conductors are the raw
+  cell, so seating it with the battery plugged in is a live operation. Then seat the ribbon into its
+  tray lane.
+- **Battery first (v0.18):** foam-tape the 403040 to the LEFT grip's floor before the left board goes
+  in — the cell lives UNDER the left PCB, and since **v0.27** its pigtail reaches **J4 on that same
+  board**, so nothing has to be routed across the spine. Then seat each board on its 3 support posts
+  + perimeter bosses; screw on each grip lid
+  (5 × M3×10 CSK). v0.24: route the FFC through the tray, **bolt the `bridge` tray to
   the right grip** (2 × M3), lap the left grip's inner shroud into it, then press the TPU grippers +
-  battery is serviced by opening the left grip. v0.24d: each cable threads its
-  **own walled channel** (FFC in the middle-front lane, power behind it, a spring in each outboard
-  lane) — thread them before the shrouds are lapped together, and don't let a service loop sit
-  across a divider rib. Full order:
+  battery is serviced by opening the left grip. v0.24d: the ribbon threads its
+  **own walled channel** with a spring in each outboard lane (**v0.27:** `spring | FFC | spring` —
+  the power lane is gone) — thread it before the shrouds are lapped together, and don't let the
+  service loop sit across a divider rib. Full order:
   [`docs/assembly.md`](docs/assembly.md).
-- **Battery:** meter the pigtail against the **"+"/"−" silk at J3** first (vendors wire PH pigtails
-  both ways) — but **do not connect the cell until after the first flash** (REGOUT0 must be
-  programmed first — see [`docs/assembly.md`](docs/assembly.md)). Slide switch OFF for assembly.
+- **Battery:** meter the pigtail against the **"+"/"−" silk at J4 — on the LEFT board** (pin 1 = "+")
+  first (vendors wire PH pigtails both ways) — but **do not connect the cell until after the first
+  flash** (REGOUT0 must be programmed first — see [`docs/assembly.md`](docs/assembly.md)). Slide
+  switch OFF for assembly. Use a cell with an **integrated PCM**; **F1** on the left board covers the
+  band the PCM does not, and neither substitutes for the other.
 
 ### Step 4 — First flash, pair
 
@@ -689,13 +707,22 @@ one `gen_fab.py` run away.
 
 The generated boards are **real, routed, DRC-clean KiCad 9 files** —
 [`hardware/kicad/generated/thumbdeck_right.kicad_pcb`](hardware/kicad/generated/thumbdeck_right.kicad_pcb)
-(36 domes + 36 diodes + module + power front-end) and
-[`thumbdeck_left.kicad_pcb`](hardware/kicad/generated/thumbdeck_left.kicad_pcb) (42 + 42, passive) —
+(36 domes + 36 diodes + module + power front-end; 75 nets, 114 footprints) and
+[`thumbdeck_left.kicad_pcb`](hardware/kicad/generated/thumbdeck_left.kicad_pcb) (42 + 42, no active
+parts, 60 nets since v0.27 added J4 and F1) —
 **0 DRC violations, 0 unconnected items** on both (`kicad-cli 9.0.9`, error severity; both boards
-re-routed and re-verified 2026-07-17 for the v0.19 outline). The full fab package (4-layer
+re-routed and re-verified for v0.27's 20-way bridge). The full fab package (4-layer
 gerbers, JLC-format BOM + CPL) exports to `hardware/kicad/generated/fab/`; the exporter refuses to
 run unless DRC is clean. Routing is fully autonomous — Freerouting + a GND stitcher + a DRC gate; see
 [`docs/routing-status.md`](docs/routing-status.md).
+
+Three placement constraints moved with the wider connector, and they are frozen: `deck.py`'s
+inner-mid M3 mount hole went from `board_h × 0.42` (40.74) to a fixed **46.0** — its Ø8 boss disc was
+the only thing capping the connector's pin count — and **J2 moved from deck y 24.5 to 28.5** on both
+boards, because the 21 mm ribbon would otherwise overlap the clamp's front spring lane. J2's land is
+26.85 mm long with 4.08 mm to the boss (the gate is 4.00). **VBAT_CELL/VBAT now route at 0.4 mm** via
+a real power netclass injected in `route.sh`'s DSN rewrite; before v0.27 `gen_board.py`'s `PWR = 0.5`
+was dead code and VBAT_CELL shipped at 0.2 mm — ~336 mΩ, a third of the whole charge loop.
 
 *Caveat worth stating plainly: 0 DRC violations means no design rule was broken. It does not mean the
 circuit is correct, and no board has ever been powered.*
@@ -797,10 +824,11 @@ relicensed by the above.
 | [`hardware/cad/assets/s25_ultra.glb`](hardware/cad/assets/) — phone model, used for fit-checking and visualization only | *provenance not yet established* | *to be stated — see [NOTICE](NOTICE)* |
 | Images in [`references/`](references/) — one Rii i8+ product photo and two i8+ teardown photos, used as design reference only | *provenance not yet established — neither photographer nor source is recorded anywhere in this repo* | **Unknown. No licence is asserted and none can currently be substantiated.** Provenance must be established, or the files removed, before redistribution — see [`docs/reference-notes.md`](docs/reference-notes.md) |
 
-The other footprints in `hardware/footprints/thumbdeck.pretty/` — `ffc_afa07_s16fcc`,
-`msk12c02_slide`, `snaptron_7mm_contact`, `snaptron_7mm_simple` — are original work drawn from
-manufacturer land-pattern drawings and are covered by the Apache-2.0 grant above, not by any
-third-party licence.
+The other footprints in `hardware/footprints/thumbdeck.pretty/` — `ffc_afa07_s20fcc` (the shipped
+20-way bridge connector), `ffc_afa07_s16fcc` (the 16-way it replaced, kept because the committed
+rev-A boards reference it), `msk12c02_slide`, `snaptron_7mm_contact`, `snaptron_7mm_simple` — are
+original work drawn from manufacturer land-pattern drawings and are covered by the Apache-2.0 grant
+above, not by any third-party licence.
 
 Nothing in the buildable output (PCBs, shells, keymats, firmware) depends on the `references/`
 images; no i8+ artwork, geometry, footprint or firmware was copied into this design. "Rii" is a

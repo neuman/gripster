@@ -12,7 +12,8 @@ work (the old KiCad-7 caveats are gone).
 rev-A electrical scope (see docs/design-review.md):
   * Ebyte E73-2G4M08S1C antenna-DOWN at the bottom board edge (module keep-out zone
     crosses the edge; GND pours stay clear on all 4 layers).
-  * Bridge = 16-pin 1.0 mm FFC ZIF (SMT, bottom contacts) on each grip's inner edge;
+  * Bridge = 20-pin 1.0 mm FFC ZIF (SMT, bottom contacts) on each grip's inner edge,
+    slot facing INBOARD; carries the matrix AND the cell (v0.27);
     a straight type-A FFC jumper crosses the spine. Left-grip pad nets are assigned
     by RIBBON GEOMETRY (conductor y-position match), not by pin number, so a straight
     jumper is correct by construction.
@@ -38,7 +39,12 @@ STOCK = "/usr/share/kicad/footprints"
 LOCAL = os.path.abspath(os.path.join(HERE, "..", "footprints", "thumbdeck.pretty"))
 NROWS, NCOLS_HALF = 9, 5
 TRACE = 0.25   # mm signal trace (Default netclass)
-PWR = 0.5      # mm power trace (Power netclass)
+PWR = 0.4      # mm power trace. NB: applied in route.sh's DSN rewrite, NOT here —
+               # KiCad 9 exposes no netclass setter on BOARD_DESIGN_SETTINGS via SWIG,
+               # so this file cannot stamp one. Until v0.27 nothing applied it at all and
+               # VBAT_CELL shipped at 0.2mm (~336mR, a third of the whole charge loop).
+               # Keep the two in sync: route.sh reads 400um. (0.5 was tried and made
+               # VBAT_CELL unroutable through the inner corridor; 0.4 costs ~34mR more.)
 
 # ---- E73 pad -> net. Pad N == Ebyte datasheet pin N (marbastlib footprint,
 # verified 1:1 vs the official Ebyte E73-2G4M08S1C User Manual pin table).
@@ -67,10 +73,14 @@ LIBS = {"TD": LOCAL,
         "USB": STOCK + "/Connector_USB.pretty",
         "FFC": STOCK + "/Connector_FFC-FPC.pretty",
         "JST": STOCK + "/Connector_JST.pretty",
+        "FUSE": STOCK + "/Fuse.pretty",
         "SW": STOCK + "/Button_Switch_SMD.pretty",
         "TP": STOCK + "/TestPoint.pretty"}
 
-FFC_FP = ("TD", "ffc_afa07_s16fcc")   # JUSHUO AFA07-S16FCC-00 (LCSC C13744)
+FFC_FP = ("TD", "ffc_afa07_s20fcc")   # JUSHUO AFA07-S20FCC-00 (LCSC C262352)
+# v0.27: 16P -> 20P. The 4 extra conductors carry the battery across the spine, which
+# deleted the separate 2-wire power cable (and its whole enclosure lane) entirely.
+# The 20-way land is the same family rule as the 16-way (nail pad = (N-1)/2*pitch + 2.35).
 
 USBC_NETS = {"A4": "VBUS", "B4": "VBUS", "A9": "VBUS", "B9": "VBUS",
              "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "S1": "GND",
@@ -90,8 +100,17 @@ LCSC = {
     "100nF": "C1525", "1uF": "C52923",
     "4u7/0805": "C1779",              # 0805 X5R >=16V
     "LED_RED": "C2286",               # 0603 red
-    "FFC16": "C13744",                # JUSHUO AFA07-S16FCC-00, 1.0mm 16P bottom-contact
+    "FFC20": "C262352",               # JUSHUO AFA07-S20FCC-00, 1.0mm 20P bottom-contact
     "JST-PH-2": "C295747",            # S2B-PH-SM4-TB side entry
+    # v0.27 cell protection. REQUIRED, not optional: the bridge ribbon now carries the
+    # raw cell, and a 1S pouch's PCM does not trip until 2.0-2.5A while a 1.0mm-pitch FFC
+    # conductor (0.70 x 0.035mm) cooks its own PET at ~2.8A*sqrt(s). That 0.43-2.0A band
+    # — the signature of a partially abraded conductor in a mechanism that flexes — is
+    # covered by nothing else. 0.75A hold (not 0.5A: that derates toward the 216mA max
+    # charge current at the car-dash temperatures this device is designed for).
+    # Rinit<=0.45R worst case, which is why VBAT_CELL gets a real trace width below.
+    "PPTC-0.75A": "C84140",           # Bourns MF-MSMF075-2, 1812, 0.75A hold / 1.5A trip
+
     "MSK12C02": "C431540",            # SPDT slide
     "TS-1187A": "C318884",            # reset tact
     "TMAG5273": "C3716049",           # TMAG5273A1QDBVR I2C 3D hall (the nub sensor)
@@ -236,6 +255,58 @@ class Board:
                 assert d >= BOSS_R, (f"{self.side}: {fp.GetReference()} is {d:.2f}mm from "
                                      f"mount hole ({h['x']},{h['y']}) — inside the {BOSS_R}mm boss")
 
+    def assert_silk_on_board(self, margin=0.2):
+        """Every silkscreen string we place must fit INSIDE the outline.
+
+        v0.27: the bridge connector's "buy a 20-way, type-A" warning shipped 21.4mm long
+        on a ~8mm-wide inner-edge strip and hung ~6.9mm off both boards. The fab would
+        have silently clipped a third of it. KiCad does notice (silk_edge_clearance) but
+        that rule's severity is *warning*, and route.sh exports DRC with
+        `--severity-error`, so the "0 violations" gate structurally cannot see it.
+        Text we author ourselves is cheap to check right here.
+
+        Pure stdlib on purpose: this module runs under KiCad's python, which has pcbnew
+        but no shapely."""
+        import math
+        poly = []
+        for pt in self.geo["outline"]:            # drop zero-length repeats
+            if not poly or abs(pt[0] - poly[-1][0]) > 1e-4 or abs(pt[1] - poly[-1][1]) > 1e-4:
+                poly.append((pt[0], pt[1]))
+
+        def inside(x, y):                          # even-odd ray cast
+            c = False
+            for k in range(len(poly)):
+                x0, y0 = poly[k]; x1, y1 = poly[(k + 1) % len(poly)]
+                if (y0 > y) != (y1 > y) and x < (x1 - x0) * (y - y0) / (y1 - y0) + x0:
+                    c = not c
+            return c
+
+        def edge_dist(x, y):                       # nearest outline segment
+            best = float("inf")
+            for k in range(len(poly)):
+                x0, y0 = poly[k]; x1, y1 = poly[(k + 1) % len(poly)]
+                dx, dy = x1 - x0, y1 - y0
+                L2 = dx * dx + dy * dy
+                t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / L2))
+                best = min(best, math.hypot(x - (x0 + t * dx), y - (y0 + t * dy)))
+            return best
+
+        bad = []
+        for t in self.b.GetDrawings():
+            if not isinstance(t, pcbnew.PCB_TEXT):
+                continue
+            bb = t.GetBoundingBox()
+            xs = (bb.GetLeft() / 1e6, bb.GetRight() / 1e6)
+            ys = (_fy(bb.GetBottom() / 1e6, self.H), _fy(bb.GetTop() / 1e6, self.H))
+            for cx in xs:
+                for cy in ys:
+                    if not inside(cx, cy):
+                        bad.append(f"{t.GetText()!r} corner ({cx:.2f},{cy:.2f}) is OFF the board")
+                    elif edge_dist(cx, cy) < margin:
+                        bad.append(f"{t.GetText()!r} corner ({cx:.2f},{cy:.2f}) is only "
+                                   f"{edge_dist(cx, cy):.2f}mm from the edge (min {margin})")
+        assert not bad, f"{self.side}: silk off the board — " + "; ".join(sorted(set(bad)))
+
     def save(self):
         p = os.path.join(OUT, f"thumbdeck_{self.side}.kicad_pcb")
         pcbnew.SaveBoard(p, self.b)
@@ -296,46 +367,161 @@ def build_matrix(bd):
                             round(x, 2), round(y, 2)))
 
 
-# Bridge contact nets in RIBBON ORDER (16 conductors): rows, left cols, 2x GND.
-BRIDGE_NETS = [f"ROW{i}" for i in range(9)] + [f"COL{5+i}" for i in range(5)] + ["GND", "GND"]
+# Bridge contact nets in RIBBON ORDER (20 conductors), index 0 = HIGHEST deck y (the
+# sort in place_bridge() is on KiCad y, which runs opposite to deck y).
+#
+# v0.27: 14 matrix signals unchanged (so firmware is untouched) + a 6-conductor power
+# group. The order inside that group is a SAFETY interlock, not packing convenience:
+#
+#   GND | GND | ROW0..ROW8 | COL5..COL9 | NC | VBAT_CELL | VBAT_CELL | NC
+#   ^ high deck y                                                       low deck y ^
+#
+#   * GND is pushed to the FAR END — 15 conductor positions from VBAT_CELL. This is
+#     sized against the real mis-insertion hazard, which is NOT a one-position slip:
+#     a 17.0mm 16-way ribbon (the part every rev-A builder already owns) drops into
+#     this 21.0mm 20-way housing with 4.0mm of independent slop at EACH end, i.e. up
+#     to a 4-position shift. place_bridge() maps the left connector by deck y, so a
+#     shift joins right-net(k) to left-net(k+n), and only nets present on BOTH boards
+#     can fault. VBAT onto GND is a dead cell short (10-16A through one 0.0245mm2
+#     conductor, which melts its own PET in ~0.2s). At 15 positions apart no
+#     achievable shift can do it — the worst case lands VBAT on a COL instead:
+#     ~50-100mA into an MCU output NFET, one dead pin, no fire.
+#   * The two NC guards absorb a +/-1 slip completely, so VBAT never touches a
+#     matrix line for the ordinary error either.
+#   * No VBAT at a ribbon edge, where a conductor is most exposed to abrasion.
+#   * This ordering is only correct WITH F1 fitted. Without the fuse the right answer
+#     changes shape entirely.
+#   * Ribbon GND is NOT in the matrix return loop (that closes through the right
+#     board's R1-R9 pulldowns and right-board GND), so moving it costs no signal
+#     integrity — it is purely the battery return.
+#
+# NC entries are None: they get NO net, deliberately. Tying them to GND would recreate
+# exactly the short the guards exist to prevent.
+BRIDGE_NETS = (["GND", "GND"] + [f"ROW{i}" for i in range(9)] + [f"COL{5+i}" for i in range(5)]
+               + [None, "VBAT_CELL", "VBAT_CELL", None])
+
+
+# v0.27: J2's deck y is a JOINT constraint with the enclosure, not a free choice.
+#   lower bound  — deck3d's clamp lane plan. The ribbon rides a walled channel between
+#     the two extension springs; the rib assert needs
+#     FLEX_Y >= SPRING_Y[0] + SPRING_D/2 + 1.0 + FLEX_W/2 + LANE_CLR + RIB_T, which for
+#     the 21mm 20-way ribbon is 28.20. At the old 24.5 the ribbon physically overlapped
+#     the front spring. (The springs cannot move: the cavity floor forces them outboard.)
+#   upper bound  — this file's own assert_clear_of_bosses. J2 sits between the chin
+#     mount hole at deck y 6.0 and the inner-mid one, whose Ø8 boss disc caps the
+#     connector length; that is why deck.py's inner-mid hole moved 40.74 -> 46.0.
+# deck3d.py asserts FLEX_Y == this number against the placement export, so the two
+# cannot drift apart again — which is exactly how the old 2.0mm skew went unnoticed.
+J2_DECK_Y = 28.5
 
 
 def place_bridge(bd, right_j2_map):
     """FFC ZIF on the inner edge, contacts along Y, ribbon exit toward the spine.
-    RIGHT grip: nets assigned pin1->ROW0 ... pin16->GND, and the (net, deck_y) list
-    is returned. LEFT grip: each contact takes the net of the RIGHT contact at the
-    same deck y — a straight type-A jumper is then correct by construction
-    (both connectors are back-mounted bottom-contact, entries facing each other,
-    so the flat ribbon meets both contact sets on the same conductor face)."""
+    RIGHT grip: nets assigned per BRIDGE_NETS, and the (net, deck_y) list is returned.
+    LEFT grip: each contact takes the net of the RIGHT contact at the same deck y — a
+    straight type-A jumper is then correct by construction (both connectors are
+    back-mounted bottom-contact, entries facing each other, so the flat ribbon meets
+    both contact sets on the same conductor face).
+
+    v0.27: 20 conductors, the last 6 of which are the power group (see BRIDGE_NETS).
+    Mapping by deck y rather than by pin index is what makes an end-for-end ribbon
+    swap a non-event — it reverses the width axis at BOTH ends simultaneously."""
     H = bd.H
     fp = bd.load(*FFC_FP)
+    # v0.27 ORIENTATION FLIP: the cable slot now faces INBOARD (into the grip's back
+    # cavity), where it used to face the spine. This is a mechanical necessity, not a
+    # preference, and it fixes a hole that predates the battery change:
+    #   The ZIF is back-mounted, so its slot sits at z ~= 6.95 under a board at 7.9. The
+    #   enclosure's cable lane is at z = 0.2, inside a shroud cavity capped at 1.75.
+    #   Between them the grip is SOLID at every z — that column is the phone cradle's
+    #   backstop wall, its rest ledge and the bottom shelf. Facing the spine, the ribbon
+    #   had 1.20mm of x in which to lose 6.74mm of z before hitting that wall, so there
+    #   was no physical route at all and there never had been (both bridge cables were
+    #   modelled as straight boxes reaching neither connector).
+    #   Facing inboard, the ribbon exits into ~10mm of open back cavity, descends there,
+    #   folds back at z ~= 2.2 and leaves through a LOW duct (deck3d FLEX_DUCT_Z0..Z1,
+    #   -0.8..2.6) that passes UNDER the whole retention structure (all of which sits at
+    #   z >= 3.9) instead of cutting through it.
+    # Cost: ~20mm more ribbon and a static fold inside the grip. The alternative was
+    # severing ~23mm of the wall the phone's capture lip is rooted in.
     if bd.side == "right":
-        # entry (ribbon) faces -x: contacts run along Y. Empirical rot below.
-        bd.place(fp, "J2", "FFC16", 3.6, 24.5, back=True, rot=270)
+        bd.place(fp, "J2", "FFC20", 3.6, J2_DECK_Y, back=True, rot=90)
     else:
         W = bd.geo["board_w"]
-        bd.place(fp, "J2", "FFC16", W - 3.6, 24.5, back=True, rot=90)
-    # collect the 16 signal pads sorted by y
+        bd.place(fp, "J2", "FFC20", W - 3.6, J2_DECK_Y, back=True, rot=270)
+    # collect the signal pads sorted by y
     sig = [p for p in fp.Pads() if p.GetNumber().isdigit()]
     sig.sort(key=lambda p: p.GetPosition().y)
-    assert len(sig) == 16, f"expected 16 FFC contacts, got {len(sig)}"
+    assert len(sig) == len(BRIDGE_NETS), \
+        f"expected {len(BRIDGE_NETS)} FFC contacts, got {len(sig)}"
     if bd.side == "right":
         for p, net in zip(sig, BRIDGE_NETS):
-            p.SetNet(bd.net(net))
-        mapping = [(p.GetNetname(), round(_fy(p.GetPosition().y / 1e6, H), 3)) for p in sig]
+            if net is not None:              # None = NC guard: leave it floating
+                p.SetNet(bd.net(net))
+        mapping = [(net, round(_fy(p.GetPosition().y / 1e6, H), 3))
+                   for p, net in zip(sig, BRIDGE_NETS)]
     else:
         assert right_j2_map is not None, "right grip must be generated first"
         for p in sig:
             dy = round(_fy(p.GetPosition().y / 1e6, H), 3)
             net = min(right_j2_map, key=lambda m: abs(m[1] - dy))
             assert abs(net[1] - dy) < 0.5, f"no ribbon conductor at y={dy} (nearest {net})"
-            p.SetNet(bd.net(net[0]))
+            if net[0] is not None:
+                p.SetNet(bd.net(net[0]))
         mapping = None
     for p in fp.Pads():                      # mechanical tabs -> GND
         if not p.GetNumber().isdigit():
             p.SetNet(bd.net("GND"))
-    bd.silk("J2 FFC16 <- pin1", 3.6 if bd.side == "right" else bd.geo["board_w"] - 3.6, 36.0)
+    # The silk names the WIDTH and the TYPE, because getting either wrong is a short,
+    # not a no-op: a 17mm 16-way ribbon drops into this 21mm housing with 4mm of slop
+    # at each end — enough to seat it 4 positions over and put VBAT on GND.
+    #
+    # It has to FIT, though, and the inner-edge strip is only ~8mm wide. The first
+    # version of this label ("J2 FFC20 1.0mm TYPE-A <- pin1") was 21.4mm long and hung
+    # ~6.9mm off the board edge on BOTH grips — the fab would have clipped a third of
+    # the one warning that stops a cell-shorting mis-seat. It also said "<- pin1" while
+    # sitting at the pin-20 end of the right board, because v0.27's rotation flip
+    # reversed the pad order under a hardcoded y offset. Pin 1 is already marked
+    # correctly and unambiguously by the footprint's own silk dot, which rotates WITH
+    # the part, so the text does not need to point at it — it only needs to say what to
+    # buy. Kept short enough to sit in the free strip below J2 (deck y 10.0..15.1,
+    # between the chin boss and the connector).
+    inner_x = 3.6 if bd.side == "right" else bd.geo["board_w"] - 3.6
+    bd.silk("20P TYPE-A", inner_x, 12.6, size=0.7)
     return mapping
+
+
+def place_left_power(bd):
+    """v0.27 LEFT grip: the cell's connector and its fuse. The left board stops being
+    purely passive here, and that is the price of deleting the separate power cable —
+    but it buys back more than it costs, because the cell finally terminates in a
+    connector on the board it actually sits in, instead of running a ~265mm bare pigtail
+    across the whole device to a JST in the other grip.
+
+        cell pouch -> J4 (JST-PH, polarised) -> F1 (PPTC) -> J2 VBAT_CELL x2 -> ribbon
+                                                                             -> right board
+
+    Why J4 is REQUIRED and not a nicety: SW90 (on the right board) gates only the LOAD,
+    so VBAT_CELL — and therefore the ribbon — is live whenever the cell is attached.
+    Without a connector on this board there is no way to de-energize the ribbon for the
+    service operation the docs advertise, and assembly.md's battery-free first power-up
+    becomes impossible. Order of assembly is now: ribbon first, then J4.
+
+    Why F1 is REQUIRED: see the LCSC table. It must sit on the CELL side of the ribbon
+    or it protects nothing at all."""
+    if bd.side != "left":
+        return
+    # Chin placement, mouth facing +y (into the grip, over the board). rot=180 would aim
+    # the plug off the bottom board edge into the shell wall; the naive mirror of the old
+    # right-board J3 at x=31 would drive the mated plug's swath straight into the cell.
+    bd.place(bd.load("JST", "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal"),
+             "J4", "JST-PH-2", 60.0, 5.5, {"1": "VCELL_RAW", "2": "GND"}, rot=0)
+    bd.silk("+", 65.5, 4.7); bd.silk("-", 65.5, 6.7); bd.silk("BAT", 60.0, 2.4)
+    # F1 in the chin west of J4, clear of the cell footprint (local x 22..52, y 13..53),
+    # clear of the innermost matrix diode column (x 61.1..64.4) and clear of every boss.
+    bd.place(bd.load("FUSE", "Fuse_1812_4532Metric"),
+             "F1", "PPTC-0.75A", 50.0, 5.5, {"1": "VCELL_RAW", "2": "VBAT_CELL"}, rot=0)
+    bd.silk("F1 PPTC 0.75A", 50.0, 2.4, size=0.8)
 
 
 def place_components(bd):
@@ -494,13 +680,13 @@ def place_components(bd):
       {"1": "VBAT_CELL", "2": "VBAT"})
     S("PWR", 48.5, 5.0)
 
-    # battery JST-PH (polarized, SMT side entry). Placed directly (NOT via the cluster
-    # rotation): the rotated pose would collide with the inner-top page keys, so it lives
-    # in the trimmed bottom chin instead — flat, out of the key field, LiPo wire reaches it
-    # across the back cavity. VBAT_CELL routes up to the power switch in the top cluster.
-    bd.place(bd.load("JST", "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal"),
-             "J3", "JST-PH-2", 44.0, 5.5, {"1": "VBAT_CELL", "2": "GND"}, rot=0)
-    bd.silk("+", 49.5, 4.7); bd.silk("-", 49.5, 6.7); bd.silk("BAT", 44.0, 2.4)
+    # v0.27: the battery connector is GONE from this board. The cell lives in the LEFT
+    # grip, so its connector (J4) and its fuse (F1) now live on the LEFT board too and
+    # VBAT_CELL arrives here over the bridge ribbon — see place_left_power(). Keeping a
+    # JST here as well would mean two cell connectors in one device, which is a guaranteed
+    # field fault. VBAT_CELL still exists on this board (U2 charger, C5, SW90); it just
+    # enters at J2 on the inner edge instead of at a connector in the chin, which also
+    # deletes the old 109mm diagonal that crossed the whole key field to reach it.
 
     # USB CC 5.1k pulldowns — east of the connector, OUT of the D+/D- escape
     # corridor (x 32-38 above the pad row must stay open for the data-pair fan-in)
@@ -673,8 +859,10 @@ def gen(side, right_j2_map=None):
     build_matrix(bd)
     j2map = place_bridge(bd, right_j2_map)
     place_components(bd)
+    place_left_power(bd)
     gnd_escapes(bd)
     bd.assert_clear_of_bosses()
+    bd.assert_silk_on_board()
     # GND: pours on F/B + a SOLID plane on In1.Cu (RF ref + return path).
     # In2.Cu stays bare = the inner signal layer for the module fan-in.
     bd.gnd_zone(pcbnew.F_Cu); bd.gnd_zone(pcbnew.B_Cu); bd.gnd_zone(pcbnew.In1_Cu)

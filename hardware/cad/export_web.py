@@ -35,7 +35,7 @@ OUT = os.path.join(MODELS, "thumbdeck_web_raw.glb")
 SINGLE = ("back_left", "back_right", "grip_lid_left",
           "grip_lid_right", "nub_spring", "nub_cap", "nub_magnet", "keymat_left",
           "keymat_right", "gripper_left", "gripper_right",
-          "battery", "flex", "power")
+          "battery", "flex")
 
 # component nodes kept UN-merged (slash-free rename) so hotspot pins can anchor
 # to them precisely; they still ride the pcb_right mover during explode.

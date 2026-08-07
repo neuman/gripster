@@ -13,7 +13,8 @@ and DRC-clean means no rule is violated, not that the circuit is correct.
 cd hardware/scripts
 python3 gen_board.py                  # placement + full netlist + deterministic USB copper
                                       #   + GND escape vias -> generated/thumbdeck_{right,left}.kicad_pcb
-./route.sh right                      # Specctra DSN (In1 marked power) -> Freerouting (-Xss16m)
+./route.sh right                      # Specctra DSN (In1 marked power, + a 0.5mm `power`
+                                      #   netclass for the cell path) -> Freerouting (-Xss16m)
 ./route.sh left                       #   -> SES import -> stitch.py (GND vias + zone fill) -> DRC -> renders
 python3 gen_fab.py                    # gerbers/BOM/CPL per side; REFUSES to export unless DRC is 0/0
 python3 sim_matrix.py                 # 78-key matrix ghosting/NKRO proof (final pass)
@@ -47,6 +48,16 @@ SOT-23s, USB-C, E73). Full walkthrough:
 
 ## Notes
 
+- **v0.27 (2026-08-07):** the bridge is a **20-way** 1.0 mm ZIF (JUSHUO
+  AFA07-S20FCC-00, LCSC C262352) whose four extra conductors carry the cell across
+  the spine, so the separate battery cable is gone. **J3 is deleted from the right
+  board**; the left board gains **J4** (JST-PH-2, C295747) and **F1** (Bourns
+  MF-MSMF075-2 PPTC, C84140) — so the left board is no longer purely passive, and
+  its BOM has two placements it did not have before. J2 sits at deck y 28.5 on both
+  boards. Both boards were re-generated and **re-routed to 0/0** with the new parts.
+  The `power` netclass injected by `route.sh` is what finally gives the cell path
+  its 0.5 mm width; details in
+  [`docs/routing-status.md`](../../docs/routing-status.md).
 - The boards are frozen build artifacts — regenerate rather than hand-edit; the
   DRC gate in `gen_fab.py` protects the export either way.
 - Opening them in the KiCad 9 GUI is fine for inspection; the pipeline does not
